@@ -2227,12 +2227,54 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
         width: 33.333% !important;
     }
 
-    /* the content reaches the screen's edges; only the notch and the home bar keep their room */
-    html.mui.mui-phonelayout .skinHeader {
-        padding-top: env(safe-area-inset-top, 0px);
+    /* Safari (26) fills its status bar and toolbar with the colour of the page and of fixed elements at the
+       screen's edges (Emby's full-screen background layer, the footer). They take the colour of the top of the
+       page's art (--mui-bar, set with theme-color) instead of solid black, so the bars blend into the page. */
+    html.mui.mui-phonelayout,
+    html.mui.mui-phonelayout .backgroundContainer {
+        background-color: var(--mui-bar, #141414) !important;
     }
 
-    html.mui.mui-phonelayout .appfooter {
-        padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* iOS doesn't count the strips under the status bar and the toolbar as part of the viewport, but still draws
+       there: the blurred art (and Emby's background layer) reach past both edges, so those strips show the art
+       going on instead of a band of colour */
+    html.mui.mui-phonelayout #mui-bg,
+    html.mui.mui-phonelayout .backgroundContainer {
+        top: -25vh !important;
+        bottom: -25vh !important;
+        height: auto !important;
+    }
+
+    /* The page scrolls under Safari's bars, the way an ordinary site does: Emby scrolls inside a container per page
+       (.scrollFrameY: the page itself or its tab), not the document, so that container reaches past both edges
+       into those strips and starts its content as much lower again. Scrolled content then passes under the status
+       bar and the toolbar; at the top the strip shows the page's art. */
+    html.mui.mui-phonelayout {
+        --mui-edge-top: 64px;
+        --mui-edge-bottom: 104px;
+    }
+
+    html.mui.mui-phonelayout .view.scrollFrameY,
+    html.mui.mui-phonelayout .view .scrollFrameY,
+    html.mui.mui-phonelayout .page.scrollFrameY {
+        top: calc(-1 * var(--mui-edge-top)) !important;
+        bottom: calc(-1 * var(--mui-edge-bottom)) !important;
+        height: auto !important;
+        box-sizing: border-box;
+        padding-top: var(--mui-edge-top) !important;
+        padding-bottom: var(--mui-edge-bottom) !important;
+        scroll-padding-top: var(--mui-edge-top);
+    }
+
+    /* the banner reaches up under the status bar too (its text sits at its bottom, where it was) */
+    html.mui.mui-phonelayout .mui-spotlight {
+        margin-top: calc(-1 * (var(--mui-pull, 0px) + var(--mui-edge-top)));
+        height: calc(clamp(420px, 72vh, 640px) + var(--mui-edge-top));
+    }
+
+    /* (while music plays, the footer carries the player bar in the album's colour, see albumtint.js) */
+    html.mui.mui-phonelayout:not(.albumtint-footer) .appfooter {
+        background-color: var(--mui-bar, #141414) !important;
+        transition: background-color .9s ease;
     }
 }

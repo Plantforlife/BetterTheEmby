@@ -84,6 +84,12 @@ namespace BetterTheEmby
             }
 
             var tags = new StringBuilder();
+            // with the phone layout, a web app added to the iOS home screen runs full screen, under the status bar
+            // (Emby's header already keeps clear of the notch)
+            if (Plugin.Instance?.Configuration?.EnablePhoneLayout ?? true)
+            {
+                tags.Append("    <meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">" + Marker + "\n");
+            }
             var settings = SettingsScript();
             WriteIfChanged(Path.Combine(WebDir, SettingsFile), settings);
             tags.Append("    <script src=\"" + SettingsFile + "?v=" + Version(settings) + "\" defer></script>" + Marker + "\n");

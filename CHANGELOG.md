@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 — 2026-11-02
+
+- iPhone / Safari: the status bar and toolbar take the colour of the page's art instead of showing black bands (Safari 26 extends the colour of the page and of edge elements into its bars).
+- Phones: pages scroll under Safari's status bar and toolbar like an ordinary site. Each page's scroll container reaches past both edges into the strips iOS leaves outside the viewport (with as much padding inside, so content starts where it did); the home banner and detail backdrops reach up under the status bar, and the blurred page art fills the rest.
+- Added to the Home Screen, Emby now runs full screen under the status bar (`apple-mobile-web-app-status-bar-style: black-translucent`).
+- Phones: the header keeps Emby's own notch padding again (1.0.0 replaced it and sat too high on screens without a notch).
+
 ## 1.0.0 — 2026-11-02
 
 First public release, as **BetterTheEmby** (formerly *Album Tint & Modern UI*, `AlbumTint.dll`).

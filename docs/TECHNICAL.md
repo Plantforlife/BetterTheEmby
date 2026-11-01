@@ -224,7 +224,9 @@ Below 40em, with `EnablePhoneLayout`:
 - The docked tab bar (`.appfooter .dockedtabs`) is hidden; the footer stays for the now-playing bar. Emby's header search button is shown.
 - Square cards in vertical grids are a third of the width (the virtual grid measures their CSS width).
 - Motion: a 200 ms fade per page; no poster flights, no detail-page choreography, no card reveals.
-- `theme-color` follows the top strip of the page's art, dimmed like the page, so the browser's bars blend in.
+- Safari 26 fills its status bar and toolbar with the colour of the page and of fixed elements at the screen's edges, and Emby scrolls inside its own containers (not the document), so Safari cannot show the page under its bars the way it does on ordinary sites. Instead the colour of the top strip of the page's art, dimmed like the page (`--mui-bar`), goes to `theme-color`, the page background, Emby's full-screen `.backgroundContainer` and the footer (except while Album Tint colours the music bar), so the bars blend into the page.
+- iOS leaves those strips outside the viewport but still draws there. So each page's scroll container (`.scrollFrameY`: the page or its tab) reaches `--mui-edge-top` (64px) above and `--mui-edge-bottom` (104px) below the viewport, with the same padding inside, and content scrolls under the status bar and toolbar as on an ordinary site. The home banner reaches up under the status bar as well; detail backdrops do already (they sit at the container's top). The blurred art (`#mui-bg`) and `.backgroundContainer` reach 25vh past both edges.
+- With the phone layout on, the plugin adds `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`: added to the iOS Home Screen, Emby runs without Safari's bars and the page reaches under the status bar (Emby's header already keeps clear of the notch with `env(safe-area-inset-top)`).
 
 ## NetEase Cloud Music metadata (NetEase.cs)
 

@@ -1078,6 +1078,8 @@
             } catch (e) { }
         }
         if (themeMeta.getAttribute('content') !== colour) themeMeta.setAttribute('content', colour);
+        // the page background and the layers at the screen's edges, which Safari extends into its bars
+        root.style.setProperty('--mui-bar', colour);
     }
     // average brightness (0..1) of a loaded image, from a 16x9 copy
     function lumaOf(img) {
