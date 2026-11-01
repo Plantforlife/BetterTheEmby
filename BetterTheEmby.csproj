@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>BetterTheEmby</AssemblyName>
+    <RootNamespace>BetterTheEmby</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Version>1.0.0.0</Version>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- Emby reference assemblies copied from the server's /system folder -->
+    <EmbyRefDir Condition="'$(EmbyRefDir)' == ''">$(MSBuildProjectDirectory)\ref</EmbyRefDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="MediaBrowser.Common"><HintPath>$(EmbyRefDir)\MediaBrowser.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MediaBrowser.Controller"><HintPath>$(EmbyRefDir)\MediaBrowser.Controller.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MediaBrowser.Model"><HintPath>$(EmbyRefDir)\MediaBrowser.Model.dll</HintPath><Private>false</Private></Reference>
+    <!-- compile-time only; the server's runtime provides it -->
+    <PackageReference Include="System.Memory" Version="4.6.0" ExcludeAssets="runtime" PrivateAssets="all" />
+    <!-- compile-time only as well: .NET 8, which Emby runs on, has System.Text.Json built in -->
+    <PackageReference Include="System.Text.Json" Version="8.0.5" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="web\albumtint.js" LogicalName="BetterTheEmby.albumtint.js" />
+    <EmbeddedResource Include="web\modernui.js" LogicalName="BetterTheEmby.modernui.js" />
+    <EmbeddedResource Include="web\modernui.css" LogicalName="BetterTheEmby.modernui.css" />
+    <EmbeddedResource Include="web\serviceworker.js" LogicalName="BetterTheEmby.serviceworker.js" />
+    <EmbeddedResource Include="web\pinyin.js" LogicalName="BetterTheEmby.pinyin.js" />
+    <EmbeddedResource Include="web\config.html" LogicalName="BetterTheEmby.config.html" />
+    <EmbeddedResource Include="web\config.js" LogicalName="BetterTheEmby.config.js" />
+  </ItemGroup>
+
+</Project>

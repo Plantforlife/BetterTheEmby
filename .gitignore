@@ -1,0 +1,13 @@
+# build output
+bin/
+obj/
+
+# Emby's own assemblies, copied from a server only to compile against; not ours to publish
+ref/*.dll
+
+# editors / OS
+.vs/
+.vscode/
+*.user
+.DS_Store
+Thumbs.db

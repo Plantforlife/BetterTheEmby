@@ -1,0 +1,2238 @@
+/*
+ * Modern UI for Emby Web (4.9.5.0): deeper background, glass chrome, rounded cards with lift, spotlight
+ * banners, art behind library and detail pages, glass menus, motion, and a cleaner video player.
+ * Injected by the BetterTheEmby plugin.
+ * Every rule is scoped to html.mui, which modernui.js adds unless ModernUI.disable() was run in this browser.
+ */
+
+html.mui {
+    --mui-ease: cubic-bezier(.22, .8, .24, 1);
+    --mui-ease-out: cubic-bezier(.16, 1, .3, 1);
+    --mui-spring: cubic-bezier(.34, 1.4, .64, 1);
+    --mui-radius: 10px;
+    --mui-glass: rgba(18, 18, 20, .6);
+    --mui-glass-line: rgba(255, 255, 255, .08);
+    --mui-chip: rgba(255, 255, 255, .1);
+    --mui-chip-hover: rgba(255, 255, 255, .18);
+    --mui-bg: var(--background-hue), var(--background-saturation), var(--background-lightness);
+    --mui-page: hsl(var(--mui-bg));
+}
+
+/* The chrome below (glass header and tabs, drawer, white-on-glass buttons) is for the dark theme the media
+   pages use; Emby's dashboard pages switch to the light theme and keep their own look. */
+html.mui.theme-dark {
+    /* Netflix-dark base instead of Emby's #1e1e1e; Album Tint still overrides it inline on album pages */
+    --background-lightness: 7.8%;
+    scrollbar-color: rgba(255, 255, 255, .18) transparent;
+}
+
+html.mui body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- header: glass when it comes back over scrolled content ---------- */
+
+html.mui .skinHeader {
+    transition: translate .32s var(--mui-ease), background-color .3s ease, box-shadow .3s ease !important;
+}
+
+html.mui.theme-dark .skinHeader.headroom-scrolling:not(.videoOsdHeader) {
+    background-color: rgba(14, 14, 16, .58) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .06), 0 12px 32px rgba(0, 0, 0, .28);
+}
+
+/* header buttons fade in when a page shows them, and give under the pointer */
+html.mui .skinHeader .headerButton {
+    transition: opacity .3s ease, background-color .2s ease, transform .2s var(--mui-ease);
+}
+
+@starting-style {
+    html.mui .skinHeader .headerButton {
+        opacity: 0;
+    }
+}
+
+html.mui .skinHeader .headerButton:active,
+html.mui .itemsViewSettingsContainer-button:active {
+    transform: scale(.9);
+}
+
+/* tabs: a segmented control whose pill slides to the active tab (modernui.js adds .mui-tab-pill) */
+html.mui .emby-tabs-slider.mui-has-pill {
+    position: relative;
+    isolation: isolate;
+}
+
+html.mui.theme-dark .tabs-viewmenubar-backgroundcontainer .emby-tabs-slider {
+    background: rgba(255, 255, 255, .07);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+    border-radius: 999px;
+    padding: 3px;
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+}
+
+html.mui .emby-tab-button.main-tab-button {
+    border-radius: 999px !important;
+    transition: color .25s ease, background-color .25s ease, transform .2s var(--mui-ease) !important;
+}
+
+html.mui .emby-tab-button.main-tab-button:active {
+    transform: scale(.94);
+}
+
+html.mui .emby-tabs-slider.mui-has-pill .emby-tab-button,
+html.mui .emby-tabs-slider.mui-has-pill .emby-tab-button-active {
+    background: transparent !important;
+}
+
+html.mui.theme-dark .emby-tabs-slider.mui-has-pill .emby-tab-button-active {
+    color: #fff !important;
+}
+
+html.mui .mui-tab-pill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .09);
+    pointer-events: none;
+    transition: transform .42s var(--mui-ease), width .42s var(--mui-ease), height .42s var(--mui-ease), opacity .2s;
+}
+
+html.mui.theme-dark .mui-tab-pill {
+    background: rgba(255, 255, 255, .2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .25), inset 0 0 0 1px rgba(255, 255, 255, .08);
+}
+
+/* ---------- side drawer: a highlight that slides to the selected entry (modernui.js adds .mui-nav-pill) ---------- */
+
+html.mui.theme-dark .mainDrawer.drawer-docked {
+    background: rgba(255, 255, 255, .028) !important;
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, .05);
+}
+
+html.mui .mainDrawerScrollSlider {
+    position: relative;
+    isolation: isolate;
+}
+
+html.mui .mui-nav-pill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    border-radius: .6em;
+    background: rgba(255, 255, 255, .11);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform .45s var(--mui-ease), width .45s var(--mui-ease), height .45s var(--mui-ease), opacity .25s ease;
+}
+
+html.mui:not(.theme-dark) .mui-nav-pill {
+    display: none;
+}
+
+/* Emby paints the hover (as ::before) and the selection (solid green) on .listItem-content-bg */
+html.mui.theme-dark .mainDrawer .navMenuOption .listItem-content-bg {
+    background-color: transparent !important;
+    transition: background-color .2s ease, transform .2s var(--mui-ease);
+}
+
+html.mui.theme-dark .mainDrawer .navMenuOption .listItem-content::before {
+    display: none !important;
+}
+
+html.mui.theme-dark .mainDrawer .navMenuOption:hover .listItem-content-bg {
+    background-color: rgba(255, 255, 255, .06) !important;
+}
+
+/* until the script has added the pill, the selected entry keeps a soft highlight of its own */
+html.mui.theme-dark .mainDrawer:not(.mui-has-navpill) .navMenuOption-selected .listItem-content-bg {
+    background-color: rgba(255, 255, 255, .11) !important;
+}
+
+html.mui.theme-dark .mainDrawer.mui-has-navpill .navMenuOption-selected .listItem-content-bg {
+    background-color: transparent !important;
+}
+
+html.mui.theme-dark .mainDrawer .navMenuOption-selected .listItem-content {
+    color: #fff !important;
+    font-weight: 600;
+}
+
+html.mui.theme-dark .mainDrawer .navMenuOption-selected .md-icon {
+    color: var(--theme-accent-text-color) !important;
+}
+
+html.mui .mainDrawer .navMenuOption:active .listItem-content-bg {
+    transform: scale(.97);
+}
+
+/* ---------- section titles ---------- */
+
+html.mui .sectionTitle-cards {
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+html.mui .sectionTitleTextButton .sectionTitleMoreIcon {
+    transition: transform .25s var(--mui-ease);
+}
+
+html.mui .sectionTitleTextButton:hover .sectionTitleMoreIcon {
+    transform: translateX(4px);
+}
+
+/* ---------- cards (rows and grids; the album/player covers belong to Album Tint) ---------- */
+
+/* Emby gives every card paint containment, which would cut off the lift and its shadow */
+html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card {
+    contain: inline-size layout style !important;
+}
+
+html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card .cardContent,
+html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card .cardImageContainer,
+html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card .cardOverlayContainer {
+    border-radius: var(--mui-radius) !important;
+}
+
+html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card .cardImageContainer {
+    background-color: rgba(255, 255, 255, .055);
+}
+
+/* the images fade in once they have loaded (modernui.js marks them .mui-ld) */
+html.mui img.cardImage {
+    opacity: 0;
+    transition: opacity .5s ease, transform .7s var(--mui-ease);
+}
+
+html.mui img.cardImage.mui-ld {
+    opacity: 1;
+}
+
+/* in rows and grids they also settle from a slight zoom */
+html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card img.cardImage:not(.mui-ld) {
+    transform: scale(1.04);
+}
+
+html.mui .cardOverlayContainer {
+    background: linear-gradient(180deg, rgba(0, 0, 0, .05) 0%, rgba(0, 0, 0, 0) 40%, rgba(0, 0, 0, .55) 100%) !important;
+    transition: opacity .28s ease !important;
+}
+
+html.mui .cardOverlayContainer .cardOverlayFab-primary {
+    background: rgba(255, 255, 255, .2) !important;
+    color: #fff !important;
+    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(14px) saturate(170%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22), 0 6px 18px rgba(0, 0, 0, .3);
+    transform: scale(.82);
+    transition: transform .4s var(--mui-spring), background-color .2s ease, color .2s ease !important;
+}
+
+html.mui .card:hover .cardOverlayFab-primary {
+    transform: scale(1);
+}
+
+html.mui .cardOverlayContainer .cardOverlayFab-primary:hover {
+    background: #fff !important;
+    color: #000 !important;
+}
+
+html.mui .cardOverlayButton-br .cardOverlayButton-fab {
+    background: rgba(0, 0, 0, .35) !important;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+}
+
+/* resume progress: an inset rounded bar */
+html.mui .card .innerCardFooter .itemProgressBar {
+    height: 4px !important;
+    margin: 0 .55em .55em !important;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .25) !important;
+}
+
+html.mui .card .innerCardFooter .itemProgressBarForeground {
+    border-radius: 4px;
+    background: var(--theme-accent-text-color) !important;
+}
+
+html.mui .card .innerCardFooter {
+    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .45)) !important;
+}
+
+/* unwatched count and watched check: small dark badges with a hairline instead of solid green dots */
+html.mui.theme-dark .card .countIndicator,
+html.mui.theme-dark .card .playedIndicator {
+    background: rgba(12, 12, 14, .66) !important;
+    color: #fff !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2), 0 4px 12px rgba(0, 0, 0, .3);
+    font-variant-numeric: tabular-nums;
+}
+
+html.mui.theme-dark .card .playedIndicator {
+    color: var(--theme-accent-text-color) !important;
+}
+
+html.mui .cardText-first {
+    font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable .cardBox {
+        transition: transform .45s var(--mui-ease);
+    }
+
+    /* the card lifts and leans toward the pointer (modernui.js sets the angles) */
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable:hover .cardBox {
+        transform: perspective(900px) translateY(-6px) rotateX(var(--mui-rx, 0deg)) rotateY(var(--mui-ry, 0deg));
+    }
+
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable .cardBox.mui-tilt {
+        transition: transform .14s ease-out;
+    }
+
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable:active .cardBox {
+        transform: perspective(900px) translateY(-2px) scale(.97) rotateX(var(--mui-rx, 0deg)) rotateY(var(--mui-ry, 0deg));
+        transition-duration: .12s;
+    }
+
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable .cardImageContainer {
+        transition: box-shadow .45s var(--mui-ease);
+    }
+
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable:hover .cardImageContainer {
+        box-shadow: 0 18px 34px -14px rgba(0, 0, 0, .85), 0 0 0 1px rgba(255, 255, 255, .1);
+    }
+
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable:hover img.cardImage {
+        transform: scale(1.06);
+    }
+
+    /* a soft glare that follows the pointer across the picture */
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable .cardImageContainer:not(.cardImageContainer-nowplaying)::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        border-radius: inherit;
+        background: radial-gradient(circle at var(--mui-gx, 50%) var(--mui-gy, 0%), rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, 0) 58%);
+        opacity: 0;
+        transition: opacity .4s ease;
+        pointer-events: none;
+    }
+
+    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable:hover .cardImageContainer::after {
+        opacity: 1;
+    }
+
+    /* the hover buttons fade in instead of popping in (Emby switches them from display:none) */
+    @starting-style {
+        html.mui .card-hoverable:hover .cardOverlayContainer {
+            opacity: 0;
+        }
+    }
+}
+
+/* rows scroll sideways and clip vertically: give the lift and shadow room without moving anything */
+html.mui .emby-scroller.scrollX.padded-top-focusscale {
+    padding-top: calc(.5em + 8px) !important;
+    margin-top: -8px !important;
+    padding-bottom: calc(.5em + 22px) !important;
+    margin-bottom: -22px !important;
+}
+
+/* row arrows: glass circles */
+html.mui.theme-dark .emby-scrollbuttons-scrollbutton {
+    background: rgba(20, 20, 22, .55) !important;
+    color: #fff !important;
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 8px 24px rgba(0, 0, 0, .35);
+    transition: background-color .2s ease, transform .2s var(--mui-ease) !important;
+}
+
+html.mui.theme-dark .emby-scrollbuttons-scrollbutton:hover {
+    background: rgba(255, 255, 255, .9) !important;
+    color: #000 !important;
+    transform: scale(1.06);
+}
+
+html.mui.theme-dark .emby-scrollbuttons-scrollbutton:active {
+    transform: scale(.94);
+}
+
+/* ---------- buttons, selects, toolbars ---------- */
+
+html.mui .detailButton.raised,
+html.mui .detailButton.fab,
+html.mui .osd-raisedbutton,
+html.mui .alphaPickerButton,
+html.mui .listViewUserDataButtons .button-flat {
+    transition: background-color .2s ease, color .2s ease, transform .25s var(--mui-ease), box-shadow .2s ease !important;
+}
+
+/* clear glass: mostly the blurred page behind, a light veil and a hairline edge */
+html.mui.theme-dark .detailButton.raised {
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, .07) !important;
+    color: #fff !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .11);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+    backdrop-filter: blur(18px) saturate(170%);
+}
+
+html.mui.theme-dark .detailButton.raised:hover {
+    background: rgba(255, 255, 255, .16) !important;
+}
+
+html.mui .detailButton:active,
+html.mui .mui-btn:active {
+    transform: scale(.96);
+}
+
+/* the main play/resume button: solid white, like Apple TV */
+html.mui.theme-dark .btnPlay.detailButton.raised,
+html.mui.theme-dark .btnResume.detailButton.raised {
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+}
+
+html.mui.theme-dark .btnPlay.detailButton.raised:hover,
+html.mui.theme-dark .btnResume.detailButton.raised:hover {
+    background: rgba(255, 255, 255, .86) !important;
+}
+
+html.mui.theme-dark .detailTextContainer .emby-select-withcolor,
+html.mui.theme-dark .detailTextContainer select.emby-select {
+    border-radius: 999px !important;
+    background-color: rgba(255, 255, 255, .055) !important;
+    border-color: transparent !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .09);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+    backdrop-filter: blur(16px) saturate(160%);
+    transition: background-color .2s ease;
+}
+
+html.mui.theme-dark .detailTextContainer .emby-select-withcolor:hover,
+html.mui.theme-dark .detailTextContainer select.emby-select:hover {
+    background-color: rgba(255, 255, 255, .12) !important;
+}
+
+/* library toolbar: play, shuffle, sort, filter */
+html.mui.theme-dark .itemsViewSettingsContainer-button.raised,
+html.mui.theme-dark .itemsViewSettingsContainer-button.fab {
+    background: rgba(255, 255, 255, .08) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+    transition: background-color .2s ease, transform .2s var(--mui-ease) !important;
+}
+
+html.mui.theme-dark .itemsViewSettingsContainer-button.raised:hover,
+html.mui.theme-dark .itemsViewSettingsContainer-button.fab:hover {
+    background: rgba(255, 255, 255, .18) !important;
+}
+
+html.mui .alphaPickerButton {
+    border-radius: 999px !important;
+}
+
+html.mui.theme-dark .alphaPickerButton:hover {
+    background: rgba(255, 255, 255, .14) !important;
+}
+
+/* the letter bar on the right swells under the pointer like a dock, pulling the letters toward the grid */
+@media (hover: hover) and (pointer: fine) {
+    html.mui .alphaPickerRow-vertical {
+        padding-left: 16px;
+        margin-left: -16px;
+    }
+
+    html.mui .alphaPickerButton-vertical {
+        transform-origin: 100% 50%;
+    }
+
+    html.mui.theme-dark .alphaPickerButton-vertical:hover {
+        background: transparent !important;
+        color: #fff !important;
+    }
+
+    html.mui .alphaPickerButton-vertical:hover {
+        transform: translateX(-10px) scale(1.45);
+    }
+
+    html.mui .alphaPickerButton-vertical:hover + .alphaPickerButton-vertical,
+    html.mui .alphaPickerButton-vertical:has(+ .alphaPickerButton-vertical:hover) {
+        transform: translateX(-5px) scale(1.2);
+    }
+
+    html.mui .alphaPickerButton-vertical:hover + .alphaPickerButton-vertical + .alphaPickerButton-vertical,
+    html.mui .alphaPickerButton-vertical:has(+ .alphaPickerButton-vertical + .alphaPickerButton-vertical:hover) {
+        transform: translateX(-2px) scale(1.07);
+    }
+}
+
+/* ---------- menus and dialogs: glass, with a softer open and close ---------- */
+
+html.mui.theme-dark .actionSheet {
+    background: rgba(30, 30, 34, .76) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .09), 0 28px 70px -16px rgba(0, 0, 0, .7) !important;
+}
+
+/* the hover highlight fades instead of snapping (Emby draws it as ::before only while hovered) */
+html.mui .actionSheet .listItem-hoverable .listItem-content::before {
+    content: " ";
+    position: absolute;
+    inset: 0 -.6em;
+    z-index: -1;
+    border-radius: .6em;
+    background: hsla(var(--theme-text-color-hue), var(--theme-text-color-saturation), var(--theme-text-color-lightness), .12) !important;
+    opacity: 0;
+    transition: opacity .16s ease;
+}
+
+html.mui .actionSheet .listItem-hoverable:hover .listItem-content::before {
+    opacity: 1;
+}
+
+/* anchored menus grow out of the button that opened them; centered dialogs rise in. Phones keep Emby's
+   bottom sheets (below 37em x 36em). */
+@media (min-width: 37em) and (min-height: 36em) {
+    html.mui .dialog[class*="dialog-transformorigin-"] {
+        animation: mui-pop-in .26s var(--mui-ease-out) both !important;
+    }
+
+    html.mui .dialog-close[class*="dialog-transformorigin-"] {
+        animation: mui-pop-out .15s ease-in both !important;
+    }
+
+    html.mui .dialog-animated:not([class*="dialog-transformorigin-"]):not(.dialog-fullscreen) {
+        animation: mui-dialog-in .32s var(--mui-ease-out) both !important;
+    }
+
+    html.mui .dialog-close:not([class*="dialog-transformorigin-"]):not(.dialog-fullscreen) {
+        animation: mui-dialog-out .18s ease-in both !important;
+    }
+}
+
+@keyframes mui-pop-in {
+    from { opacity: 0; transform: scale(.9); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes mui-pop-out {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: scale(.96); }
+}
+
+@keyframes mui-dialog-in {
+    from { opacity: 0; transform: translateY(18px) scale(.97); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes mui-dialog-out {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: scale(.97); }
+}
+
+/* behind a modal dialog the page softly blurs as it dims */
+html.mui .dialogBackdrop {
+    transition: background-color .25s ease, -webkit-backdrop-filter .25s ease, backdrop-filter .25s ease;
+}
+
+html.mui .dialogBackdropOpened:not(.dialogBackdrop-auto) {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+/* ---------- spotlight banner (home and library suggestions) ---------- */
+
+html.mui .mui-spotlight {
+    position: relative;
+    height: clamp(380px, 64vh, 780px);
+    margin-top: calc(-1 * var(--mui-pull, 0px));
+    margin-bottom: .6em;
+    overflow: hidden;
+    isolation: isolate;
+    contain: layout paint style;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: pan-y;
+}
+
+.mui-sl-slide,
+.mui-sl-shade {
+    position: absolute;
+    inset: 0;
+}
+
+.mui-sl-slide {
+    opacity: 0;
+    transition: opacity 1.1s ease;
+    cursor: pointer;
+}
+
+.mui-sl-slide.is-active {
+    opacity: 1;
+    z-index: 1;
+}
+
+.mui-sl-slide img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 28%;
+    transform-origin: 62% 38%;
+}
+
+.mui-sl-slide.is-active img {
+    animation: mui-kenburns 16s var(--mui-ease-out) both;
+}
+
+/* a soft glow of the art's own color under the text */
+.mui-sl-slide::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(70% 90% at 18% 100%, var(--mui-tint, transparent) 0%, transparent 70%);
+    opacity: .55;
+}
+
+@keyframes mui-kenburns {
+    from { transform: scale(1.12); }
+    to { transform: scale(1); }
+}
+
+.mui-sl-shade {
+    z-index: 2;
+    pointer-events: none;
+    background:
+        linear-gradient(90deg, hsla(var(--mui-bg), .92) 0%, hsla(var(--mui-bg), .62) 26%, hsla(var(--mui-bg), .12) 56%, hsla(var(--mui-bg), 0) 72%),
+        linear-gradient(0deg, hsl(var(--mui-bg)) 0%, hsla(var(--mui-bg), .7) 14%, hsla(var(--mui-bg), 0) 46%),
+        linear-gradient(180deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, 0) 28%);
+}
+
+/* over a library's art the banner fades out at the bottom instead of into the flat page color */
+html.mui.mui-pagebg .mui-sl-slide,
+html.mui.mui-pagebg .mui-sl-shade {
+    -webkit-mask-image: linear-gradient(180deg, #000 52%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 52%, transparent 100%);
+}
+
+html.mui.mui-pagebg .mui-sl-shade {
+    background:
+        linear-gradient(90deg, rgba(0, 0, 0, .7) 0%, rgba(0, 0, 0, .45) 26%, rgba(0, 0, 0, .1) 56%, rgba(0, 0, 0, 0) 72%),
+        linear-gradient(180deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, 0) 28%);
+}
+
+.mui-sl-info {
+    position: absolute;
+    z-index: 3;
+    left: var(--mui-padx, 3.3%);
+    bottom: 15%;
+    width: min(44em, 50%);
+    visibility: hidden;
+    transition: visibility 0s .5s;
+}
+
+.mui-sl-info.is-active {
+    visibility: visible;
+    transition: visibility 0s;
+}
+
+/* the logo, the facts, the overview and the buttons come in one after another */
+.mui-sl-info > * {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .3s ease, transform .45s var(--mui-ease);
+}
+
+.mui-sl-info.is-active > * {
+    opacity: 1;
+    transform: none;
+    transition: opacity .6s ease, transform .85s var(--mui-ease);
+}
+
+.mui-sl-info.is-active > :nth-child(1) { transition-delay: .18s; }
+.mui-sl-info.is-active > :nth-child(2) { transition-delay: .26s; }
+.mui-sl-info.is-active > :nth-child(3) { transition-delay: .34s; }
+.mui-sl-info.is-active > :nth-child(4) { transition-delay: .42s; }
+
+.mui-sl-logo {
+    display: block;
+    max-width: min(26em, 100%);
+    max-height: 8.5em;
+    width: auto;
+    height: auto;
+    margin-bottom: 1.1em;
+    object-fit: contain;
+    object-position: left bottom;
+    filter: drop-shadow(0 4px 20px rgba(0, 0, 0, .55));
+}
+
+.mui-sl-title {
+    margin: 0 0 .32em;
+    font-size: 3.1em;
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    text-shadow: 0 4px 30px rgba(0, 0, 0, .5);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mui-sl-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .2em .7em;
+    margin-bottom: .85em;
+    color: rgba(255, 255, 255, .85);
+    font-size: .98em;
+    font-weight: 500;
+}
+
+.mui-sl-meta .mui-star {
+    color: #ffc93c;
+    font-size: 1.15em;
+    vertical-align: -.18em;
+    margin-right: .1em;
+}
+
+.mui-sl-badge {
+    padding: .05em .45em;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .4);
+    font-size: .82em;
+    font-weight: 600;
+}
+
+.mui-sl-overview {
+    margin: 0 0 1.5em;
+    color: rgba(255, 255, 255, .76);
+    line-height: 1.65;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, .55);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.mui-sl-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .7em;
+}
+
+.mui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4em;
+    height: 3em;
+    padding: 0 1.55em 0 1.25em;
+    border: 0;
+    border-radius: 999px;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform .2s var(--mui-ease), background-color .2s ease, box-shadow .25s ease;
+}
+
+.mui-btn .md-icon {
+    font-size: 1.55em;
+}
+
+.mui-btn-primary {
+    background: #fff;
+    color: #000;
+}
+
+.mui-btn-primary:hover {
+    background: rgba(255, 255, 255, .86);
+    box-shadow: 0 10px 30px rgba(255, 255, 255, .16);
+}
+
+.mui-btn-glass {
+    background: rgba(255, 255, 255, .1);
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+}
+
+.mui-btn-glass:hover {
+    background: rgba(255, 255, 255, .2);
+}
+
+.mui-btn-round {
+    width: 3em;
+    padding: 0;
+}
+
+.mui-btn:focus-visible,
+.mui-sl-dot:focus-visible,
+.mui-sl-arrow:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+}
+
+.mui-sl-progress {
+    display: inline-block;
+    width: 3.4em;
+    height: 4px;
+    margin-left: .3em;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, .2);
+    overflow: hidden;
+}
+
+.mui-sl-progress > i {
+    display: block;
+    height: 100%;
+    background: currentColor;
+}
+
+.mui-sl-dots {
+    position: absolute;
+    z-index: 4;
+    right: var(--mui-padx, 3.3%);
+    bottom: 15%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mui-sl-dot {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .32);
+    overflow: hidden;
+    cursor: pointer;
+    transition: width .45s var(--mui-ease), background-color .3s ease;
+}
+
+.mui-sl-dot:hover {
+    background: rgba(255, 255, 255, .6);
+}
+
+.mui-sl-dot.is-active {
+    width: 34px;
+    background: rgba(255, 255, 255, .26);
+}
+
+.mui-sl-dot.is-active::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: #fff;
+    transform-origin: left center;
+    animation: mui-dotfill var(--mui-sl-ms, 8000ms) linear both;
+}
+
+.mui-spotlight.is-paused .mui-sl-dot.is-active::after {
+    animation-play-state: paused;
+}
+
+@keyframes mui-dotfill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+.mui-sl-arrow {
+    position: absolute;
+    z-index: 4;
+    top: 50%;
+    width: 46px;
+    height: 46px;
+    margin-top: -23px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .3);
+    color: #fff;
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity .3s ease, background-color .2s ease, transform .2s var(--mui-ease);
+}
+
+.mui-sl-arrow .md-icon {
+    font-size: 30px;
+}
+
+.mui-sl-prev {
+    left: 14px;
+}
+
+.mui-sl-next {
+    right: 14px;
+}
+
+.mui-spotlight:hover .mui-sl-arrow {
+    opacity: 1;
+}
+
+.mui-sl-arrow:hover {
+    background: rgba(255, 255, 255, .24);
+    transform: scale(1.06);
+}
+
+.mui-sl-arrow:active {
+    transform: scale(.94);
+}
+
+@media all and (max-width: 50em) {
+    html.mui .mui-spotlight {
+        height: clamp(420px, 72vh, 640px);
+    }
+
+    .mui-sl-info {
+        width: auto;
+        right: var(--mui-padx, 4%);
+        bottom: 13%;
+    }
+
+    .mui-sl-title {
+        font-size: 2.2em;
+    }
+
+    .mui-sl-overview {
+        -webkit-line-clamp: 2;
+    }
+
+    .mui-sl-dots {
+        left: 0;
+        right: 0;
+        bottom: 5%;
+        justify-content: center;
+    }
+
+    .mui-sl-shade {
+        background:
+            linear-gradient(0deg, hsl(var(--mui-bg)) 0%, hsla(var(--mui-bg), .82) 30%, hsla(var(--mui-bg), 0) 70%),
+            linear-gradient(180deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, 0) 28%);
+    }
+
+    html.mui.mui-pagebg .mui-sl-shade {
+        background:
+            linear-gradient(0deg, rgba(0, 0, 0, .55) 0%, rgba(0, 0, 0, .3) 30%, rgba(0, 0, 0, 0) 62%),
+            linear-gradient(180deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, 0) 28%);
+    }
+
+    .mui-sl-arrow {
+        display: none;
+    }
+}
+
+/* the transparent header floats over the banner; over the bright art it needs a little shadow */
+html.mui.mui-onspotlight .skinHeader:not(.headroom-scrolling) .headerButton,
+html.mui.mui-onspotlight .skinHeader:not(.headroom-scrolling) .pageTitle {
+    text-shadow: 0 1px 8px rgba(0, 0, 0, .5);
+}
+
+/* ---------- art behind the page: a library's on its pages, a video's on its details ---------- */
+
+#mui-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    contain: strict;
+    overflow: hidden;
+}
+
+#mui-bg > div {
+    position: absolute;
+    inset: -80px;
+    background-size: cover;
+    background-position: center;
+    /* --mui-bgb: modernui.js dims bright art more than dark art */
+    filter: blur(48px) saturate(1.35) brightness(var(--mui-bgb, .4));
+    opacity: 0;
+    transition: opacity .9s ease;
+    will-change: opacity;
+}
+
+/* on library pages less blurred and a little brighter, so it reads as the library's art */
+#mui-bg > div.mui-lib {
+    filter: blur(22px) saturate(1.45) brightness(var(--mui-bgb, .5));
+}
+
+#mui-bg > div.mui-on {
+    opacity: 1;
+}
+
+#mui-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(120% 90% at 50% 0%, transparent 40%, rgba(0, 0, 0, .45) 100%);
+    opacity: 0;
+    transition: opacity .9s ease;
+}
+
+html.mui-pagebg #mui-bg::after {
+    opacity: 1;
+}
+
+html.mui.mui-pagebg .mainDrawer.drawer-docked {
+    background: rgba(0, 0, 0, .2) !important;
+}
+
+/* ---------- item details: backdrop hero over a blurred copy of the art ---------- */
+
+html.mui .mui-hero {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: min(82vh, 60vw);
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(180deg, #000 50%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 50%, transparent 100%);
+    will-change: transform, opacity;
+}
+
+html.mui .mui-hero img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 22%;
+    opacity: 0;
+    transition: opacity .8s ease;
+}
+
+html.mui .mui-hero img.mui-ld {
+    opacity: 1;
+    animation: mui-heroin 1.6s var(--mui-ease-out) both;
+}
+
+/* the backdrop the page we came from had (a season and its show share one): it stays as it is */
+html.mui .mui-hero.mui-hero-still img {
+    opacity: 1;
+    animation: none;
+    transition: none;
+}
+
+/* a carried-over backdrop that the new page doesn't share fades out under the new one */
+html.mui .mui-hero.mui-hero-leaving {
+    opacity: 0 !important;
+    transition: opacity .7s ease;
+}
+
+@keyframes mui-heroin {
+    from { transform: scale(1.06); }
+    to { transform: none; }
+}
+
+html.mui .mui-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, rgba(0, 0, 0, .84) 0%, rgba(0, 0, 0, .6) 36%, rgba(0, 0, 0, .16) 66%, rgba(0, 0, 0, 0) 82%),
+        linear-gradient(0deg, rgba(0, 0, 0, .6) 0%, rgba(0, 0, 0, 0) 48%),
+        linear-gradient(180deg, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, 0) 24%);
+}
+
+/* The content sits over the backdrop. The page gets its own stacking context so that this z-index stays inside
+   it: in the page's stacking it tied with the header's z-index 1 and, coming later, covered the back button. */
+html.mui .mui-hashero {
+    isolation: isolate;
+}
+
+html.mui .mui-hashero .itemMainScrollSlider {
+    position: relative;
+    z-index: 1;
+}
+
+/* the poster and text sit over the lower part of the backdrop */
+html.mui .mui-hashero .detailMainContainer {
+    margin-top: clamp(3em, 26vh, 18em);
+}
+
+html.mui .mui-hashero .detailMainContainerParent-fade {
+    background: none !important;
+}
+
+html.mui.mui-videoitem .detailImageContainer .cardImageContainer,
+html.mui.mui-videoitem .detailImageContainer .cardContent,
+html.mui.mui-videoitem .detailImageContainer img {
+    border-radius: 12px !important;
+}
+
+html.mui.mui-videoitem .detailImageContainer .cardImageContainer {
+    box-shadow: 0 24px 50px -18px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .1) !important;
+}
+
+html.mui.mui-videoitem .detailImageContainer .card {
+    contain: inline-size layout style !important;
+}
+
+html.mui .mui-detail-logo {
+    display: block;
+    max-width: min(30em, 92%);
+    max-height: 9em;
+    width: auto;
+    height: auto;
+    margin: 0 0 .5em;
+    object-fit: contain;
+    object-position: left bottom;
+    filter: drop-shadow(0 4px 22px rgba(0, 0, 0, .6));
+    animation: mui-fadeup .7s var(--mui-ease) both;
+}
+
+html.mui .mui-haslogo .itemName-primary {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+html.mui.mui-videoitem.mui-haslogo-page .skinHeader:not(.headroom-scrolling) .pageTitleWithLogo {
+    opacity: 0;
+}
+
+html.mui .mui-hashero .detailTextContainer {
+    text-shadow: 0 1px 14px rgba(0, 0, 0, .45);
+}
+
+html.mui .mui-hashero .overview-text {
+    color: rgba(255, 255, 255, .82);
+    line-height: 1.7;
+}
+
+/* below 50em Emby shows its own backdrop strip above the text: keep that one, fade it into the blurred art */
+@media all and (max-width: 49.99em) {
+    html.mui .mui-hero {
+        display: none;
+    }
+
+    html.mui .mui-hashero .detailMainContainer {
+        margin-top: 0;
+    }
+
+    html.mui.mui-videoitem .itemBackdropContainer {
+        -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+        mask-image: linear-gradient(180deg, #000 55%, transparent 100%);
+    }
+}
+
+@keyframes mui-fadeup {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+
+/* ---------- a poster flying between its card and the detail page (modernui.js) ---------- */
+
+.mui-fly {
+    position: fixed;
+    z-index: 1000;
+    overflow: hidden;
+    pointer-events: none;
+    background: #18181b;
+    box-shadow: 0 30px 60px -22px rgba(0, 0, 0, .85), 0 0 0 1px rgba(255, 255, 255, .08);
+    contain: strict;
+}
+
+.mui-fly img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mui-fly img.mui-sharp {
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+
+.mui-fly img.mui-sharp.mui-ld {
+    opacity: 1;
+}
+
+.mui-fly.mui-fly-out {
+    opacity: 0;
+    transition: opacity .22s ease;
+}
+
+/* the real picture stays hidden while the copy is on its way to it */
+html.mui-fly-detail .itemView:not(.hide) .detailImageContainer-main .card,
+.mui-fly-target .cardImageContainer,
+.mui-fly-target .cardOverlayContainer,
+.mui-fly-target .listItemImage {
+    opacity: 0 !important;
+}
+
+/* ---------- video player ---------- */
+
+html.mui .videoOsdBottom-video {
+    background: linear-gradient(0deg, rgba(0, 0, 0, .86) 0%, rgba(0, 0, 0, .62) 34%, rgba(0, 0, 0, .26) 68%, rgba(0, 0, 0, 0) 100%) !important;
+    padding-top: 7em !important;
+    transition: opacity .35s ease, transform .5s var(--mui-ease) !important;
+}
+
+html.mui .videoOsdBottom-video.videoOsdBottom-hidden {
+    transform: translateY(18px);
+}
+
+/* (the music player is Album Tint's: html.albumtint-osd) */
+html.mui:not(.albumtint-osd) .skinHeader.videoOsdHeader {
+    background: linear-gradient(180deg, rgba(0, 0, 0, .62) 0%, rgba(0, 0, 0, 0) 100%) !important;
+    transition: opacity .35s ease, transform .5s var(--mui-ease) !important;
+}
+
+html.mui:not(.albumtint-osd) .skinHeader.videoOsdHeader.videoOsdHeader-hidden {
+    transform: translateY(-14px);
+}
+
+html.mui .videoOsdBottom-video .videoOsdParentTitle-large {
+    font-size: 2.2em;
+    font-weight: 800;
+    letter-spacing: -.015em;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, .5);
+}
+
+html.mui .videoOsdPositionSliderContainer .emby-slider-background {
+    height: 5px !important;
+    border-radius: 5px !important;
+    background: rgba(255, 255, 255, .22) !important;
+    transition: transform .2s var(--mui-ease);
+}
+
+html.mui .videoOsdPositionSliderContainer:hover .emby-slider-background {
+    transform: scaleY(1.6);
+}
+
+html.mui .videoOsdPositionSliderContainer .emby-slider-background-lower {
+    border-radius: 5px !important;
+    background: #fff !important;
+    box-shadow: 0 0 12px rgba(255, 255, 255, .35);
+}
+
+html.mui .videoOsdPositionSliderContainer .emby-slider-background-upper {
+    border-radius: 5px !important;
+    background: rgba(255, 255, 255, .28) !important;
+}
+
+html.mui .videoOsdBottom-video .osdIconButton {
+    transition: background-color .2s ease, transform .2s var(--mui-ease) !important;
+}
+
+html.mui .videoOsdBottom-video .osdIconButton:hover {
+    background: rgba(255, 255, 255, .14) !important;
+}
+
+html.mui .videoOsdBottom-video .osdIconButton:active {
+    transform: scale(.9);
+}
+
+html.mui .videoOsdBottom-video .videoOsd-maintransportbuttons .osdIconButton .md-icon {
+    font-size: 1.15em;
+}
+
+html.mui .videoOsdBottom-video .videoosd-tab-button {
+    border-radius: 999px !important;
+    padding: .45em 1.05em !important;
+    transition: background-color .2s ease, color .2s ease !important;
+}
+
+html.mui .videoOsdBottom-video .videoosd-tab-button:hover {
+    background: rgba(255, 255, 255, .12) !important;
+}
+
+html.mui .videoOsdBottom-video .videoosd-tab-button.emby-tab-button-active {
+    background: rgba(255, 255, 255, .2) !important;
+    color: #fff !important;
+}
+
+html.mui .osd-raisedbutton,
+html.mui .btnSkipIntro {
+    border-radius: 999px !important;
+    background: rgba(20, 20, 22, .55) !important;
+    color: #fff !important;
+    -webkit-backdrop-filter: blur(18px) saturate(170%) !important;
+    backdrop-filter: blur(18px) saturate(170%) !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16), 0 10px 30px rgba(0, 0, 0, .35) !important;
+}
+
+html.mui .osd-raisedbutton:hover,
+html.mui .btnSkipIntro:hover {
+    background: #fff !important;
+    color: #000 !important;
+}
+
+/* Skip Intro slides up into view when Emby shows it */
+html.mui .btnSkipIntro {
+    transition: opacity .35s ease, transform .45s var(--mui-ease), background-color .2s ease, color .2s ease, box-shadow .2s ease !important;
+}
+
+@starting-style {
+    html.mui .btnSkipIntro {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+}
+
+/* play / pause / seek feedback in the middle of the picture */
+.mui-osd-flash {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    z-index: 5;
+    width: 96px;
+    height: 96px;
+    margin: -48px 0 0 -48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, .42);
+    color: #fff;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    pointer-events: none;
+    animation: mui-flash .65s var(--mui-ease) forwards;
+}
+
+.mui-osd-flash .md-icon {
+    font-size: 52px;
+}
+
+@keyframes mui-flash {
+    0% { opacity: 0; transform: scale(.72); }
+    22% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.28); }
+}
+
+/* ---------- motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    html.mui *,
+    html.mui *::before,
+    html.mui *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+    }
+}
+
+/* ---------- drawer: the metadata manager link is not wanted under My Media ---------- */
+
+html.mui .mainDrawer .navMenuOption:has([title="元数据管理器"]),
+html.mui .mainDrawer .navMenuOption:has([title="Metadata Manager"]) {
+    display: none !important;
+}
+
+/* ---------- our library tabs (series, artist feed, Genshin OST) ---------- */
+
+/* only while it is the active tab: Emby hides the others with .tabContent:not(.is-active) */
+html.mui .tabContent.mui-tab.is-active {
+    display: block;
+}
+
+html.mui .tabContent.mui-tab {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+html.mui .mui-tabempty {
+    max-width: 34em;
+    margin: 12vh auto 0;
+    text-align: center;
+    color: rgba(255, 255, 255, .62);
+}
+
+html.mui .mui-tabempty h2 {
+    color: #fff;
+    font-size: 1.5em;
+    margin: 0 0 .5em;
+}
+
+/* a horizontal strip of cards that scrolls sideways */
+html.mui .mui-cardrow {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding: 10px 2px 6px;
+    margin: -10px -2px -6px;
+}
+
+html.mui .mui-cardrow::-webkit-scrollbar {
+    display: none;
+}
+
+html.mui .mui-cardrow > .card {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+}
+
+html.mui .mui-cardrow > .squareCard {
+    width: clamp(9.5em, 15vw, 12.5em);
+}
+
+html.mui .mui-cardrow > .portraitCard {
+    width: clamp(8.5em, 12vw, 11em);
+}
+
+/* Genshin OST sections */
+html.mui .mui-gsec + .mui-gsec {
+    margin-top: 2.2em;
+}
+
+html.mui .mui-gsec-title {
+    display: flex;
+    align-items: baseline;
+    gap: .5em;
+    margin: 0 0 .6em .2em;
+    font-size: 1.45em;
+    font-weight: 700;
+}
+
+html.mui .mui-gsec-count {
+    font-size: .6em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, .5);
+}
+
+/* series: a picture on the left; on the right what it is, then a row of cards */
+html.mui .mui-series {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: var(--mui-panel-pic) minmax(0, 1fr);
+    column-gap: clamp(1.1em, 2.4vw, 2em);
+    padding: clamp(1em, 2vw, 1.6em);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, .045);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
+    overflow: hidden;
+}
+
+/* series: the cover (portrait) on the left; name, facts, genres and what it is about; then its entries */
+html.mui .mui-series {
+    --mui-panel-pic: clamp(9em, 16vw, 14em);
+    margin-bottom: 1.6em;
+}
+
+/* the newest entry's backdrop, blurred into a faint tint behind the panel */
+html.mui .mui-series::before {
+    content: "";
+    position: absolute;
+    inset: -40px;
+    z-index: -1;
+    background: var(--mui-series-art, none) center / cover no-repeat;
+    filter: blur(40px) saturate(1.3);
+    opacity: .3;
+}
+
+html.mui .mui-series-cover {
+    align-self: start;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .06);
+    cursor: pointer;
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, .85), inset 0 0 0 1px rgba(255, 255, 255, .08);
+    transition: transform .4s var(--mui-ease), box-shadow .4s var(--mui-ease);
+}
+
+html.mui .mui-series-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html.mui .mui-series-cover:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 24px 50px -18px rgba(0, 0, 0, .9), inset 0 0 0 1px rgba(255, 255, 255, .12);
+    }
+}
+
+html.mui .mui-series-cover:active {
+    transform: scale(.97);
+}
+
+html.mui .mui-series-side {
+    min-width: 0;
+}
+
+html.mui .mui-series-name {
+    margin: 0;
+    font-size: clamp(1.5em, 2.6vw, 2.1em);
+    font-weight: 800;
+    letter-spacing: -.01em;
+    cursor: pointer;
+}
+
+html.mui .mui-series-meta {
+    margin-top: .3em;
+    color: rgba(255, 255, 255, .72);
+    font-weight: 600;
+}
+
+html.mui .mui-series-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4em;
+    margin-top: .7em;
+}
+
+html.mui .mui-series-chips span {
+    padding: .2em .7em;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .09);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+    color: rgba(255, 255, 255, .8);
+    font-size: .85em;
+    font-weight: 600;
+}
+
+html.mui .mui-series-about {
+    margin: .75em 0 0;
+    max-width: 56em;
+    color: rgba(255, 255, 255, .74);
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    cursor: pointer;
+    white-space: pre-line;
+}
+
+html.mui .mui-series-about.is-open {
+    -webkit-line-clamp: unset;
+}
+
+html.mui .mui-series-row {
+    margin-top: 1.1em;
+}
+
+html.mui .mui-series .mui-cardrow > .portraitCard {
+    width: clamp(7.5em, 10vw, 9.5em);
+}
+
+/* phones: a smaller picture beside the text, the card row under both */
+@media (max-width: 40em) {
+    html.mui .mui-series {
+        --mui-panel-pic: 7em;
+    }
+
+    html.mui .mui-series-row {
+        grid-column: 1 / -1;
+    }
+
+    html.mui .mui-series-side {
+        display: contents;
+    }
+
+    html.mui .mui-series-about {
+        -webkit-line-clamp: 2;
+    }
+}
+
+html.mui .mui-feed-more {
+    height: 1px;
+}
+
+/* the drawer's collections list (collections stay reachable from the libraries) */
+html.mui .mainDrawer .navDrawerCollapseSection:has([data-listtype="collections"]) {
+    display: none !important;
+}
+
+/* the moment a flying poster hands over to the page's own picture: that one appears at once, under the copy */
+html.mui .mui-landing img.cardImage,
+html.mui .mui-landing .cardImageContainer {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* ---------- artists: a vertical feed of artist rows ----------
+   No boxes: each artist is a row across the whole width. On the left the photo, a square with soft corners; on
+   the right the name, album count and genres, the biography, and the albums. Light from the photo's colours
+   glows behind it. */
+
+html.mui .mui-feed {
+    display: flex;
+    flex-direction: column;
+}
+
+html.mui .mui-feed-more {
+    height: 1px;
+}
+
+html.mui .mui-artist {
+    --mui-card: clamp(11em, 13vw, 15em);
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: var(--mui-card) minmax(0, 1fr);
+    column-gap: clamp(1.5em, 3vw, 3em);
+    padding: clamp(1.5em, 2.4vw, 2.2em) 0;
+    content-visibility: auto;
+    contain-intrinsic-size: auto 20em;
+}
+
+html.mui .mui-artist + .mui-artist {
+    border-top: 1px solid rgba(255, 255, 255, .07);
+}
+
+/* the glow: the photo, blurred, behind it, fading out */
+html.mui .mui-artist::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--mui-card) * -.4);
+    width: calc(var(--mui-card) * 2.8);
+    background: var(--mui-panel-art, none) center / cover no-repeat;
+    filter: blur(60px) saturate(1.6);
+    opacity: .38;
+    -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent);
+    mask-image: radial-gradient(closest-side, #000 30%, transparent);
+    pointer-events: none;
+}
+
+/* the photo */
+html.mui .mui-artist-face {
+    position: relative;
+    align-self: start;
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    isolation: isolate;
+    background: #1d1d1f;
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+    box-shadow: 0 22px 44px -26px rgba(0, 0, 0, .9);
+    transition: transform .35s var(--mui-ease), box-shadow .35s var(--mui-ease);
+}
+
+html.mui .mui-artist-face::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1);
+    pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html.mui .mui-artist-face:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 28px 50px -26px rgba(0, 0, 0, .95);
+    }
+}
+
+html.mui .mui-artist-face:active {
+    transform: scale(.98);
+}
+
+html.mui .mui-artist-face img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 30%;
+    animation: mui-face-in .45s var(--mui-ease) both;
+}
+
+@keyframes mui-face-in {
+    from { opacity: 0; transform: scale(1.05); }
+    to { opacity: 1; transform: none; }
+}
+
+/* no photo: a colour of its own, then the newest cover, blurred, with the initial on it */
+html.mui .mui-artist-face.is-initial {
+    background: var(--mui-face-tone, #2a2a2e);
+}
+
+html.mui .mui-artist-face.is-cover::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    z-index: -1;
+    background: var(--mui-face-art) center / cover no-repeat;
+    filter: blur(22px) saturate(1.4) brightness(.72);
+    animation: mui-face-in .45s var(--mui-ease) both;
+}
+
+html.mui .mui-artist-initial {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: calc(var(--mui-card) * .36);
+    font-weight: 800;
+    line-height: 1;
+    color: rgba(255, 255, 255, .9);
+    text-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+}
+
+/* the right side: name, then count and genres */
+html.mui .mui-artist-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+html.mui .mui-artist-name {
+    margin: 0;
+    font-size: clamp(1.5em, 2.2vw, 2.1em);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -.015em;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+html.mui .mui-artist-sub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .45em;
+    margin-top: .5em;
+}
+
+html.mui .mui-artist-count {
+    margin-right: .35em;
+    color: rgba(255, 255, 255, .6);
+    font-size: .9em;
+    font-weight: 600;
+}
+
+html.mui .mui-artist-count:empty {
+    display: none;
+}
+
+html.mui .mui-artist-tag {
+    padding: .22em .75em;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .75);
+    font-size: .8em;
+    font-weight: 600;
+}
+
+html.mui .mui-artist-about {
+    margin-top: .8em;
+}
+
+html.mui .mui-artist-bio {
+    margin: 0;
+    color: rgba(255, 255, 255, .74);
+    font-size: .98em;
+    line-height: 1.75;
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+html.mui .mui-artist-bio.is-open {
+    -webkit-line-clamp: unset;
+}
+
+html.mui .mui-artist-bio.is-empty {
+    display: none;
+}
+
+html.mui .mui-artist-more {
+    display: inline-block;
+    margin-top: .25em;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #fff;
+    font: inherit;
+    font-size: .88em;
+    font-weight: 700;
+    opacity: .7;
+    cursor: pointer;
+    transition: opacity .2s ease;
+}
+
+html.mui .mui-artist-more:hover {
+    opacity: 1;
+}
+
+html.mui .mui-artist-albums {
+    margin-top: auto;
+    padding-top: 1.1em;
+    min-height: 3em;
+}
+
+html.mui .mui-artist .mui-cardrow > .squareCard {
+    width: clamp(8.5em, 9.4vw, 10.5em);
+}
+
+/* phones: the photo small, beside the name; the biography and albums under both */
+@media (max-width: 40em) {
+    html.mui .mui-artist {
+        --mui-card: 5.6em;
+        grid-template-columns: var(--mui-card) minmax(0, 1fr);
+        column-gap: 1em;
+        padding: 1.2em 0;
+    }
+
+    html.mui .mui-artist-main {
+        display: contents;
+    }
+
+    html.mui .mui-artist-head {
+        grid-column: 2;
+        align-self: center;
+        min-width: 0;
+    }
+
+    html.mui .mui-artist-name {
+        font-size: 1.3em;
+    }
+
+    html.mui .mui-artist-about,
+    html.mui .mui-artist-albums {
+        grid-column: 1 / -1;
+    }
+
+    html.mui .mui-artist-face {
+        border-radius: 12px;
+    }
+
+    html.mui .mui-artist::before {
+        left: -2em;
+        width: 14em;
+    }
+
+    html.mui .mui-artist .mui-cardrow > .squareCard {
+        width: 7.6em;
+    }
+}
+
+/* ---------- artist pages ---------- */
+
+/* the photo as a square with soft corners, like the artist feed; no photo: the newest cover, blurred, with the initial */
+html.mui .mui-artistpage .detailImageContainer .cardImageContainer {
+    border-radius: 18px !important;
+    background-position: 50% 25%;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 30px 60px -30px rgba(0, 0, 0, .9) !important;
+}
+
+html.mui .mui-artistpage .detailImageContainer .cardImageContainer.mui-hasart {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: #1d1d1f !important;
+}
+
+html.mui .mui-artistpage .detailImageContainer .cardImageContainer.mui-hasart::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    z-index: -1;
+    background: var(--mui-face-art) center / cover no-repeat;
+    filter: blur(26px) saturate(1.4) brightness(.72);
+}
+
+html.mui .mui-artistpage .detailImageContainer .cardImageContainer.mui-hasart .cardImageIcon {
+    display: none;
+}
+
+html.mui .mui-artistpage .mui-page-initial {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 6em;
+    font-weight: 800;
+    color: rgba(255, 255, 255, .9);
+    text-shadow: 0 8px 30px rgba(0, 0, 0, .35);
+}
+
+html.mui .mui-about {
+    margin-top: 1.2em;
+}
+
+html.mui .mui-about-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    padding: clamp(1.2em, 2.4vw, 2em) clamp(1.3em, 2.8vw, 2.4em);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, .045);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+}
+
+html.mui .mui-about-card::before {
+    content: "";
+    position: absolute;
+    inset: -40px;
+    z-index: -1;
+    background: var(--mui-panel-art, none) center / cover no-repeat;
+    filter: blur(50px) saturate(1.4);
+    opacity: .28;
+}
+
+html.mui .mui-about-text {
+    color: rgba(255, 255, 255, .82);
+    font-size: 1.02em;
+    line-height: 1.85;
+}
+
+html.mui .mui-about-text p {
+    margin: 0 0 .7em;
+    break-inside: avoid-column;
+}
+
+html.mui .mui-about-text p:last-child {
+    margin-bottom: 0;
+}
+
+/* a long biography reads in two columns on wide screens */
+@media (min-width: 75em) {
+    html.mui .mui-about-card.is-long .mui-about-text {
+        column-count: 2;
+        column-gap: 3em;
+    }
+}
+
+html.mui .mui-about-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5em;
+    margin-top: 1.2em;
+    padding-top: 1em;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+html.mui .mui-about-facts span,
+html.mui .mui-about-src {
+    padding: .25em .8em;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .75);
+    font-size: .85em;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+html.mui .mui-about-src {
+    margin-left: auto;
+    color: rgba(255, 255, 255, .85);
+    transition: background .2s ease;
+}
+
+html.mui .mui-about-src:hover {
+    background: rgba(255, 255, 255, .16);
+}
+
+/* ---------- Genshin OST: a header per category, albums as wide tiles ---------- */
+
+html.mui .mui-gs-head {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 2em;
+    min-height: 13em;
+    margin-bottom: 1.6em;
+    padding: clamp(1.4em, 3vw, 2.4em) clamp(1.4em, 3vw, 2.6em);
+    border-radius: 26px;
+    background: rgba(255, 255, 255, .045);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+}
+
+html.mui .mui-gs-head::before,
+html.mui .mui-gs-tile::before {
+    content: "";
+    position: absolute;
+    inset: -40px;
+    z-index: -1;
+    background: var(--mui-panel-art, none) center / cover no-repeat;
+    filter: blur(50px) saturate(1.4);
+    opacity: .35;
+}
+
+html.mui .mui-gs-headtext {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+html.mui .mui-gs-name {
+    margin: 0;
+    font-size: clamp(2em, 3.6vw, 3em);
+    font-weight: 800;
+    letter-spacing: -.015em;
+}
+
+html.mui .mui-gs-meta {
+    margin-top: .4em;
+    color: rgba(255, 255, 255, .7);
+    font-size: 1.05em;
+    font-weight: 600;
+}
+
+html.mui .mui-gs-actions {
+    margin-top: 1.3em;
+}
+
+/* the covers, fanned out */
+html.mui .mui-gs-fan {
+    position: relative;
+    flex: 0 0 auto;
+    width: clamp(12em, 24vw, 22em);
+    height: clamp(8.5em, 12vw, 11em);
+}
+
+html.mui .mui-gs-fan img {
+    position: absolute;
+    top: 50%;
+    right: calc(var(--i) * clamp(2.4em, 4.2vw, 3.8em));
+    width: clamp(7.5em, 11vw, 10em);
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 14px;
+    box-shadow: 0 18px 36px -14px rgba(0, 0, 0, .8), 0 0 0 1px rgba(255, 255, 255, .1);
+    transform: translateY(-50%) rotate(calc(var(--i) * -4deg)) scale(calc(1 - var(--i) * .07));
+    z-index: calc(10 - var(--i));
+    filter: brightness(calc(1 - var(--i) * .12));
+}
+
+html.mui .mui-gs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 25em), 1fr));
+    gap: 1.1em;
+}
+
+html.mui .mui-gs-tile {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: clamp(7.5em, 9vw, 9.5em) minmax(0, 1fr);
+    gap: 1.2em;
+    align-items: start;
+    padding: 1em;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, .045);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
+    cursor: pointer;
+    outline: none;
+    transition: transform .35s var(--mui-ease), background-color .25s ease, box-shadow .35s var(--mui-ease);
+}
+
+html.mui .mui-gs-tile::before {
+    opacity: .22;
+    transition: opacity .35s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    html.mui .mui-gs-tile:hover {
+        transform: translateY(-3px);
+        background-color: rgba(255, 255, 255, .07);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12), 0 22px 40px -22px rgba(0, 0, 0, .8);
+    }
+
+    html.mui .mui-gs-tile:hover::before {
+        opacity: .38;
+    }
+}
+
+html.mui .mui-gs-tile:focus-visible {
+    box-shadow: inset 0 0 0 2px #fff;
+}
+
+html.mui .mui-gs-tile:active {
+    transform: scale(.985);
+}
+
+html.mui .mui-gs-cover {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, .06);
+    box-shadow: 0 14px 30px -14px rgba(0, 0, 0, .8), 0 0 0 1px rgba(255, 255, 255, .08);
+}
+
+html.mui .mui-gs-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+html.mui .mui-gs-play {
+    position: absolute;
+    right: .5em;
+    bottom: .5em;
+    width: 2.6em;
+    height: 2.6em;
+    font-size: .9em;
+    opacity: 0;
+    transform: translateY(6px) scale(.9);
+    transition: opacity .25s ease, transform .3s var(--mui-ease);
+}
+
+html.mui .mui-gs-tile:hover .mui-gs-play,
+html.mui .mui-gs-tile:focus-within .mui-gs-play {
+    opacity: 1;
+    transform: none;
+}
+
+html.mui .mui-gs-info {
+    min-width: 0;
+    padding-top: .15em;
+}
+
+html.mui .mui-gs-title {
+    margin: 0;
+    font-size: 1.15em;
+    font-weight: 800;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+html.mui .mui-gs-tmeta {
+    margin-top: .25em;
+    color: rgba(255, 255, 255, .55);
+    font-size: .85em;
+    font-weight: 600;
+}
+
+html.mui .mui-gs-tracks {
+    margin: .7em 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: gs;
+    font-size: .86em;
+    color: rgba(255, 255, 255, .72);
+}
+
+html.mui .mui-gs-tracks li {
+    counter-increment: gs;
+    padding: .18em 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+html.mui .mui-gs-tracks li::before {
+    content: counter(gs);
+    display: inline-block;
+    width: 1.6em;
+    color: rgba(255, 255, 255, .38);
+    font-variant-numeric: tabular-nums;
+}
+
+html.mui .mui-gs-tracks li.mui-gs-rest {
+    color: rgba(255, 255, 255, .4);
+}
+
+html.mui .mui-gs-tracks li.mui-gs-rest::before {
+    content: "";
+}
+
+@media (max-width: 40em) {
+    html.mui .mui-gs-fan {
+        display: none;
+    }
+
+    html.mui .mui-gs-head {
+        min-height: 0;
+    }
+}
+
+/* ---------- search: one heading per kind, large ---------- */
+
+html.mui .mui-searchpage .sections .sectionTitle {
+    font-size: clamp(1.6em, 2.4vw, 2.3em);
+    font-weight: 800;
+    letter-spacing: -.01em;
+    margin-bottom: .35em;
+}
+
+html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
+    margin-top: 1.2em;
+}
+
+
+/* ---------- phones ---------- */
+
+@media (max-width: 40em) {
+    /* no tab bar along the bottom (the drawer and the header do its job); the footer stays for the player bar */
+    html.mui.mui-phonelayout .appfooter .dockedtabs {
+        display: none !important;
+    }
+
+    /* search in the header's top right */
+    html.mui.mui-phonelayout .skinHeader .headerSearchButton.hide {
+        display: inline-flex !important;
+    }
+
+    /* albums three to a row */
+    html.mui.mui-phonelayout .vertical-wrap > .squareCard {
+        width: 33.333% !important;
+    }
+
+    /* the content reaches the screen's edges; only the notch and the home bar keep their room */
+    html.mui.mui-phonelayout .skinHeader {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    html.mui.mui-phonelayout .appfooter {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}

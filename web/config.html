@@ -1,0 +1,74 @@
+<div id="betterTheEmbyConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox,emby-textarea" data-controller="__plugin/bettertheembyjs">
+    <div data-role="content">
+        <div class="content-primary">
+            <form class="betterTheEmbyConfigForm">
+                <p class="fieldDescription">保存后，网页端刷新一次即生效。Changes apply after reloading the web client.</p>
+
+                <h2 class="sectionTitle">外观 · Look</h2>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnableModernUI" /><span>现代外观 · Modern UI</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">首页横幅、页面背景、详情页大图、动画、毛玻璃顶栏。Banners, art behind pages, detail backdrops, motion, glass header.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnableAlbumTint" /><span>专辑配色与歌词 · Album colours and lyrics</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">播放器随封面取色，Apple Music 式歌词。The player takes the cover's colours; Apple-Music-style lyrics.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnablePhoneLayout" /><span>手机布局 · Phone layout</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">去掉底部标签栏、搜索在右上角、专辑三列、动画更克制。No bottom tab bar, search at the top right, albums three to a row, calmer motion.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnableWebCache" /><span>网页缓存 · Web client cache</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">在浏览器里缓存网页端文件（仅 HTTPS），打开更快。Caches the web client's files in the browser (HTTPS only).</div>
+                </div>
+
+                <h2 class="sectionTitle">媒体库 · Libraries</h2>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="SimplifyLibraryTabs" /><span>精简标签 · Simpler tabs</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">视频库只留 影片/节目 · 推荐 · 收藏，音乐库只留 专辑。Video libraries keep shows/films, suggestions and favourites; music libraries keep albums.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnableSeriesTab" /><span>「系列」标签 · Series tab</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">视频库里按 Emby 合集列出系列作品。Lists the franchises of a video library, from Emby collections.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnableArtistFeed" /><span>「艺人」标签 · Artists tab</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">音乐库里每位艺人一行：照片、简介和专辑。One row per artist: photo, biography and albums.</div>
+                </div>
+                <div class="inputContainer">
+                    <textarea is="emby-textarea" id="folderTabs" rows="8" label="按文件夹分类的音乐库 · Folder tabs (JSON)" style="font-family:monospace"></textarea>
+                    <div class="fieldDescription">让某个音乐库的标签对应库里的文件夹，格式见 README。Music libraries whose tabs are their folders; see the README for the format. 留空即不启用。Empty: none.</div>
+                </div>
+
+                <h2 class="sectionTitle">搜索 · Search</h2>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnableSmartSearch" /><span>按标题搜索 · Title search</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">只列节目、电影、专辑；单集或单曲只在自己的名字匹配时出现。Shows, films and albums; an episode or song only when its own name matches.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnablePinyinSearch" /><span>拼音搜索 · Pinyin search</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">全拼或首字母（gdyg → 孤独摇滚），n 和 l 不分。Full pinyin or initials, with n and l alike.</div>
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="EnablePinyinIndex" /><span>拼音字母索引 · Pinyin A-Z index</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">媒体库右侧索引栏显示 A–Z 而不是汉字。The index beside library grids shows A–Z instead of characters.</div>
+                </div>
+
+                <h2 class="sectionTitle">网易云音乐 · NetEase Cloud Music</h2>
+                <div class="inputContainer">
+                    <input is="emby-input" type="number" id="netEaseSpacing" min="500" max="10000" step="100" label="查询间隔（毫秒）· Pause between lookups (ms)" />
+                </div>
+                <div class="checkboxContainer checkboxContainer-withDescription">
+                    <label><input is="emby-checkbox" type="checkbox" data-key="NetEaseRotateAddress" /><span>轮换来源地址 · Rotate client address</span></label>
+                    <div class="fieldDescription checkboxFieldDescription">每次查询在 X-Real-IP 里换一个国内地址，绕开网易云按地址的限流。这是网易云没有提供的做法，接口可能随时变化，请自行权衡后开启。Sends a different mainland address in X-Real-IP with every lookup, which gets past NetEase's per-address limit. NetEase does not offer this; turn it on at your own discretion.</div>
+                </div>
+                <div class="inputContainer">
+                    <input is="emby-input" type="password" id="netEaseCookie" autocomplete="off" label="网易云 Cookie（可选）· NetEase cookie (optional)" />
+                    <div class="fieldDescription">匿名查询被拒时，用已登录的会话再试一次。可以粘贴整段 Cookie，或只填 MUSIC_U 的值。建议用小号。Used only when an anonymous lookup is refused. The whole Cookie header or just the MUSIC_U value.</div>
+                </div>
+
+                <button is="emby-button" type="submit" class="raised button-submit block"><span>保存 · Save</span></button>
+            </form>
+        </div>
+    </div>
+</div>
