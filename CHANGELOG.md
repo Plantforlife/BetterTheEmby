@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.14 — 2026-11-02
+
+- Video option menus remove their top and bottom inset so the first and last option highlights meet the menu edges. Side inset, small corners, selection dot and text padding are retained.
+
 ## 1.0.2.13 — 2026-11-02
 
 - Video detail options use smaller corners: 6px on the selectors, 8px on their desktop menus and 4px on entries. The selected dot, spacing and alignment stay the same.

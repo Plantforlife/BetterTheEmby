@@ -40,7 +40,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 - **Artist pages**: photo, a blurred tint and an *About* card with the full biography. An artist without a biography is looked up when an administrator opens the page.
 - **A–Z index**: the letter bar beside a library grid shows pinyin initials A–Z instead of Chinese characters, and every letter is there (Emby lists at most 27 characters).
 - **Short version names**: a detail page's *Version* picker shows what comes after the first " - " of each name, so `天气之子 - 4K BluRay-Remux … - Xcat` reads `4K BluRay-Remux … - Xcat`: the title in front is already the page's heading.
-- Video detail selectors and their desktop menus use small rounded corners, with a dot marking the selected entry.
+- Video detail selectors and their desktop menus use small rounded corners, with a dot marking the selected entry. The first and last option highlights meet the menu's top and bottom edges.
 
 ### Search
 

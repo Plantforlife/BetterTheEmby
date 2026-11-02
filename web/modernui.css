@@ -2581,6 +2581,11 @@ html.mui .actionSheet.mui-video-select-menu .listItem-content {
     border-radius: 4px !important;
 }
 
+/* Let first/last option highlights reach the menu's top/bottom instead of leaving empty strips. */
+html.mui .actionSheet.mui-select-menu.mui-video-select-menu .actionSheetScroller {
+    padding: 0 6px !important;
+}
+
 /* The menu of a select (version, audio, subtitles), placed at the select's left edge by modernui.js. */
 html.mui .actionSheet.mui-select-menu .actionSheetScroller {
     padding: 6px !important;
