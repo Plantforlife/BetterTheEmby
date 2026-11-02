@@ -2386,6 +2386,111 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
     html.mui.mui-phonelayout .skinHeader.skinHeader.headroom-hidden:not(.videoOsdHeader)::after {
         opacity: 0;
     }
+
+    /* Dark pages: no frosted band behind the header at all. A pinned box can't reach behind the status bar, so the
+       band could only start under it, a darker strip below the page that shows there. Instead the header's buttons
+       float on glass of their own, as Safari's do, and its title carries a shadow. */
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader)::after {
+        display: none;
+    }
+
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerButton {
+        border-radius: 50%;
+        background-color: rgba(20, 20, 22, .36) !important;
+        -webkit-backdrop-filter: blur(16px) saturate(170%);
+        backdrop-filter: blur(16px) saturate(170%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 4px 16px rgba(0, 0, 0, .16);
+    }
+
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .pageTitle {
+        text-shadow: 0 1px 12px rgba(0, 0, 0, .6);
+    }
+
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .pageTitleWithDefaultLogo {
+        filter: drop-shadow(0 1px 8px rgba(0, 0, 0, .45));
+    }
+
+    /* The drawer's dimming layer: Emby fades a black box in to opacity .3. WebKit extends a dimming layer behind
+       Safari's bars in its background colour, its opacity aside, so the bars turned black while the drawer was open.
+       With the dimness in the colour itself (rgba, opacity up to 1) it extends the page's colour dimmed as much, which
+       is what the page under the drawer looks like. */
+    html.mui.mui-phonelayout .drawer-backdrop {
+        background-color: rgba(0, 0, 0, .3) !important;
+        animation-name: mui-dim-in !important;
+    }
+
+    html.mui.mui-phonelayout .drawer-backdrop.drawer-backdrop-fadeout {
+        animation-name: mui-dim-out !important;
+    }
+
+    /* A tab bar wider than the screen (a music library's folder tabs): it scrolls sideways over a glass track that
+       stays put, its tabs fading out on the side(s) with more of them; modernui.js brings the active tab to the
+       middle (.mui-tabs-overflow / -start / -end on the bar). */
+    html.mui.mui-phonelayout .tabs-viewmenubar.mui-tabs-overflow {
+        scrollbar-width: none;
+        overscroll-behavior-x: contain;
+        /* Emby snaps every tab to the start (mandatory), which pulled a centred tab back to the edge */
+        scroll-snap-type: x proximity;
+        scroll-padding-inline: 36px;
+        -webkit-mask-image: linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0, #000 36px, #000 calc(100% - 36px), transparent 100%);
+    }
+
+    html.mui.mui-phonelayout .tabs-viewmenubar.mui-tabs-overflow::-webkit-scrollbar {
+        display: none;
+    }
+
+    html.mui.mui-phonelayout .tabs-viewmenubar.mui-tabs-overflow .emby-tab-button {
+        scroll-snap-align: center;
+    }
+
+    html.mui.mui-phonelayout .tabs-viewmenubar.mui-tabs-overflow.mui-tabs-start {
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent 100%);
+        mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent 100%);
+    }
+
+    html.mui.mui-phonelayout .tabs-viewmenubar.mui-tabs-overflow.mui-tabs-end {
+        -webkit-mask-image: linear-gradient(to right, transparent 0, #000 36px);
+        mask-image: linear-gradient(to right, transparent 0, #000 36px);
+    }
+
+    html.mui.mui-phonelayout .headerMiddle:has(> .tabs-viewmenubar.mui-tabs-overflow) {
+        isolation: isolate;
+    }
+
+    html.mui.mui-phonelayout .headerMiddle:has(> .tabs-viewmenubar.mui-tabs-overflow)::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        left: 12px;
+        right: 12px;
+        top: 50%;
+        height: 34px;
+        transform: translateY(-50%);
+        border-radius: 999px;
+        background: rgba(30, 30, 34, .4);
+        -webkit-backdrop-filter: blur(20px) saturate(160%);
+        backdrop-filter: blur(20px) saturate(160%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07), 0 6px 20px rgba(0, 0, 0, .18);
+        pointer-events: none;
+    }
+
+    html.mui.mui-phonelayout .tabs-viewmenubar.mui-tabs-overflow .emby-tabs-slider {
+        background: none !important;
+        box-shadow: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+}
+
+@keyframes mui-dim-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes mui-dim-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }
 
 /* The footer, pinned to the bottom edge, shows nothing while nothing plays: transparent and without children it

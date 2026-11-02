@@ -368,6 +368,9 @@
             if (over) return;
             if (!view.isConnected || view.classList.contains('hide')) { release(true); return; }
             if (pageReady(view, r)) {
+                // A person's header has its own fixed portrait slot. Filmography rows can keep changing the
+                // page height below it; they must not hold this ready header or start another text sequence.
+                if (r.path === 'item' && personDetail(view)) { release(); return; }
                 var size = pageSize(view);
                 if (size !== last) { last = size; since = now || performance.now(); }
                 else if ((now || performance.now()) - since >= SETTLE_MS) { release(); return; }
@@ -387,6 +390,10 @@
             return !spot || (!spot.pending && !!spot.sections.querySelector(':scope > .mui-spotlight'));
         }
         return true;
+    }
+    function personDetail(view) {
+        var item = view && view.controller && view.controller.currentItem;
+        return !!(view && view.__muiPerson) || !!(item && item.Type === 'Person');
     }
     function pageSize(view) {
         var f = pageFrame(view) || view, header = document.querySelector('.skinHeader');
@@ -414,6 +421,7 @@
         var name = view.querySelector('.detailTextContainer .itemName-primary');
         if (!name || !name.textContent.trim()) return;
         choreo = null;
+        if (personDetail(view)) return; // the portrait flies while the whole header fades in once
         if (reduceMotion || !document.body.animate) return;
         var parts = [], poster = view.querySelector('.detailImageContainer-main');
         if (poster && !root.classList.contains('mui-fly-detail')) parts.push(poster); // a poster in flight lands by itself
@@ -453,7 +461,32 @@
                 pill.offsetWidth; // apply the jump before turning the slide back on
                 pill.style.transition = '';
             }
+            fitTabBar(slider, active, fresh || instant);
         });
+    }
+    // Phones: a tab bar wider than the screen (a library's folder tabs) scrolls sideways over a glass track, fading
+    // out on the side(s) with more tabs (modernui.css), and brings the active tab to the middle when it changes
+    function fitTabBar(slider, active, instant) {
+        var bar = slider.parentNode;
+        if (!bar || !bar.classList || !bar.classList.contains('tabs-viewmenubar')) return;
+        var over = isPhone() && bar.scrollWidth > bar.clientWidth + 1;
+        bar.classList.toggle('mui-tabs-overflow', over);
+        if (!over) { bar.__muiActive = null; return; }
+        if (!bar.__muiEdges) {
+            bar.__muiEdges = function () {
+                var max = bar.scrollWidth - bar.clientWidth;
+                bar.classList.toggle('mui-tabs-start', bar.scrollLeft <= 6);
+                bar.classList.toggle('mui-tabs-end', bar.scrollLeft >= max - 6);
+            };
+            bar.addEventListener('scroll', bar.__muiEdges, { passive: true });
+        }
+        if (instant || bar.__muiActive !== active) {
+            bar.__muiActive = active;
+            var br = bar.getBoundingClientRect(), ar = active.getBoundingClientRect();
+            var left = Math.max(0, Math.min(bar.scrollWidth - bar.clientWidth, bar.scrollLeft + ar.left - br.left - (br.width - ar.width) / 2));
+            try { bar.scrollTo({ left: left, behavior: instant || reduceMotion ? 'instant' : 'smooth' }); } catch (e) { bar.scrollLeft = left; }
+        }
+        bar.__muiEdges();
     }
     function queueTabs() {
         if (tabsQueued) return;
@@ -694,7 +727,7 @@
         if (!src) return;
         var it = cardItem(card), r = media.getBoundingClientRect();
         if (!it || !r.width || !r.height) return;
-        flyFrom = { id: it.Id, card: card, rect: r, src: src, radius: radiusOf(media), at: Date.now() };
+        flyFrom = { id: it.Id, type: it.Type, card: card, rect: r, src: src, radius: radiusOf(media), at: Date.now() };
     }
 
     // where the poster of a detail page is, when it is on screen (for the flight back to its card)
@@ -800,14 +833,32 @@
 
     function flyToDetail(view, from) {
         lastCard = { id: from.id, el: from.card };
+        var person = from.type === 'Person', placeholder = null;
+        if (person) view.__muiPerson = true;
         root.classList.add('mui-fly-detail'); // the page's own poster stays hidden until the copy lands on it
-        var f = newFlight(from, function () { root.classList.remove('mui-fly-detail'); });
+        var f = newFlight(from, function () {
+            root.classList.remove('mui-fly-detail');
+            if (placeholder && placeholder.classList.contains('mui-person-placeholder')) placeholder.remove();
+        });
+        function realPoster() {
+            return view.querySelector('.detailImageContainer-main .card:not(.mui-person-placeholder) .cardImageContainer');
+        }
         waitFor(function () {
             if (f.ended) return 'off';
-            if (!pageReady(view, { path: 'item' })) return null;
+            if (!person && !pageReady(view, { path: 'item' })) return null;
             var box = view.querySelector('.detailImageContainer-main');
             if (!box) return null;
             if (getComputedStyle(box).display === 'none') return 'off'; // phones show no poster there
+            if (person && !box.querySelector('.cardImageContainer') && box.clientWidth && !placeholder) {
+                // Use Emby's own portrait geometry before the slow person query finishes. This is invisible
+                // beneath the flying copy, and is replaced by Emby's real card when metadata arrives.
+                placeholder = el('div', 'card portraitCard detailImageContainerCard mui-person-placeholder');
+                placeholder.setAttribute('aria-hidden', 'true');
+                var cardBox = el('div', 'detailImageContainerCard-cardBox cardBox');
+                cardBox.appendChild(el('div', 'cardContent cardImageContainer cardPadder-portrait'));
+                placeholder.appendChild(cardBox);
+                box.appendChild(placeholder);
+            }
             var m = box.querySelector('.cardImageContainer'), b = m && m.getBoundingClientRect();
             return b && b.width && b.height ? m : null;
         }, function (dest) {
@@ -815,20 +866,24 @@
             sharpen(f.ghost, dest.querySelector('img'));
             fly(f, from.rect, from.radius, function () {
                 // Emby may render the poster again while the copy is in the air: follow the current one
-                if (!dest.isConnected) dest = view.querySelector('.detailImageContainer-main .cardImageContainer') || dest;
+                var real = realPoster();
+                if (real && real !== dest) { dest = real; sharpen(f.ghost, real.querySelector('img')); }
                 return dest.isConnected ? dest.getBoundingClientRect() : null;
             }, radiusOf(dest), 580, function () {
                 // Hand over only once the page's own picture is there, and show it at once (no fade of its own):
                 // the copy then fades away over the same picture. Otherwise the copy went, the spot was empty for a
                 // moment, and the picture faded in a second time.
-                var img = dest.isConnected && dest.querySelector('img');
-                whenLoaded(img, 3000, function () {
-                    var card = img && img.closest('.card');
-                    if (card) card.classList.add('mui-landing');
-                    if (img && img.naturalWidth) markImg(img);
-                    f.end();
-                    if (card) setTimeout(function () { card.classList.remove('mui-landing'); }, 400);
-                });
+                waitFor(function () { return f.ended ? 'off' : realPoster(); }, function (real) {
+                    if (real === 'off' || f.ended) return;
+                    var img = real.querySelector('img');
+                    whenLoaded(img, 3000, function () {
+                        var card = real.closest('.card');
+                        if (card) card.classList.add('mui-landing');
+                        if (img && img.naturalWidth) markImg(img);
+                        f.end();
+                        if (card) setTimeout(function () { card.classList.remove('mui-landing'); }, 400);
+                    });
+                }, 3000, f.end);
             });
         }, 1200, f.end);
         return true;
