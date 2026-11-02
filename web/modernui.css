@@ -1188,6 +1188,7 @@ html.mui .mui-hashero .overview-text {
 
 /* the real picture stays hidden while the copy is on its way to it */
 html.mui-fly-detail .itemView:not(.hide) .detailImageContainer-main .card,
+.mui-fly-target.mui-series-cover,
 .mui-fly-target .cardImageContainer,
 .mui-fly-target .cardOverlayContainer,
 .mui-fly-target .listItemImage,

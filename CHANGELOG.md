@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2.16 — 2026-11-02
+
+- Top-level library tabs use a clearer directional slide and fade: right-hand tabs enter from the right and left-hand tabs from the left. Motion scales with the viewport, waits for custom content/native scroll bodies, and cancels cleanly on rapid switches.
+- Series covers and titles now use the same poster transition into collection details and back as normal cards. Returning hides only the series cover, keeping its title rows visible. Phone and reduced-motion behaviour is retained.
+
 ## 1.0.2.15 — 2026-11-02
 
 - Video option selectors and menus share the detail artwork's 12px corners. Selected rows have a persistent light-grey background with dark text and fill the menu width without dark inset strips; the outer menu clips the row at its rounded edges.

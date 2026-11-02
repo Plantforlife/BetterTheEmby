@@ -155,6 +155,7 @@
     // the item behind a card: virtual grids keep it on their container, other rows put its id on the card
     function cardItem(card) {
         if (card.__album) return card.__album;
+        if (card.__muiItem) return card.__muiItem;
         var ic = card.parentNode;
         if (ic && typeof ic.getItemFromElement === 'function') {
             try {
@@ -551,7 +552,14 @@
     // phones: the tab we leave keeps its place in the document (see "the document scrolls")
     function onBeforeTabChange(e) {
         var bar = e.target;
+        if (bar && bar.classList && bar.classList.contains('tabs-viewmenubar')) stopTabSlide(document.querySelector('.view.withTabs:not(.hide)'));
         if (docScroll && bar && bar.classList && bar.classList.contains('tabs-viewmenubar')) docSave(pageFrame());
+    }
+
+    function stopTabSlide(view) {
+        if (!view || !view.__muiTabSlide) return;
+        view.__muiTabSlide.cancel();
+        view.__muiTabSlide = null;
     }
 
     // a tab switch: the new tab's content slides in from the side of the tab that was picked
@@ -565,7 +573,7 @@
         if (reduceMotion || !window.MutationObserver) return;
         var view = document.querySelector('.view.withTabs:not(.hide)');
         if (!view) return;
-        var dx = (+to > +from ? 1 : -1) * 18, done = false, timer;
+        var direction = +to > +from ? 1 : -1, done = false, timer;
         var tabs = view.controller && view.controller.getTabs ? view.controller.getTabs() : [];
         var custom = tabs[to] && tabs[to].mui;
         // A new custom tab is activated before its controller/template and data have arrived.
@@ -583,19 +591,26 @@
         function enter() {
             var c = view.querySelector('.tabContent.is-active[data-index="' + to + '"]');
             if (done || !c || !view.isConnected || view.classList.contains('hide') || (custom && c.__muiReady !== true)) return;
+            var content = c.querySelector(':scope > .scrollSlider, :scope > .mui-tabbody');
+            if (!content) return; // a native tab can activate before its template has arrived
             cancel();
             // one movement: the cards it brings (or Emby builds again) come with it, they don't rise in as well
             revealUntil = 0;
             revealPending = [];
             // its content moves, not the tab itself, whose A-Z index is fixed to the screen
-            slide(c.querySelector(':scope > .scrollSlider, :scope > .mui-tabbody') || c, isPhone() ? dx / 2 : dx, isPhone() ? 200 : 260);
+            var phone = isPhone(), width = c.clientWidth || view.clientWidth || window.innerWidth;
+            var distance = phone ? Math.min(32, Math.max(20, width * .07)) : Math.min(96, Math.max(40, width * .06));
+            stopTabSlide(view);
+            var animation = view.__muiTabSlide = slide(content, direction * distance, phone ? 260 : 360);
+            if (animation) animation.finished.then(clear, clear);
+            function clear() { if (view.__muiTabSlide === animation) view.__muiTabSlide = null; }
         }
         // Emby has usually activated the content already (between beforetabchange and tabchange, in this same
         // task, so nothing has been painted yet)
         // A custom controller can finish before Emby activates it, or the other way around. Listen for both;
         // either signal starts the same single entrance, before the completed content is painted.
         var mo = new MutationObserver(enter);
-        mo.observe(view, { attributes: true, attributeFilter: ['class'], subtree: true });
+        mo.observe(view, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
         view.addEventListener('mui:tabready', enter);
         view.__muiCancelTabEnter = cancel;
         timer = setTimeout(cancel, 10000);
@@ -763,7 +778,9 @@
     function sameShape(a, b) { return Math.abs(a.width / a.height - b.width / b.height) < 0.2 * b.width / b.height; }
 
     // the picture of a card, or of a list row (a season's episodes are a list), and its url
-    function mediaOf(card) { return card.querySelector('.cardImageContainer, .listItemImage, .mui-gs-cover'); }
+    function mediaOf(card) {
+        return card.classList.contains('mui-series-cover') ? card : card.querySelector('.cardImageContainer, .listItemImage, .mui-gs-cover');
+    }
     function pictureOf(media) {
         var img = media && media.querySelector('img');
         if (img) return img.complete && img.naturalWidth ? img.currentSrc || img.src : null;
@@ -773,7 +790,8 @@
     function noteCardClick(e) {
         flyFrom = null;
         if (reduceMotion || e.button) return;
-        var t = e.target, card = t.closest('.card, .listItem, .mui-gs-tile');
+        var t = e.target, card = t.closest('.card, .listItem, .mui-gs-tile, .mui-series-cover');
+        if (!card && t.closest('.mui-series-name')) card = t.closest('.mui-series').querySelector('.mui-series-cover');
         if (!card || card.closest('.detailImageContainer, .osdPosterContainer, .dialog, .mainDrawer, .lyricsScroller')) return;
         if (t.closest('.mui-gs-play')) return;
         var act = t.closest('[data-action]');
@@ -799,6 +817,7 @@
         if (!view || !view.classList) return;
         if (view.__muiRelease) view.__muiRelease(true);
         if (view.__muiCancelTabEnter) view.__muiCancelTabEnter();
+        stopTabSlide(view);
         // phones: where the page was left, for when it comes back (see "the document scrolls")
         if (docScroll && view.classList.contains('page')) docSave(pageFrame(view));
         if (!view.classList.contains('itemView')) return;
@@ -956,7 +975,7 @@
         return true;
     }
     function findCard(view, id) {
-        var cards = view.querySelectorAll('.itemsContainer > .card, .itemsContainer > .listItem, .mui-gs-tile');
+        var cards = view.querySelectorAll('.itemsContainer > .card, .itemsContainer > .listItem, .mui-gs-tile, .mui-series-cover');
         for (var i = 0; i < cards.length; i++) {
             if (cards[i].parentNode.classList.contains('detailImageContainer')) continue;
             var it = cardItem(cards[i]);
@@ -2492,6 +2511,7 @@
 
         // the collection's own cover if it has one (Emby: edit images), else the first entry's poster
         var cover = el('button', 'mui-series-cover'), poster = null;
+        cover.__muiItem = s.box;
         cover.type = 'button';
         cover.setAttribute('aria-label', s.box.Name);
         if (s.box.ImageTags && s.box.ImageTags.Primary) poster = { id: s.box.Id, tag: s.box.ImageTags.Primary };

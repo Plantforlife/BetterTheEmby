@@ -16,6 +16,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 - **Detail pages**: a full-width backdrop with parallax, the title logo in place of the title, the poster and lines of text coming in one after another. A show, its seasons and episodes share one backdrop that stays put between them.
 - **Cards**: lift and lean toward the pointer with a soft glare; a click flies the poster to the detail page and back.
 - **Chrome**: frosted-glass header and menus, a pill that slides to the active tab, one highlight that slides through the drawer.
+- **Library tabs**: content slides in from the selected tab's side, including first visits to Series and soundtrack categories. Switching again cancels the preceding motion.
 - **Video player**: softer gradients, a bolder seek bar, glass buttons; Skip Intro slides in.
 - "Reduce motion" in the system turns all motion off.
 
@@ -34,7 +35,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 | Music | Albums · **Artists** |
 | Music libraries you list in *Folder tabs* | one tab per folder, plus an optional "all" tab |
 
-- **Series**: built from Emby collections. Put the shows and films of one franchise into a collection and they appear in release order, with cover, years, genres and overview.
+- **Series**: built from Emby collections. Put the shows and films of one franchise into a collection and they appear in release order, with cover, years, genres and overview. The cover transitions into collection details and back like a normal card.
 - **Artists**: one row per artist: photo, name, album count and genres, biography, and albums.
 - **Folder tabs**: for a music library organised in folders (soundtracks by game version, by region…). Each tab shows one folder's albums in folder order (numbers by value, Chinese by pinyin), as wide tiles with their first tracks. An optional title prefix is also omitted in that library's home album rows. See [the format](docs/TECHNICAL.md#folder-tabs).
 - **Artist pages**: photo, a blurred tint and an *About* card with the full biography. An artist without a biography is looked up when an administrator opens the page.
