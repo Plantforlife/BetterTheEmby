@@ -70,8 +70,91 @@
         return itemCache[id];
     }
 
+    // The detail controller already requests this item. Share that request instead of making the server
+    // load the same person/album again while Emby is still building the page.
+    function detailItem(view, id) {
+        var controller = view && view.controller;
+        if (controller && controller.params && String(controller.params.id) === String(id) && controller.dataPromise) {
+            return controller.dataPromise.then(function () {
+                var item = controller.currentItem;
+                return item && String(item.Id) === String(id) ? item : getItem(id);
+            });
+        }
+        return getItem(id);
+    }
+
+    // Person lookups can take longer than the page transition. Start the same native request when a viewer
+    // rests on an actor or focuses one, and hand it to Emby once on navigation (never to later refreshes).
+    var personWarm = {}, personTimer = 0, personHover = null;
+    var PERSON_FIELDS = 'ShareLevel,SyncStatus,ContainerSyncStatus';
+    var PERSON_EXCLUDE = 'VideoChapters,VideoMediaSources,MediaStreams';
+    function warmPerson(card) {
+        var item = card && cardItem(card), a = api();
+        if (!a || !item || item.Type !== 'Person' || card.closest('.detailImageContainer, .dialog')) return;
+        var uid = a.getCurrentUserId(), key = uid + '|' + item.Id, now = Date.now();
+        Object.keys(personWarm).forEach(function (k) { if (now - personWarm[k].at > 15000) delete personWarm[k]; });
+        if (personWarm[key]) return;
+        if (!a.__muiPersonWarm) {
+            var get = a.getItem;
+            a.getItem = function (userId, id, options) {
+                var k = userId + '|' + id, saved = personWarm[k];
+                if (saved && Date.now() - saved.at <= 15000 && options && options.fields === PERSON_FIELDS &&
+                    options.ExcludeFields === PERSON_EXCLUDE && Object.keys(options).length === 2) {
+                    delete personWarm[k];
+                    return saved.promise;
+                }
+                return get.apply(this, arguments);
+            };
+            a.__muiPersonWarm = true;
+        }
+        var record = { at: now, promise: a.getItem(uid, item.Id, { fields: PERSON_FIELDS, ExcludeFields: PERSON_EXCLUDE }) };
+        personWarm[key] = record;
+        record.promise.catch(function () { if (personWarm[key] === record) delete personWarm[key]; });
+    }
+    function onPersonIntent(e) {
+        if (!e.target || !e.target.closest) return;
+        var card = e.target.closest('.card');
+        if (e.type === 'pointerover') {
+            if (e.pointerType !== 'mouse' || card === personHover) return;
+            personHover = card;
+            clearTimeout(personTimer);
+            if (card) personTimer = setTimeout(function () { if (card.isConnected) warmPerson(card); }, 120);
+        } else {
+            clearTimeout(personTimer);
+            warmPerson(card);
+        }
+    }
+
+    function patchPersonCredits() {
+        var a = api();
+        if (!a || a.__muiCredits || typeof a.getPersonCredits !== 'function' || a.isMinServerVersion('4.10.0.1')) return;
+        // Emby 4.9's API client returns an empty items envelope for this unsupported endpoint, but its person
+        // page expects an array of credit groups and throws on .map(). Preserve the same empty result shape
+        // the renderer expects, without adding a request or changing supported credit responses.
+        var get = a.getPersonCredits;
+        a.getPersonCredits = function () {
+            return get.apply(this, arguments).then(function (res) {
+                return res && Array.isArray(res.Items) && !res.Items.length && res.TotalRecordCount === 0 ? [] : res;
+            });
+        };
+        a.__muiCredits = true;
+    }
+    function emptyCredits(scope) {
+        var a = api();
+        if (!a || !a.__muiCredits || !scope.querySelectorAll) return;
+        scope.querySelectorAll('.creditsItemsContainer').forEach(function (box) {
+            var view = box.closest('.itemView'), controller = view && view.controller;
+            if (controller && Array.isArray(controller.currentItemCreditTypes) && !controller.currentItemCreditTypes.length) {
+                // The native renderer also resumes its hidden empty list and assumes a first credit group.
+                // The DOM observer runs before that resume microtask; supply the actual empty list directly.
+                box.fetchData = function () { return Promise.resolve([]); };
+            }
+        });
+    }
+
     // the item behind a card: virtual grids keep it on their container, other rows put its id on the card
     function cardItem(card) {
+        if (card.__album) return card.__album;
         var ic = card.parentNode;
         if (ic && typeof ic.getItemFromElement === 'function') {
             try {
@@ -93,6 +176,7 @@
             return;
         }
         hooked = true;
+        patchPersonCredits();
         patchLibraryTabs();
         if (SETTINGS.phoneLayout !== false && window.Emby && typeof Emby.importModule === 'function') {
             patchScroller().then(function (ok) { docReady = !!ok; syncDocScroll(); }, function (e) { console.warn('[ModernUI] scroller', e); });
@@ -214,7 +298,13 @@
         prevOsd = isOsd;
         hookEmby();
         var detail = r.path === 'item';
-        if (detail && !restored) carryHero(view);
+        if (detail && !restored) {
+            // Only video details share the preceding video's hero. A person/album card already identifies
+            // the new layout: carrying a hero there left .mui-hashero padding after the art was removed.
+            var type = flyFrom && flyFrom.type;
+            if (type && !VIDEO_TYPES[type]) heroCarry = null;
+            else carryHero(view);
+        }
         var flying = startFlight(view, r, back, isOsd);
         // Album Tint animates the way into and out of the music player
         var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio(), entrance = [];
@@ -245,9 +335,11 @@
         var reveal = !restored && !isOsd && !isPhone();
         if (reveal && r.path === 'item') choreo = { view: view, until: Date.now() + 4000 };
         if (restored) entrance = [];
-        holdEntrance(view, r, entrance, function () {
+        holdEntrance(view, r, entrance, function (ready) {
             if (!reveal) return;
             revealCards(view);
+            // If the server outlasted the entrance, don't make already-visible text disappear and rise again.
+            if (!ready && choreo && choreo.view === view) choreo = null;
             checkChoreo();
         });
         setTimeout(function () { afterShow(view, r); }, 0);
@@ -257,29 +349,34 @@
     // and buttons when the item arrives, the home page's rows and banner after that. So its entrance is held at its
     // first frame (invisible) until what it waits for is there and its size has stayed put for a moment, then
     // plays: the page comes in once, already in place. A page that is already complete (one we come back to) and
-    // a slow server don't wait: at most HOLD_MS.
+    // a slow server is bounded: at most HOLD_MS for libraries, 1200ms for a detail page's metadata.
     var HOLD_MS = 450, SETTLE_MS = 70, holding = 0;
     function holdEntrance(view, r, anims, done) {
         anims = anims.filter(Boolean);
         var over = false, last = null, since = 0, cap = 0;
-        function release() {
+        function release(cancelled) {
             if (over) return;
             over = true;
             clearTimeout(cap);
             holding = Math.max(0, holding - 1);
             view.__muiHold = false;
-            anims.forEach(function (a) { try { a.play(); } catch (e) { } });
-            if (done) done();
+            if (view.__muiRelease === release) view.__muiRelease = null;
+            anims.forEach(function (a) { try { if (cancelled) a.cancel(); else a.play(); } catch (e) { } });
+            if (!cancelled && done) done(pageReady(view, r));
         }
-        if (!anims.length) { release(); return; }
+        if (!anims.length) { if (done) done(pageReady(view, r)); return; }
         anims.forEach(function (a) { a.pause(); });
         holding++;
         view.__muiHold = true;
-        cap = setTimeout(release, HOLD_MS);
+        view.__muiRelease = release;
+        cap = setTimeout(release, r.path === 'item' ? 1200 : HOLD_MS);
         (function frame(now) {
             if (over) return;
-            if (!view.isConnected || view.classList.contains('hide')) { release(); return; }
+            if (!view.isConnected || view.classList.contains('hide')) { release(true); return; }
             if (pageReady(view, r)) {
+                // A person's header has its own fixed portrait slot. Filmography rows can keep changing the
+                // page height below it; they must not hold this ready header or start another text sequence.
+                if (r.path === 'item' && personDetail(view)) { release(); return; }
                 var size = pageSize(view);
                 if (size !== last) { last = size; since = now || performance.now(); }
                 else if ((now || performance.now()) - since >= SETTLE_MS) { release(); return; }
@@ -293,11 +390,16 @@
             return !!(name && name.textContent.trim());
         }
         if (view.classList.contains('withTabs')) {
-            if (!view.querySelector('.tabContent.is-active')) return false;
+            var tab = view.querySelector('.tabContent.is-active');
+            if (!tab || tab.__muiReady === false) return false;
             var spot = spotlightTarget(); // a page with a banner waits for its rows and the banner
             return !spot || (!spot.pending && !!spot.sections.querySelector(':scope > .mui-spotlight'));
         }
         return true;
+    }
+    function personDetail(view) {
+        var item = view && view.controller && view.controller.currentItem;
+        return !!(view && view.__muiPerson) || !!(item && item.Type === 'Person');
     }
     function pageSize(view) {
         var f = pageFrame(view) || view, header = document.querySelector('.skinHeader');
@@ -325,6 +427,7 @@
         var name = view.querySelector('.detailTextContainer .itemName-primary');
         if (!name || !name.textContent.trim()) return;
         choreo = null;
+        if (personDetail(view)) return; // the portrait flies while the whole header fades in once
         if (reduceMotion || !document.body.animate) return;
         var parts = [], poster = view.querySelector('.detailImageContainer-main');
         if (poster && !root.classList.contains('mui-fly-detail')) parts.push(poster); // a poster in flight lands by itself
@@ -413,9 +516,25 @@
         if (reduceMotion || !window.MutationObserver) return;
         var view = document.querySelector('.view.withTabs:not(.hide)');
         if (!view) return;
-        var dx = (+to > +from ? 1 : -1) * 18, done = false;
-        function enter(c) {
+        var dx = (+to > +from ? 1 : -1) * 18, done = false, timer;
+        var tabs = view.controller && view.controller.getTabs ? view.controller.getTabs() : [];
+        var custom = tabs[to] && tabs[to].mui;
+        // A new custom tab is activated before its controller/template and data have arrived.
+        // Keep its direction, and let the controller start the one slide when the body is complete.
+        if (view.__muiCancelTabEnter) view.__muiCancelTabEnter();
+        revealUntil = 0;
+        revealPending = [];
+        function cancel() {
             done = true;
+            clearTimeout(timer);
+            mo.disconnect();
+            view.removeEventListener('mui:tabready', enter);
+            if (view.__muiCancelTabEnter === cancel) view.__muiCancelTabEnter = null;
+        }
+        function enter() {
+            var c = view.querySelector('.tabContent.is-active[data-index="' + to + '"]');
+            if (done || !c || !view.isConnected || view.classList.contains('hide') || (custom && c.__muiReady !== true)) return;
+            cancel();
             // one movement: the cards it brings (or Emby builds again) come with it, they don't rise in as well
             revealUntil = 0;
             revealPending = [];
@@ -424,17 +543,14 @@
         }
         // Emby has usually activated the content already (between beforetabchange and tabchange, in this same
         // task, so nothing has been painted yet)
-        var ready = view.querySelector('.tabContent.is-active[data-index="' + to + '"]');
-        if (ready) { enter(ready); return; }
-        // otherwise catch the class change when it comes, still before it is painted
-        var mo = new MutationObserver(function () {
-            var c = view.querySelector('.tabContent.is-active[data-index="' + to + '"]');
-            if (!c || done) return;
-            mo.disconnect();
-            enter(c);
-        });
+        // A custom controller can finish before Emby activates it, or the other way around. Listen for both;
+        // either signal starts the same single entrance, before the completed content is painted.
+        var mo = new MutationObserver(enter);
         mo.observe(view, { attributes: true, attributeFilter: ['class'], subtree: true });
-        setTimeout(function () { if (!done) { done = true; mo.disconnect(); } }, 1500);
+        view.addEventListener('mui:tabready', enter);
+        view.__muiCancelTabEnter = cancel;
+        timer = setTimeout(cancel, 10000);
+        enter();
     }
 
     // ---------- drawer: one highlight that slides to the selected entry ----------
@@ -598,7 +714,7 @@
     function sameShape(a, b) { return Math.abs(a.width / a.height - b.width / b.height) < 0.2 * b.width / b.height; }
 
     // the picture of a card, or of a list row (a season's episodes are a list), and its url
-    function mediaOf(card) { return card.querySelector('.cardImageContainer') || card.querySelector('.listItemImage'); }
+    function mediaOf(card) { return card.querySelector('.cardImageContainer, .listItemImage, .mui-gs-cover'); }
     function pictureOf(media) {
         var img = media && media.querySelector('img');
         if (img) return img.complete && img.naturalWidth ? img.currentSrc || img.src : null;
@@ -608,15 +724,16 @@
     function noteCardClick(e) {
         flyFrom = null;
         if (reduceMotion || e.button) return;
-        var t = e.target, card = t.closest('.card, .listItem');
+        var t = e.target, card = t.closest('.card, .listItem, .mui-gs-tile');
         if (!card || card.closest('.detailImageContainer, .osdPosterContainer, .dialog, .mainDrawer, .lyricsScroller')) return;
+        if (t.closest('.mui-gs-play')) return;
         var act = t.closest('[data-action]');
         if (act && card.contains(act) && act.getAttribute('data-action') !== 'link') return; // play, menu...
         var media = mediaOf(card), src = pictureOf(media);
         if (!src) return;
         var it = cardItem(card), r = media.getBoundingClientRect();
         if (!it || !r.width || !r.height) return;
-        flyFrom = { id: it.Id, card: card, rect: r, src: src, radius: radiusOf(media), at: Date.now() };
+        flyFrom = { id: it.Id, type: it.Type, card: card, rect: r, src: src, radius: radiusOf(media), at: Date.now() };
     }
 
     // where the poster of a detail page is, when it is on screen (for the flight back to its card)
@@ -631,6 +748,8 @@
     function onViewBeforeHide(e) {
         var view = e.target;
         if (!view || !view.classList) return;
+        if (view.__muiRelease) view.__muiRelease(true);
+        if (view.__muiCancelTabEnter) view.__muiCancelTabEnter();
         // phones: where the page was left, for when it comes back (see "the document scrolls")
         if (docScroll && view.classList.contains('page')) docSave(pageFrame(view));
         if (!view.classList.contains('itemView')) return;
@@ -720,13 +839,32 @@
 
     function flyToDetail(view, from) {
         lastCard = { id: from.id, el: from.card };
+        var person = from.type === 'Person', placeholder = null;
+        if (person) view.__muiPerson = true;
         root.classList.add('mui-fly-detail'); // the page's own poster stays hidden until the copy lands on it
-        var f = newFlight(from, function () { root.classList.remove('mui-fly-detail'); });
+        var f = newFlight(from, function () {
+            root.classList.remove('mui-fly-detail');
+            if (placeholder && placeholder.classList.contains('mui-person-placeholder')) placeholder.remove();
+        });
+        function realPoster() {
+            return view.querySelector('.detailImageContainer-main .card:not(.mui-person-placeholder) .cardImageContainer');
+        }
         waitFor(function () {
             if (f.ended) return 'off';
+            if (!person && !pageReady(view, { path: 'item' })) return null;
             var box = view.querySelector('.detailImageContainer-main');
             if (!box) return null;
             if (getComputedStyle(box).display === 'none') return 'off'; // phones show no poster there
+            if (person && !box.querySelector('.cardImageContainer') && box.clientWidth && !placeholder) {
+                // Use Emby's own portrait geometry before the slow person query finishes. This is invisible
+                // beneath the flying copy, and is replaced by Emby's real card when metadata arrives.
+                placeholder = el('div', 'card portraitCard detailImageContainerCard mui-person-placeholder');
+                placeholder.setAttribute('aria-hidden', 'true');
+                var cardBox = el('div', 'detailImageContainerCard-cardBox cardBox');
+                cardBox.appendChild(el('div', 'cardContent cardImageContainer cardPadder-portrait'));
+                placeholder.appendChild(cardBox);
+                box.appendChild(placeholder);
+            }
             var m = box.querySelector('.cardImageContainer'), b = m && m.getBoundingClientRect();
             return b && b.width && b.height ? m : null;
         }, function (dest) {
@@ -734,20 +872,24 @@
             sharpen(f.ghost, dest.querySelector('img'));
             fly(f, from.rect, from.radius, function () {
                 // Emby may render the poster again while the copy is in the air: follow the current one
-                if (!dest.isConnected) dest = view.querySelector('.detailImageContainer-main .cardImageContainer') || dest;
+                var real = realPoster();
+                if (real && real !== dest) { dest = real; sharpen(f.ghost, real.querySelector('img')); }
                 return dest.isConnected ? dest.getBoundingClientRect() : null;
             }, radiusOf(dest), 580, function () {
                 // Hand over only once the page's own picture is there, and show it at once (no fade of its own):
                 // the copy then fades away over the same picture. Otherwise the copy went, the spot was empty for a
                 // moment, and the picture faded in a second time.
-                var img = dest.isConnected && dest.querySelector('img');
-                whenLoaded(img, 3000, function () {
-                    var card = img && img.closest('.card');
-                    if (card) card.classList.add('mui-landing');
-                    if (img && img.naturalWidth) markImg(img);
-                    f.end();
-                    if (card) setTimeout(function () { card.classList.remove('mui-landing'); }, 400);
-                });
+                waitFor(function () { return f.ended ? 'off' : realPoster(); }, function (real) {
+                    if (real === 'off' || f.ended) return;
+                    var img = real.querySelector('img');
+                    whenLoaded(img, 3000, function () {
+                        var card = real.closest('.card');
+                        if (card) card.classList.add('mui-landing');
+                        if (img && img.naturalWidth) markImg(img);
+                        f.end();
+                        if (card) setTimeout(function () { card.classList.remove('mui-landing'); }, 400);
+                    });
+                }, 3000, f.end);
             });
         }, 1200, f.end);
         return true;
@@ -765,7 +907,7 @@
         return true;
     }
     function findCard(view, id) {
-        var cards = view.querySelectorAll('.itemsContainer > .card, .itemsContainer > .listItem');
+        var cards = view.querySelectorAll('.itemsContainer > .card, .itemsContainer > .listItem, .mui-gs-tile');
         for (var i = 0; i < cards.length; i++) {
             if (cards[i].parentNode.classList.contains('detailImageContainer')) continue;
             var it = cardItem(cards[i]);
@@ -1340,10 +1482,11 @@
         function clear() {
             setPageBg(null);
             root.classList.remove('mui-videoitem', 'mui-haslogo-page');
+            if (view) view.classList.remove('mui-hashero');
             var carried = view && view.querySelector(':scope > .mui-hero[data-carried]');
             if (carried) leaveHero(carried);
         }
-        getItem(r.params.id).then(function (item) {
+        detailItem(view, r.params.id).then(function (item) {
             if (token !== itemToken) return;
             if (item.Type === 'MusicArtist') { clear(); artistPage(view, item, token); return; }
             if (!VIDEO_TYPES[item.Type]) { clear(); return; }
@@ -1939,6 +2082,8 @@
         this.view.classList.add('mui-tab');
         this.body = el('div', 'mui-tabbody padded-left padded-right padded-top-page padded-bottom-page');
         this.view.appendChild(this.body);
+        this.view.__muiReady = false;
+        this.body.style.visibility = 'hidden';
     };
     MuiTab.prototype.onResume = function () {
         if (!this.started) {
@@ -1947,13 +2092,22 @@
             return Promise.resolve(this.render()).catch(function (e) {
                 console.warn('[ModernUI] tab', e);
                 self.body.appendChild(el('div', 'mui-tabempty', L('加载失败', 'Could not load')));
-            }).then(hideLoading);
+            }).then(function () {
+                if (!self.view || !self.body) return;
+                self.view.__muiReady = true;
+                self.body.style.visibility = '';
+                self.view.dispatchEvent(new Event('mui:tabready', { bubbles: true }));
+                hideLoading();
+            });
         }
         hideLoading();
         return Promise.resolve();
     };
     MuiTab.prototype.onPause = function () { };
-    MuiTab.prototype.destroy = function () { if (this.io) this.io.disconnect(); this.view = this.body = null; };
+    MuiTab.prototype.destroy = function () {
+        if (this.io) this.io.disconnect();
+        this.view = this.body = null;
+    };
     MuiTab.prototype.scrollToBeginning = function () {
         if (!this.view) return;
         if (docScroll) docScrollTo(0, 'smooth');
@@ -2096,24 +2250,37 @@
         if (trackCount(al)) meta.push(L(trackCount(al) + ' 首', trackCount(al) + ' tracks'));
         if (al.RunTimeTicks) meta.push(Math.round(al.RunTimeTicks / 6e8) + L(' 分钟', ' min'));
         info.appendChild(el('div', 'mui-gs-tmeta', meta.join(' · ')));
-        info.appendChild(el('ol', 'mui-gs-tracks'));
+        var tracks = el('ol', 'mui-gs-tracks');
+        // Reserve exactly the preview rows, so track requests don't resize the tiles during the tab slide.
+        for (var i = 0; i < Math.min(trackCount(al), 5); i++) {
+            var row = el('li', '', '\u00a0');
+            row.style.visibility = 'hidden';
+            row.setAttribute('aria-hidden', 'true');
+            tracks.appendChild(row);
+        }
+        info.appendChild(tracks);
         tile.appendChild(info);
         tile.addEventListener('click', function () { showItem(al); });
-        tile.addEventListener('keydown', function (e) { if (e.key === 'Enter') showItem(al); });
+        tile.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && e.target === tile) { e.preventDefault(); tile.click(); }
+        });
         if (io) io.observe(tile); else gsTracks(tile);
         return tile;
     }
     // the first few tracks, once the tile is near
     function gsTracks(tile) {
+        if (tile.__tracksLoading) return;
+        tile.__tracksLoading = true;
         var a = api(), al = tile.__album;
         a.getItems(a.getCurrentUserId(), {
             ParentId: al.Id, IncludeItemTypes: 'Audio', Recursive: true, SortBy: 'ParentIndexNumber,IndexNumber,SortName', Limit: 4, EnableImages: false
         }).then(function (res) {
             var ol = tile.querySelector('.mui-gs-tracks'), items = res.Items || [];
+            ol.textContent = '';
             items.forEach(function (t) { ol.appendChild(el('li', '', t.Name)); });
             var rest = trackCount(al) - items.length;
             if (rest > 0) ol.appendChild(el('li', 'mui-gs-rest', L('还有 ' + rest + ' 首', rest + ' more')));
-        }, function () { });
+        }, function () { tile.__tracksLoading = false; });
     }
     function folderTab(conf, tab) {
         return tabClass(function () {
@@ -2532,6 +2699,9 @@
         document.addEventListener('load', onImageEvent, true);
         document.addEventListener('error', onImageEvent, true);
         document.addEventListener('pointerup', onInput, true);
+        document.addEventListener('pointerover', onPersonIntent, { passive: true });
+        document.addEventListener('focusin', onPersonIntent, true);
+        document.addEventListener('pointerdown', onPersonIntent, { passive: true, capture: true });
         document.addEventListener('keydown', onInput, true);
         document.addEventListener('click', function (e) {
             if (!e.target || !e.target.closest) return;
@@ -2561,6 +2731,7 @@
                         if (n.nodeType !== 1) return;
                         if (isCardImage(n)) { checkImg(n); return; }
                         var cl = n.classList;
+                        if (rec.target.classList && rec.target.classList.contains('creditsSubSections')) emptyCredits(n);
                         // a new set of header tabs (another page) fades in, before it is first painted
                         if (!tabsFaded && (cl.contains('emby-tab-button') || (n.firstElementChild && n.querySelector('.emby-tab-button')))) {
                             var bar = n.closest('.tabs-viewmenubar');

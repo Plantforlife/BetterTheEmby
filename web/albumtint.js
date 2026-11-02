@@ -20,6 +20,8 @@
         '#albumtint-bg>div.albumtint-on{opacity:1}',
         // the theme's flat background sits under our layer; header/footer/drawer get see-through tints
         'html.albumtint-page .backgroundContainer{background:transparent!important}',
+        // Hide inherited artist art as soon as the album is known, including while its palette is loading.
+        'html.albumtint-music .backdropContainer{visibility:hidden!important}',
         'html.albumtint-page body{background:transparent}',
         'html.albumtint-page .skinHeader-withBackground,html.albumtint-page .skinHeader-blurred{background:transparent!important}',
         'html.albumtint-page .mainDrawer.drawer-docked{background:rgba(0,0,0,.18)!important}',
@@ -245,6 +247,14 @@
     function getItem(id) {
         var a = api();
         if (!a || !a.getCurrentUserId()) return Promise.reject(new Error('no session'));
+        var view = document.querySelector('.itemView:not(.hide)'), controller = view && view.controller;
+        if (controller && controller.params && String(controller.params.id) === String(id) && controller.dataPromise) {
+            return controller.dataPromise.then(function () {
+                var item = controller.currentItem;
+                if (item && String(item.Id) === String(id)) return item;
+                return a.getItem(a.getCurrentUserId(), id);
+            });
+        }
         if (!itemCache[id]) {
             itemCache[id] = a.getItem(a.getCurrentUserId(), id);
             itemCache[id].catch(function () { delete itemCache[id]; });
@@ -304,6 +314,7 @@
     }
 
     function setPage(url) {
+        root.classList.toggle('albumtint-music', !!url);
         if (url === pageUrl) return;
         pageUrl = url;
         var token = ++pageToken;
@@ -330,8 +341,31 @@
             root.style.setProperty('--albumtint-lyric-glow', s.lyricGlow);
             root.classList.add('albumtint-page');
         }, function (e) {
-            if (token === pageToken) { pageUrl = null; console.warn('[AlbumTint]', e); }
+            if (token === pageToken) { setPage(null); console.warn('[AlbumTint]', e); }
         });
+    }
+
+    // Music uses its cover palette, never the parent artist's backdrop. Hook the native backdrop decision
+    // too, so the unused full-screen image is not fetched or briefly painted before Album Tint updates.
+    var backdropHooked = false;
+    function hookBackdrop() {
+        if (backdropHooked || !window.Emby || typeof Emby.importModule !== 'function') return;
+        backdropHooked = true;
+        Emby.importModule('./modules/backdrop/backdrop.js').then(function (m) {
+            var bg = m.default || m, get = bg.getBackdropsFromOptions, set = bg.setBackdrops;
+            function music(items) {
+                return !isDisabled() && items && items.length && items.every(function (it) {
+                    return (it.Type === 'MusicAlbum' || (it.Type === 'Audio' && it.MediaType === 'Audio')) && artUrl(it);
+                });
+            }
+            bg.getBackdropsFromOptions = function (items, options) {
+                return music(items) ? [] : get.apply(this, arguments);
+            };
+            bg.setBackdrops = function (items, options) {
+                if (music(items)) { setPage(artUrl(items[0])); return set.call(this, [], options); }
+                return set.apply(this, arguments);
+            };
+        }, function () { backdropHooked = false; });
     }
 
     function setFooter(url) {
@@ -929,6 +963,7 @@
             if ((attempt || 0) < 240) setTimeout(function () { hookPlayback((attempt || 0) + 1); }, 250);
             return;
         }
+        hookBackdrop();
         window.require(['playbackManager', 'events'], function (p, ev) {
             pm = p && p.default ? p.default : p;
             events = ev && ev.default ? ev.default : ev;
