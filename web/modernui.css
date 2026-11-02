@@ -2568,6 +2568,19 @@ html.mui.mui-docscroll .page.scrollFrameY[data-bindheader="true"]:not(.hide):not
     contain: none !important;
 }
 
+/* Video detail pickers use compact corners, including their desktop menu and selected entry. */
+html.mui .itemView .detailTextContainer select.detailTrackSelect {
+    border-radius: 6px !important;
+}
+
+html.mui .actionSheet.mui-video-select-menu {
+    border-radius: 8px !important;
+}
+
+html.mui .actionSheet.mui-video-select-menu .listItem-content {
+    border-radius: 4px !important;
+}
+
 /* The menu of a select (version, audio, subtitles), placed at the select's left edge by modernui.js. */
 html.mui .actionSheet.mui-select-menu .actionSheetScroller {
     padding: 6px !important;

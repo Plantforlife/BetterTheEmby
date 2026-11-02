@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.13 — 2026-11-02
+
+- Video detail options use smaller corners: 6px on the selectors, 8px on their desktop menus and 4px on entries. The selected dot, spacing and alignment stay the same.
+
 ## 1.0.2.12 — 2026-11-02
 
 - Search includes album artists and finds their albums by album-artist name, full pinyin or initials. Artist results use the existing cards and also appear in drawer suggestions. Artist catalogues are cached per library, and an unavailable artist lookup does not hide title results.

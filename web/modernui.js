@@ -440,6 +440,7 @@
             return;
         }
         sheet.classList.add('mui-select-menu');
+        sheet.classList.toggle('mui-video-select-menu', !!from.wrapper.querySelector('select.detailTrackSelect'));
         function place() {
             if (!sheet.isConnected) return;
             var w = from.wrapper.getBoundingClientRect();
