@@ -27,6 +27,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-checkbox', 'emby-textarea'
         artistFeedDesc: 'One row per artist: photo, biography and albums.',
         folderTabs: 'Folder tabs (JSON)',
         folderTabsDesc: 'Music libraries whose tabs are their folders; see the README for the format. Empty: none.',
+        shortVersionNames: 'Short version names',
+        shortVersionNamesDesc: 'A detail page\'s version picker shows what comes after the first " - " of each name, leaving off the title it starts with.',
         search: 'Search',
         smartSearch: 'Title search',
         smartSearchDesc: 'Shows, films and albums; an episode or song only when its own name matches.',

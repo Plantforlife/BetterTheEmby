@@ -174,6 +174,7 @@ namespace BetterTheEmby
                 seriesTab = c.EnableSeriesTab,
                 artistFeed = c.EnableArtistFeed,
                 folderTabs = c.FolderTabs ?? string.Empty,
+                shortVersionNames = c.EnableShortVersionNames,
                 smartSearch = c.EnableSmartSearch,
                 pinyinSearch = c.EnablePinyinSearch,
                 pinyinIndex = c.EnablePinyinIndex

@@ -39,6 +39,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 - **Folder tabs**: for a music library organised in folders (soundtracks by game version, by region…). Each tab shows one folder's albums in folder order (numbers by value, Chinese by pinyin), as wide tiles with their first tracks. An optional title prefix is also omitted in that library's home album rows. See [the format](docs/TECHNICAL.md#folder-tabs).
 - **Artist pages**: photo, a blurred tint and an *About* card with the full biography. An artist without a biography is looked up when an administrator opens the page.
 - **A–Z index**: the letter bar beside a library grid shows pinyin initials A–Z instead of Chinese characters, and every letter is there (Emby lists at most 27 characters).
+- **Short version names**: a detail page's *Version* picker shows what comes after the first " - " of each name, so `天气之子 - 4K BluRay-Remux … - Xcat` reads `4K BluRay-Remux … - Xcat`: the title in front is already the page's heading.
 
 ### Search
 
@@ -89,7 +90,7 @@ Upgrading from *Album Tint & Modern UI* (`AlbumTint.dll`)? See [Upgrading](docs/
 | Group | Settings |
 |---|---|
 | Look | Modern UI · Album colours and lyrics · Phone layout · Web client cache |
-| Libraries | Simpler tabs · Series tab · Artists tab · Folder tabs (JSON) |
+| Libraries | Simpler tabs · Series tab · Artists tab · Folder tabs (JSON) · Short version names |
 | Search | Title search · Pinyin search · Pinyin A–Z index |
 | NetEase | Pause between lookups · Rotate client address (off by default) · Cookie (optional) |
 

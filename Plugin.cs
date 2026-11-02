@@ -40,6 +40,12 @@ namespace BetterTheEmby
         /// </summary>
         public string FolderTabs { get; set; } = string.Empty;
 
+        /// <summary>
+        /// A detail page's version picker shows what comes after the first " - " of each version's name (the part
+        /// before it is the title, which the page shows already).
+        /// </summary>
+        public bool EnableShortVersionNames { get; set; } = true;
+
         // ----- search -----
 
         /// <summary>Search shows titles (shows, films, albums); an episode or a song only when its own name matches.</summary>

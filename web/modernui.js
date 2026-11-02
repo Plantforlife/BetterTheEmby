@@ -15,7 +15,7 @@
     // the plugin's settings (its settings page); everything is on when they are missing
     var SETTINGS = Object.assign({
         modernUI: true, phoneLayout: true, simplifyTabs: true, seriesTab: true, artistFeed: true, folderTabs: '',
-        smartSearch: true, pinyinSearch: true, pinyinIndex: true
+        smartSearch: true, pinyinSearch: true, pinyinIndex: true, shortVersionNames: true
     }, window.BetterTheEmbySettings || {});
     // text in Chinese when Emby's interface is Chinese, in English otherwise
     function L(zh, en) { return /^zh/i.test(document.documentElement.getAttribute('lang') || navigator.language || '') ? zh : en; }
@@ -406,12 +406,33 @@
         return f.scrollHeight + 'x' + f.scrollWidth + '|' + (header ? header.offsetHeight : 0);
     }
 
+    // The version picker of a detail page names each version after its file: "Title - 4K BluRay-Remux ... - Group".
+    // The title is already the page's heading, so each option shows what comes after the first " - ". Emby builds
+    // the picker's menu from the options' text, so one rewrite covers the closed picker and its menu. Options Emby
+    // fills in again (a new page) are rewritten as they arrive, before they are first painted.
+    function shortVersionNames(scope) {
+        if (SETTINGS.shortVersionNames === false || !scope || !scope.querySelectorAll) return;
+        var selects = scope.matches && scope.matches('select.selectSource') ? [scope] : scope.querySelectorAll('select.selectSource');
+        Array.prototype.forEach.call(selects, function (select) {
+            Array.prototype.forEach.call(select.options, function (option) {
+                var text = option.textContent;
+                if (text === option.__muiShort) return;
+                var at = text.indexOf(' - ');
+                var rest = at > 0 ? text.slice(at + 3).trim() : '';
+                if (!rest) return; // no title in front of it, or nothing after: keep the name as it is
+                option.__muiShort = rest;
+                option.textContent = rest;
+            });
+        });
+    }
+
     function afterShow(view, r) {
         syncTabs(true);
         syncNav(false);
         watchTitle();
         updatePageArt(view, r);
         updateSpotlights();
+        shortVersionNames(view);
         homeAlbumTitles(view);
         markLoaded(view);
         setTimeout(function () { markLoaded(view); }, 1500);
@@ -2786,8 +2807,11 @@
                 var cards = [], refilled = [], now = Date.now(), tabsFaded = false;
                 records.forEach(function (rec) {
                     homeAlbumTitles(rec.target);
+                    // the version picker's options are filled in as <option>s of the select, or the select arrives whole
+                    if (rec.target.classList && rec.target.classList.contains('selectSource')) shortVersionNames(rec.target);
                     rec.addedNodes.forEach(function (n) {
                         if (n.nodeType !== 1) return;
+                        if (n.classList.contains('selectSource') || (n.firstElementChild && n.querySelector('select.selectSource'))) shortVersionNames(n);
                         if (n.classList.contains('verticalSection') || n.querySelector('.verticalSection')) homeAlbumTitles(n);
                         if (isCardImage(n)) { checkImg(n); return; }
                         var cl = n.classList;

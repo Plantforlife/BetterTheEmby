@@ -26,6 +26,7 @@ Dashboard → Plugins → BetterTheEmby → Settings. The server writes the web-
 | `EnableSeriesTab` | on | The **Series** tab in video libraries. |
 | `EnableArtistFeed` | on | The **Artists** tab in music libraries. |
 | `FolderTabs` | empty | Music libraries whose tabs are their folders (JSON, see [Folder tabs](#folder-tabs)). |
+| `EnableShortVersionNames` | on | A detail page's version picker shows what follows the first " - " of each name (see [Short version names](#short-version-names)). |
 | `EnableSmartSearch` | on | Title search (see [Search](#search)). |
 | `EnablePinyinSearch` | on | Pinyin and pinyin initials in search. |
 | `EnablePinyinIndex` | on | The A–Z index beside library grids shows pinyin initials. |
@@ -214,6 +215,14 @@ Home rows resolve their library from the section heading's `parentId` before app
 A shelf of its own shows a header (name, album count, years, track total, *Play all*, the covers fanned out) and the albums as wide tiles with their first four tracks.
 
 Music albums have no path in the API (Emby builds them from tags), and `SortBy=Path` doesn't follow folder names. The tab lists the shelf folder's sub folders, sorts them with `Intl.Collator('zh-Hans-CN', { numeric: true })` (numbers by value, Chinese by pinyin — the order Windows Explorer shows) and matches each album to its folder by title (`"02.蒙德 - 风与牧歌之城"` and `"原神 - 风与牧歌之城"` both read `风与牧歌之城`). A folder whose name doesn't read like its album is asked for its album directly.
+
+## Short version names
+
+A video with several files (versions) has a *Version* picker on its detail page: `select.selectSource` (`emby-select`, `data-menu="custom"`), one `<option>` per media source, whose text is the source's name, usually the file name: `天气之子 - 4K BluRay-Remux HEVC_10bit DTS-HD MA_5.1ch HDR_HDR10 - Xcat`. With `EnableShortVersionNames`, `shortVersionNames()` in `modernui.js` rewrites each option's text to what follows the first `" - "` (`4K BluRay-Remux … - Xcat`), because the title in front is the page's heading already.
+
+- Emby draws the closed picker and builds its action-sheet menu from the options' text, so rewriting the options covers both; the option values (`mediasource_<id>`) are untouched.
+- The picker's options are filled in when the page is built, so the global DOM observer rewrites them as they are added (before they are first painted), and `afterShow` covers a page already built. Choosing another version doesn't rebuild the options.
+- A name without `" - "`, or with nothing after it, is left as it is; only the first `" - "` counts (`HDR_HDR10 - Xcat` keeps its own). Titles that themselves contain `" - "` keep the rest of the title. Only the detail page's picker is changed, not the video player's own version menu.
 
 ## Search
 
