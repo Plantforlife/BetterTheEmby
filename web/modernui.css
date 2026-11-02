@@ -2568,21 +2568,45 @@ html.mui.mui-docscroll .page.scrollFrameY[data-bindheader="true"]:not(.hide):not
     contain: none !important;
 }
 
-/* The menu of a select (version, audio, subtitles), placed at the select's left edge by modernui.js: each entry's
-   text lines up with the select's own text, and the check mark of the chosen entry sits at the right end instead of
-   in a column in front of every entry. */
+/* The menu of a select (version, audio, subtitles), placed at the select's left edge by modernui.js. */
 html.mui .actionSheet.mui-select-menu .actionSheetScroller {
-    padding-left: 5px !important;
-    padding-right: 5px !important;
+    padding: 6px !important;
+}
+
+html.mui .actionSheet.mui-select-menu .actionsheetScrollSlider {
+    padding: 0 !important;
+}
+
+/* The same space on all four sides of an entry; the chosen one has a dot in front of its first line instead of Emby's
+   check-mark column in front of every entry. */
+html.mui .actionSheet.mui-select-menu .listItem-content {
+    padding: 10px !important;
+    min-height: 0 !important;
+    align-items: flex-start !important;
 }
 
 html.mui .actionSheet.mui-select-menu .actionSheetItemImageContainer {
-    order: 2;
-    width: 2.2em !important;
-    margin-left: auto;
+    display: none !important;
 }
 
 html.mui .actionSheet.mui-select-menu .listItemBody {
-    padding-left: 5px !important;
-    padding-right: 4px !important;
+    position: relative;
+    min-height: 0 !important;
+    padding: 0 0 0 16px !important;
+}
+
+html.mui .actionSheet.mui-select-menu .listItemBody::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: calc(.75em - 3px);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0;
+}
+
+html.mui .actionSheet.mui-select-menu .listItem-content:has(.actionSheetItemImageContainer:not(:empty)) .listItemBody::before {
+    opacity: 1;
 }

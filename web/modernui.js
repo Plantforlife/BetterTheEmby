@@ -428,8 +428,8 @@
 
     // The menu of a select (version, audio, subtitles) opens as an action sheet that Emby places 26px left of the
     // select, to make room for a check-mark column in front of every entry; the entries' text then lined up with
-    // nothing. It is placed at the select's own left edge instead, with the text in line with the select's text and
-    // the check mark at the right end (modernui.css, .mui-select-menu). Phones keep Emby's bottom sheets.
+    // nothing. It is placed at the select's own left edge instead, with the same space on all four sides of each entry
+    // and a dot in front of the chosen one (modernui.css, .mui-select-menu). Phones keep Emby's bottom sheets.
     var selectOpened = null;
     function alignSelectMenu(sheet, retried) {
         var from = selectOpened;

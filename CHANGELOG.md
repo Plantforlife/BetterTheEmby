@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.11 — 2026-11-02
+
+- Select menus on desktops: the chosen entry has a dot in front of its first line instead of a check mark at the right end, and every entry has the same 10px on all four sides (the menu 6px around its entries).
+
 ## 1.0.2.10 — 2026-11-02
 
 - Select menus (version, audio, subtitles) open at the select's own left edge, with each entry's text in line with the select's text and the check mark at the right end. Emby placed them 26px to the left of the select, for a check-mark column in front of every entry, so the text lined up with nothing. This replaces 1.0.2.9's narrower column. Phones keep Emby's bottom sheets.
