@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.15 — 2026-11-02
+
+- Video option selectors and menus share the detail artwork's 12px corners. Selected rows have a persistent light-grey background with dark text and fill the menu width without dark inset strips; the outer menu clips the row at its rounded edges.
+
 ## 1.0.2.14 — 2026-11-02
 
 - Video option menus remove their top and bottom inset so the first and last option highlights meet the menu edges. Side inset, small corners, selection dot and text padding are retained.

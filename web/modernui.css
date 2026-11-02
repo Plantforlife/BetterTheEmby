@@ -2568,22 +2568,37 @@ html.mui.mui-docscroll .page.scrollFrameY[data-bindheader="true"]:not(.hide):not
     contain: none !important;
 }
 
-/* Video detail pickers use compact corners, including their desktop menu and selected entry. */
+/* Video options share the detail artwork's corners; the menu clips full-width highlights to that outline. */
 html.mui .itemView .detailTextContainer select.detailTrackSelect {
-    border-radius: 6px !important;
+    border-radius: 12px !important;
 }
 
 html.mui .actionSheet.mui-video-select-menu {
-    border-radius: 8px !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
 }
 
 html.mui .actionSheet.mui-video-select-menu .listItem-content {
-    border-radius: 4px !important;
+    border-radius: 0 !important;
 }
 
-/* Let first/last option highlights reach the menu's top/bottom instead of leaving empty strips. */
+/* No outer inset: the selected row reaches every edge while its text keeps the existing internal padding. */
 html.mui .actionSheet.mui-select-menu.mui-video-select-menu .actionSheetScroller {
-    padding: 0 6px !important;
+    padding: 0 !important;
+}
+
+/* Emby's check icon marks the actual selection, independently of the hovered or keyboard-focused row. */
+html.mui .actionSheet.mui-video-select-menu .listItem-content:has(.actionSheetItemImageContainer:not(:empty)) {
+    background: rgba(255, 255, 255, .78) !important;
+    color: #111 !important;
+}
+
+html.mui .actionSheet.mui-video-select-menu .listItem-content:has(.actionSheetItemImageContainer:not(:empty)) .listItemBodyText {
+    color: inherit !important;
+}
+
+html.mui .actionSheet.mui-video-select-menu .listItem-content:has(.actionSheetItemImageContainer:not(:empty)) .secondaryText {
+    color: rgba(0, 0, 0, .65) !important;
 }
 
 /* The menu of a select (version, audio, subtitles), placed at the select's left edge by modernui.js. */
