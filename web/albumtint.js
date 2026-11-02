@@ -21,7 +21,10 @@
         // the theme's flat background sits under our layer; header/footer/drawer get see-through tints
         'html.albumtint-page .backgroundContainer{background:transparent!important}',
         // Hide inherited artist art as soon as the album is known, including while its palette is loading.
-        'html.albumtint-music .backdropContainer{visibility:hidden!important}',
+        // Phone layout makes native backdrop children explicitly visible for Safari's bar handling. Hide the
+        // drawing descendants as well, so that rule cannot reveal artist artwork over an album palette.
+        'html.albumtint-music .backdropContainer,html.albumtint-music .backdropContainer *{visibility:hidden!important}',
+        '@media(max-width:40em){html.mui.mui-phonelayout.albumtint-page{background-color:var(--albumtint-base,var(--mui-page))!important}}',
         'html.albumtint-page body{background:transparent}',
         'html.albumtint-page .skinHeader-withBackground,html.albumtint-page .skinHeader-blurred{background:transparent!important}',
         'html.albumtint-page .mainDrawer.drawer-docked{background:rgba(0,0,0,.18)!important}',
@@ -87,6 +90,12 @@
         'html.albumtint-osd .lyricsItem.albumtint-lead .listItem-content{padding-bottom:0!important}',
         'html.albumtint-osd .lyricsItem.albumtint-sub{font-size:160%;font-weight:600;line-height:1.15;margin-top:-.25em;margin-bottom:.34em}',
         'html.albumtint-osd .lyricsItem.albumtint-sub .listItem-content{padding-top:0!important}',
+        // Keep the desktop lyric scale; on a phone leave enough room for a whole phrase and its translation.
+        '@media(max-width:40em){' +
+            'html.albumtint-osd .lyricsItem{font-size:clamp(1.125rem,5.6vw,1.5rem);line-height:1.4}' +
+            'html.albumtint-osd .lyricsItem.albumtint-sub{font-size:clamp(.875rem,3.8vw,1rem);line-height:1.4}' +
+            'html.albumtint-osd .lyricsItem-selected .listItemBodyText,html.albumtint-osd .lyricsItem.albumtint-cur .listItemBodyText{transform:scale(1.04)}' +
+        '}',
         'html.albumtint-osd .lyricsItem,html.albumtint-osd .lyricsItem:hover,html.albumtint-osd .lyricsItem:focus,' +
             'html.albumtint-osd .lyricsItem .listItem-content{background:transparent!important;box-shadow:none!important}',
         // every line is a "play from here" button (Emby seeks on click). A plate slides under the line the pointer is
@@ -270,7 +279,9 @@
         else if (item.ImageTags && item.ImageTags.Primary) { id = item.Id; tag = item.ImageTags.Primary; }
         else if (item.PrimaryImageItemId && item.PrimaryImageTag) { id = item.PrimaryImageItemId; tag = item.PrimaryImageTag; }
         if (!id) return null;
-        return a.getImageUrl(id, { type: 'Primary', tag: tag, maxWidth: 160, quality: 90 });
+        // getImageUrl scales widths by devicePixelRatio and can rewrite quality. Palette extraction needs the
+        // same pixels on every screen, rather than a different compressed image on a high-DPI phone.
+        return a.getUrl('Items/' + id + '/Images/Primary', { tag: tag, maxWidth: 160, quality: 90 });
     }
 
     function routeInfo() {
@@ -296,7 +307,7 @@
     // ---------- applying ----------
     var root = document.documentElement, layers = null, front = 0, pageToken = 0, footerToken = 0, pageUrl = null;
     var VARS = ['--background-hue', '--background-saturation', '--background-lightness', '--theme-accent-text-color', '--albumtint-glow', '--albumtint-glow-soft',
-        '--albumtint-lyric-glow'];
+        '--albumtint-lyric-glow', '--albumtint-base'];
 
     function ensureDom() {
         if (layers && layers[0].isConnected) return true;
@@ -339,6 +350,9 @@
             root.style.setProperty('--albumtint-glow', s.glow);
             root.style.setProperty('--albumtint-glow-soft', s.glowSoft);
             root.style.setProperty('--albumtint-lyric-glow', s.lyricGlow);
+            // Mobile art fades into the document at Safari's bars. Use the palette's real base there, rather
+            // than the darker, desaturated theme tint used for Emby's controls.
+            root.style.setProperty('--albumtint-base', hsl(s.main));
             root.classList.add('albumtint-page');
         }, function (e) {
             if (token === pageToken) { setPage(null); console.warn('[AlbumTint]', e); }

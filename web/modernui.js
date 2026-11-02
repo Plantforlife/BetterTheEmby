@@ -412,6 +412,7 @@
         watchTitle();
         updatePageArt(view, r);
         updateSpotlights();
+        homeAlbumTitles(view);
         markLoaded(view);
         setTimeout(function () { markLoaded(view); }, 1500);
     }
@@ -2181,6 +2182,63 @@
         if (bare && name.indexOf(bare) === 0) name = name.slice(bare.length).replace(/^[\s\-–—:：·]+/, '');
         return name;
     }
+    // Native home rows use the same titles as folder tabs. Their heading links identify the library;
+    // album artists and albums in other libraries can share a name, so neither names nor artists scope this.
+    function homeAlbumTitles(scope) {
+        var path = routeInfo().path;
+        if (!scope || (path !== 'home' && path !== 'home.html') || !FOLDER_TABS.some(function (c) { return !!c.strip; })) return;
+        var section = scope.closest && scope.closest('.verticalSection');
+        if (section) homeAlbumSectionTitles(section);
+        if (scope.querySelectorAll) scope.querySelectorAll('.verticalSection').forEach(homeAlbumSectionTitles);
+    }
+    function homeAlbumSectionTitles(section) {
+        var candidates = section.querySelectorAll('.itemsContainer > .card');
+        var hasTitle = Array.prototype.some.call(candidates, function (card) {
+            var item = cardItem(card);
+            return item && item.Type === 'MusicAlbum' && item.Name && FOLDER_TABS.some(function (conf) {
+                return conf.strip && gsTitle(item.Name, conf.strip) !== item.Name;
+            });
+        });
+        if (!hasTitle) return;
+        var heading = section.querySelector('.sectionTitleTextButton[href], .sectionTitleContainer a[href]');
+        var match = heading && /[?&]parentId=([^&#]+)/i.exec(heading.getAttribute('href') || '');
+        if (!match) return;
+        var id;
+        try { id = decodeURIComponent(match[1]); } catch (e) { return; }
+        var state = section.__muiAlbumTitles;
+        if (state && state.id === id) {
+            if (state.ready) applyHomeAlbumTitles(section, state.conf);
+            return;
+        }
+        state = section.__muiAlbumTitles = { id: id, ready: false, conf: null };
+        getItem(id).then(function (lib) {
+            if (section.__muiAlbumTitles !== state) return;
+            state.conf = lib.CollectionType === 'music' ? folderTabsFor(lib) : null;
+            state.ready = true;
+            if (section.isConnected) applyHomeAlbumTitles(section, state.conf);
+        }, function () {
+            if (section.__muiAlbumTitles === state) delete section.__muiAlbumTitles;
+        });
+    }
+    function applyHomeAlbumTitles(section, conf) {
+        if (!conf || !conf.strip) return;
+        section.querySelectorAll('.itemsContainer > .card').forEach(function (card) {
+            var item = cardItem(card);
+            if (!item || item.Type !== 'MusicAlbum' || !item.Name) return;
+            var title = card.querySelector('.cardText-first'), name = String(item.Name), shortened = gsTitle(name, conf.strip);
+            if (!title || !shortened || shortened === name) return;
+            // Change only the title's text node. Emby's original DTO, artist links, actions and DOM listeners
+            // stay intact, and virtual cards get this display-only change again whenever Emby refills them.
+            var texts = document.createTreeWalker(title, 4), text;
+            while ((text = texts.nextNode())) {
+                if (text.nodeValue.trim() === name) text.nodeValue = text.nodeValue.replace(name, shortened);
+            }
+            if (title.getAttribute('title') === name) title.setAttribute('title', shortened);
+            title.querySelectorAll('[title]').forEach(function (node) {
+                if (node.getAttribute('title') === name) node.setAttribute('title', shortened);
+            });
+        });
+    }
     function trackCount(al) { return al.ChildCount || al.RecursiveItemCount || 0; }
     function coverOf(al) {
         if (al.ImageTags && al.ImageTags.Primary) return { id: al.Id, tag: al.ImageTags.Primary };
@@ -2727,8 +2785,10 @@
             new MutationObserver(function (records) {
                 var cards = [], refilled = [], now = Date.now(), tabsFaded = false;
                 records.forEach(function (rec) {
+                    homeAlbumTitles(rec.target);
                     rec.addedNodes.forEach(function (n) {
                         if (n.nodeType !== 1) return;
+                        if (n.classList.contains('verticalSection') || n.querySelector('.verticalSection')) homeAlbumTitles(n);
                         if (isCardImage(n)) { checkImg(n); return; }
                         var cl = n.classList;
                         if (rec.target.classList && rec.target.classList.contains('creditsSubSections')) emptyCredits(n);

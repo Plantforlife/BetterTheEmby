@@ -22,6 +22,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 ### Music (Album Tint)
 
 - The album page, the full-screen player and the now-playing bar take the album cover's colours.
+- Phones and desktops use the same cover sample; album gradients keep inherited artist artwork out.
 - Apple-Music-style covers and lyrics: the current line glows, the others blur with distance, the list glides; bilingual LRC lines are kept together. Point at a line to see its time and click to jump there.
 - The cover flies between the now-playing bar or album page and the player.
 
@@ -35,7 +36,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 - **Series**: built from Emby collections. Put the shows and films of one franchise into a collection and they appear in release order, with cover, years, genres and overview.
 - **Artists**: one row per artist: photo, name, album count and genres, biography, and albums.
-- **Folder tabs**: for a music library organised in folders (soundtracks by game version, by region…). Each tab shows one folder's albums in folder order (numbers by value, Chinese by pinyin), as wide tiles with their first tracks. See [the format](docs/TECHNICAL.md#folder-tabs).
+- **Folder tabs**: for a music library organised in folders (soundtracks by game version, by region…). Each tab shows one folder's albums in folder order (numbers by value, Chinese by pinyin), as wide tiles with their first tracks. An optional title prefix is also omitted in that library's home album rows. See [the format](docs/TECHNICAL.md#folder-tabs).
 - **Artist pages**: photo, a blurred tint and an *About* card with the full biography. An artist without a biography is looked up when an administrator opens the page.
 - **A–Z index**: the letter bar beside a library grid shows pinyin initials A–Z instead of Chinese characters, and every letter is there (Emby lists at most 27 characters).
 
@@ -48,7 +49,8 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 ### Phones
 
-- No tab bar along the bottom; search in the top right; albums three to a row; the header's buttons float on glass; a library with many tabs scrolls them sideways.
+- No tab bar along the bottom; search in the top right; albums three to a row; floating header controls use dark glass for readable text over artwork; a library with many tabs scrolls them sideways.
+- Smaller lyrics and translations fit whole phrases on the full-screen player.
 - Calmer motion: one short fade per page.
 - Pages scroll as a whole, like an ordinary site: Safari's toolbar shrinks away as you scroll, the page goes on under the status bar and the toolbar, and a tap on the status bar goes back to the top. Each page and tab keeps its place when you come back to it.
 - **Real full screen on iPhone**: in Safari, Share → *Add to Home Screen*. Opened from the Home Screen, Emby runs without Safari's bars and the page reaches under the status bar.

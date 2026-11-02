@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2.7 — 2026-11-02
+
+- Phones: smaller full-screen lyrics and translations leave room for whole phrases; desktop sizes stay the same.
+- Album colours: phones and desktops sample the same 160 px cover at quality 90. Inherited artist backdrops stay hidden on phones too, and the document behind Safari's bars uses the gradient's actual base colour.
+- Phones: floating header buttons and tab tracks have more opaque dark surfaces, less blur and clearer text over cards and artwork.
+- Home album rows follow their music library's `stripPrefix` setting, matching folder tabs without changing album metadata or other libraries.
+
 ## 1.0.2 — 2026-11-02
 
 - Phones: pages scroll the document, like an ordinary site, so Safari shrinks its toolbar as you scroll, shows the page under the status bar and the toolbar, and goes back to the top on a tap on the status bar. Emby scrolls a container per page inside a locked document, which Safari never does any of that for; on phones that container is now let out into the document and Emby's scroller reads and moves the document instead (its virtual grids and header keep working). Each page and each tab keeps its own place. This replaces 1.0.1's containers stretched past the screen's edges, which didn't work. Emby's full-screen background layer and the empty footer are transparent now: Safari painted its status bar and toolbar solid in their colour (it does that for any fixed element with a background at the screen's edge) instead of showing the page under them. And a hidden header now leaves the screen completely: Emby keeps the strip of it under the status bar on screen, frosted, which stood over the status bar as a band nothing scrolled under.
