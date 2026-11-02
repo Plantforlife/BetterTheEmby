@@ -2241,6 +2241,11 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
         background-color: var(--mui-bar, #141414) !important;
     }
 
+    /* an album page: Album Tint sets Emby's background colour to the album's main colour, its gradient's base */
+    html.mui.mui-phonelayout.albumtint-page {
+        background-color: var(--mui-page) !important;
+    }
+
     html.mui.mui-phonelayout .backgroundContainer {
         background: transparent !important;
     }
@@ -2303,6 +2308,51 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
     min-height: 100vh;
     min-height: 100svh;
     contain: none !important;
+}
+
+/* Safari 26 gives the status bar to the page's first pinned box at the top: a hit test a few pixels below the top
+   edge, walked up to the first position:fixed or sticky element at least 90% as wide as the screen and more than
+   10px tall. Such an owner gets the status bar painted solid in its colour (sampled once, and kept, when it has no
+   plain colour), with a hairline under it; only with no owner does the page scroll on behind the clock. Emby's
+   header is such a box (fixed, full width, transparent at the top of a page), and so are the full-screen background
+   layers. Pinned boxes with pointer-events: none don't count, so the header lets taps through (its rows and buttons
+   still take them) and the background layers take none. (WebKit: LocalFrameView::fixedContainerEdges.) */
+html.mui.mui-docscroll .skinHeader {
+    pointer-events: none !important;
+}
+
+html.mui.mui-docscroll .skinHeader > * {
+    pointer-events: auto;
+}
+
+html.mui.mui-docscroll .backgroundContainer,
+html.mui.mui-docscroll .backdropContainer,
+html.mui.mui-docscroll #mui-bg,
+html.mui.mui-docscroll #albumtint-bg {
+    pointer-events: none !important;
+}
+
+/* The footer, pinned to the bottom edge, likewise: only the now-playing bar in it takes taps. */
+html.mui.mui-docscroll .appfooter {
+    pointer-events: none !important;
+}
+
+html.mui.mui-docscroll .appfooter > * {
+    pointer-events: auto;
+}
+
+/* Safari 26 also clips pinned boxes to the screen between its bars, whatever their offsets: the blurred art can't
+   reach behind the status bar or the toolbar, where the page's own colour shows (--mui-bar, the dimmed colour of the
+   top of that art) with the content scrolling over it. So the art fades into that colour toward both edges, and the
+   strips behind the bars carry on from it instead of starting as a band (the toolbar's strip grows and shrinks with
+   it). */
+html.mui.mui-docscroll #mui-bg,
+html.mui.mui-docscroll #albumtint-bg {
+    top: 0 !important;
+    bottom: 0 !important;
+    height: auto !important;
+    -webkit-mask-image: linear-gradient(to bottom, transparent env(safe-area-inset-top, 0px), #000 calc(env(safe-area-inset-top, 0px) + 16vh), #000 calc(100% - 18vh), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent env(safe-area-inset-top, 0px), #000 calc(env(safe-area-inset-top, 0px) + 16vh), #000 calc(100% - 18vh), transparent 100%);
 }
 
 /* Emby hides its header by sliding it up all but the strip under the status bar
