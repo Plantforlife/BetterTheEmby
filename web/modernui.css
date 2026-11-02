@@ -1190,7 +1190,8 @@ html.mui .mui-hashero .overview-text {
 html.mui-fly-detail .itemView:not(.hide) .detailImageContainer-main .card,
 .mui-fly-target .cardImageContainer,
 .mui-fly-target .cardOverlayContainer,
-.mui-fly-target .listItemImage {
+.mui-fly-target .listItemImage,
+.mui-fly-target .mui-gs-cover {
     opacity: 0 !important;
 }
 
