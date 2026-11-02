@@ -2227,12 +2227,17 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
         width: 33.333% !important;
     }
 
-    /* Safari (26) fills its status bar and toolbar with the colour of the page and of fixed elements at the
-       screen's edges (Emby's full-screen background layer, the footer). They take the colour of the top of the
-       page's art (--mui-bar, set with theme-color) instead of solid black, so the bars blend into the page. */
-    html.mui.mui-phonelayout,
-    html.mui.mui-phonelayout .backgroundContainer {
+    /* Safari (26) paints its status bar and toolbar solid in the background colour of a position:fixed element at
+       the screen's edge (Emby's full-screen background layer is one, top to bottom), and only without one does it
+       show the scrolled page under them. So that layer stays transparent, and the colour of the top of the page's
+       art (--mui-bar) goes to the page itself: Safari shows it in the status bar at the very top of a page and when
+       the page is pulled past its ends. */
+    html.mui.mui-phonelayout {
         background-color: var(--mui-bar, #141414) !important;
+    }
+
+    html.mui.mui-phonelayout .backgroundContainer {
+        background: transparent !important;
     }
 
     /* iOS doesn't count the strips under the status bar and the toolbar as part of the viewport, but still draws
@@ -2245,10 +2250,23 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
         height: auto !important;
     }
 
-    /* (while music plays, the footer carries the player bar in the album's colour, see albumtint.js) */
-    html.mui.mui-phonelayout:not(.albumtint-footer) .appfooter {
+    /* The footer is fixed to the bottom edge as well: with nothing playing it holds nothing (the tab bar is gone)
+       and has no colour, so Safari's toolbar shows the page; with the now-playing bar it takes the page's colour
+       (or, while music plays, the album's, see albumtint.js), and the toolbar the bar's. */
+    html.mui.mui-phonelayout .appfooter {
+        background: transparent !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border-top-color: transparent !important;
+    }
+
+    html.mui.mui-phonelayout:not(.albumtint-footer) .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)) {
         background-color: var(--mui-bar, #141414) !important;
         transition: background-color .9s ease;
+    }
+
+    html.mui.mui-phonelayout.albumtint-footer .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)) {
+        background-color: var(--albumtint-footer) !important;
     }
 }
 
