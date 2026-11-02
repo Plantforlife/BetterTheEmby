@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.9 — 2026-11-02
+
+- Option menus of selects (version, audio, subtitles): the strip in front of each entry, kept free for the check mark, is 2.6em wide instead of Emby's 3.99em, so the text starts closer to the left edge.
+
 ## 1.0.2.8 — 2026-11-02
 
 - Detail pages: the **Version** picker shows what comes after the first " - " of each version's name ("天气之子 - 4K BluRay-Remux … - Xcat" becomes "4K BluRay-Remux … - Xcat"), leaving off the title the name starts with and the page shows already. It covers the closed picker and its menu. New setting **Short version names** (on by default). A name with no " - ", or with nothing after it, stays as it is.

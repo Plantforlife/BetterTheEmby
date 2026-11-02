@@ -2567,3 +2567,10 @@ html.mui.mui-docscroll .page.scrollFrameY[data-bindheader="true"]:not(.hide):not
     overflow: visible !important;
     contain: none !important;
 }
+
+/* Option menus of selects (version, audio, subtitles): Emby reserves 3.99em in front of each entry for the check
+   mark, with the mark centred in it, which left a wide empty strip before the text. 2.6em is enough. (Menus with
+   cover pictures use other classes.) */
+html.mui .actionSheetItemImageContainer-customwidth:not(.d):not(.d) {
+    width: 2.6em !important;
+}
