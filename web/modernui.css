@@ -2310,29 +2310,86 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
     contain: none !important;
 }
 
-/* Safari 26 gives the status bar to the page's first pinned box at the top: a hit test a few pixels below the top
-   edge, walked up to the first position:fixed or sticky element at least 90% as wide as the screen and more than
-   10px tall. Such an owner gets the status bar painted solid in its colour (sampled once, and kept, when it has no
-   plain colour), with a hairline under it; only with no owner does the page scroll on behind the clock. Emby's
-   header is such a box (fixed, full width, transparent at the top of a page), and so are the full-screen background
-   layers. Pinned boxes with pointer-events: none don't count, so the header lets taps through (its rows and buttons
-   still take them) and the background layers take none. (WebKit: LocalFrameView::fixedContainerEdges.) */
-html.mui.mui-docscroll .skinHeader {
-    pointer-events: none !important;
+/* Behind Safari 26's status bar and toolbar WebKit puts a solid fill whenever it finds a "fixed container" at that edge
+   (LocalFrameView::fixedContainerEdges): it hit-tests a point 4px inside the edge, ignoring pointer-events, and walks
+   up from what it hits to the first position:fixed or sticky box at least 90% as wide as the screen. The fill takes
+   that box's background colour (with a backdrop filter: the page's colour), or else a colour sampled from the page;
+   only without such a box does the page show behind the clock and the toolbar. The top edge is sampled only until the
+   page is first scrolled or touched, and an edge once found is kept for as long as its box is rendered and
+   visibility: visible, so in a single-page app like Emby the header found at start held the status bar for good. A
+   box with visibility: hidden is neither hit nor kept, and counts as hidden as long as what it shows paints on
+   layers of its own. So on phones Emby's header and the full-screen background layers are visibility: hidden from
+   the start; the header's rows (given layers by position: relative) and the layers' pictures stay visible, and the
+   header's background moves to its ::after. */
+@media (max-width: 40em) {
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader),
+    html.mui.mui-phonelayout .backgroundContainer,
+    html.mui.mui-phonelayout .backdropContainer,
+    html.mui.mui-phonelayout #mui-bg,
+    html.mui.mui-phonelayout #albumtint-bg {
+        visibility: hidden !important;
+    }
+
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) > *,
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader)::before,
+    html.mui.mui-phonelayout .backdropContainer > *,
+    html.mui.mui-phonelayout #mui-bg > *,
+    html.mui.mui-phonelayout #mui-bg::after,
+    html.mui.mui-phonelayout #albumtint-bg > * {
+        visibility: visible;
+    }
+
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) > * {
+        position: relative;
+    }
+
+    /* the header box paints nothing itself (hidden, it couldn't); its background is drawn by ::after */
+    html.mui.mui-phonelayout .skinHeader.skinHeader.skinHeader:not(.videoOsdHeader) {
+        background: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+    }
+
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader)::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        visibility: visible;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .3s ease;
+    }
+
+    html.mui.mui-phonelayout .skinHeader-withBackground.headroom-scrolling:not(.videoOsdHeader)::after {
+        opacity: 1;
+        background: var(--header-background);
+    }
+
+    html.mui.mui-phonelayout .skinHeader-withBackground.skinHeader-withbackdropfilter.headroom-scrolling:not(.semiTransparent):not(.videoOsdHeader)::after {
+        background: var(--header-blur-background);
+        -webkit-backdrop-filter: blur(4em) saturate(2.1);
+        backdrop-filter: blur(4em) saturate(2.1);
+    }
+
+    html.mui.mui-phonelayout.theme-dark .skinHeader.headroom-scrolling:not(.videoOsdHeader)::after {
+        opacity: 1;
+        background: rgba(14, 14, 16, .58);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        backdrop-filter: blur(24px) saturate(180%);
+        box-shadow: 0 1px 0 rgba(255, 255, 255, .06), 0 12px 32px rgba(0, 0, 0, .28);
+    }
+
+    html.mui.mui-phonelayout.theme-dark .skinHeader.headroom-hidden:not(.videoOsdHeader)::after,
+    html.mui.mui-phonelayout .skinHeader.skinHeader.headroom-hidden:not(.videoOsdHeader)::after {
+        opacity: 0;
+    }
 }
 
-html.mui.mui-docscroll .skinHeader > * {
-    pointer-events: auto;
-}
-
-html.mui.mui-docscroll .backgroundContainer,
-html.mui.mui-docscroll .backdropContainer,
-html.mui.mui-docscroll #mui-bg,
-html.mui.mui-docscroll #albumtint-bg {
-    pointer-events: none !important;
-}
-
-/* The footer, pinned to the bottom edge, likewise: only the now-playing bar in it takes taps. */
+/* The footer, pinned to the bottom edge, shows nothing while nothing plays: transparent and without children it
+   counts as hidden, and with pointer-events: none WebKit then looks again past it, at the page. (While the
+   now-playing bar is up, the toolbar takes the bar's colour, which suits it.) */
 html.mui.mui-docscroll .appfooter {
     pointer-events: none !important;
 }
