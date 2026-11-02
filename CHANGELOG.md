@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 — 2026-11-02
+
+- Phones: pages scroll the document, like an ordinary site, so Safari shrinks its toolbar as you scroll, shows the page under the status bar and the toolbar, and goes back to the top on a tap on the status bar. Emby scrolls a container per page inside a locked document, which Safari never does any of that for; on phones that container is now let out into the document and Emby's scroller reads and moves the document instead (its virtual grids and header keep working). Each page and each tab keeps its own place. This replaces 1.0.1's containers stretched past the screen's edges, which didn't work.
+- Page changes (Anime → Movies and so on) no longer twitch: cards no longer flash for one frame before rising in (Emby fills its grids inside an animation frame, and the reveal started a frame late); a page that Emby is still filling in (its tabs, a detail page's facts, the home page's rows and banner) waits, invisible, until it is in place and comes in once instead of shifting under its own fade (at most 450 ms); cards already there come in with the page instead of rising in after it; a header title or tab bar that is fading in isn't thrown back to transparent when Emby sets it again.
+- Phones: no cards rise in at all (a grid's first fill counted as a new sort and still made them rise).
+- A tab switch slides the tab's content, not the tab, so the A–Z index stays put.
+- Settings page: Chinese only, with English to pick at the top (remembered in the browser), instead of both languages on every line.
+
 ## 1.0.1 — 2026-11-02
 
 - iPhone / Safari: the status bar and toolbar take the colour of the page's art instead of showing black bands (Safari 26 extends the colour of the page and of edge elements into its bars).

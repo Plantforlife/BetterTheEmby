@@ -94,6 +94,9 @@
         }
         hooked = true;
         patchLibraryTabs();
+        if (SETTINGS.phoneLayout !== false && window.Emby && typeof Emby.importModule === 'function') {
+            patchScroller().then(function (ok) { docReady = !!ok; syncDocScroll(); }, function (e) { console.warn('[ModernUI] scroller', e); });
+        }
         window.require(['playbackManager', 'events'], function (p, ev) {
             pm = p && p.default ? p.default : p;
             events = ev && ev.default ? ev.default : ev;
@@ -153,10 +156,20 @@
 
     // ---------- motion helpers ----------
 
+    // A fade with no movement leaves transform alone: any transform, even translateY(0), makes the element the
+    // frame of its position:fixed children (the A-Z index of a library), which would jump while it runs.
     function rise(target, delay, dy, ms) {
         if (!target || reduceMotion || !target.animate) return null;
-        return target.animate([{ opacity: 0, transform: 'translateY(' + (dy || 0) + 'px)' }, { opacity: 1, transform: 'none' }],
-            { duration: ms || 360, delay: delay || 0, easing: EASE, fill: 'backwards' });
+        var frames = dy ? [{ opacity: 0, transform: 'translateY(' + dy + 'px)' }, { opacity: 1, transform: 'none' }] : [{ opacity: 0 }, { opacity: 1 }];
+        return target.animate(frames, { duration: ms || 360, delay: delay || 0, easing: EASE, fill: 'backwards' });
+    }
+    // fades something in, unless it is fading in already: starting over would throw it back to transparent for a
+    // few frames (a header title Emby sets twice, say)
+    function fadeIn(target, dy, ms) {
+        if (!target) return;
+        var a = target.__muiFade;
+        if (a && a.playState === 'running') return;
+        target.__muiFade = rise(target, 0, dy, ms);
     }
     function slide(target, dx, ms) {
         if (!target || reduceMotion || !target.animate) return null;
@@ -183,6 +196,8 @@
     function onViewShow(e) {
         var view = e.target;
         if (!view || !view.classList) return;
+        // phones: the page comes back where it was left, a new one starts at the top (see "the document scrolls")
+        if (docScroll && view.classList.contains('page')) docRestore((e.detail || {}).isRestored ? pageFrame(view) : null);
         // dashboard pages (settings, plugins) aren't views: they get no art, and the last page's goes
         if (!view.classList.contains('view')) {
             if (view.classList.contains('page')) {
@@ -202,17 +217,17 @@
         if (detail && !restored) carryHero(view);
         var flying = startFlight(view, r, back, isOsd);
         // Album Tint animates the way into and out of the music player
-        var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio();
+        var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio(), entrance = [];
         if (!albumTint && !isOsd && isPhone()) {
-            if (!restored) rise(view, 0, 0, firstView ? 260 : 200);
+            if (!restored) entrance.push(rise(view, 0, 0, firstView ? 260 : 200));
         } else if (!albumTint && !isOsd) {
             if (wasOsd || firstView) {
                 // leaving the video player (Emby brings back the page, the header and the drawer at once), or
                 // the first page after start: the three fade in together
                 var ms = firstView ? 460 : 340;
-                rise(view, 0, 0, ms);
-                rise(document.querySelector('.skinHeader'), 0, 0, ms);
-                rise(document.querySelector('.mainDrawer'), 0, 0, ms);
+                entrance.push(rise(view, 0, 0, ms));
+                entrance.push(rise(document.querySelector('.skinHeader'), 0, 0, ms));
+                entrance.push(rise(document.querySelector('.mainDrawer'), 0, 0, ms));
             } else {
                 // Back where it came from: going forward a page comes up into place; going back, the page we return
                 // to comes down into place, from where it had gone (a poster in flight already says where it goes,
@@ -220,18 +235,73 @@
                 // the content moves: its backdrop stays still (it may be the very one the last page had).
                 var dy = flying || detail ? 0 : back ? -12 : 14;
                 var parts = detail ? Array.prototype.filter.call(view.children, function (c) { return !c.classList.contains('mui-hero'); }) : [view];
-                parts.forEach(function (p) { rise(p, 0, dy, restored ? 220 : 300); });
+                parts.forEach(function (p) { entrance.push(rise(p, 0, dy, restored ? 220 : 300)); });
             }
         }
         firstView = false;
-        if (!restored && !isOsd && !isPhone()) {
+        // the cards of the last page don't rise in on this one; this page's rise in with it (holdEntrance)
+        revealUntil = 0;
+        revealPending = [];
+        var reveal = !restored && !isOsd && !isPhone();
+        if (reveal && r.path === 'item') choreo = { view: view, until: Date.now() + 4000 };
+        if (restored) entrance = [];
+        holdEntrance(view, r, entrance, function () {
+            if (!reveal) return;
             revealCards(view);
-            if (r.path === 'item') {
-                choreo = { view: view, until: Date.now() + 4000 };
-                checkChoreo();
-            }
-        }
+            checkChoreo();
+        });
         setTimeout(function () { afterShow(view, r); }, 0);
+    }
+
+    // A page Emby is still filling in moves under its own fade: its tabs come a frame later, a detail page's facts
+    // and buttons when the item arrives, the home page's rows and banner after that. So its entrance is held at its
+    // first frame (invisible) until what it waits for is there and its size has stayed put for a moment, then
+    // plays: the page comes in once, already in place. A page that is already complete (one we come back to) and
+    // a slow server don't wait: at most HOLD_MS.
+    var HOLD_MS = 450, SETTLE_MS = 70, holding = 0;
+    function holdEntrance(view, r, anims, done) {
+        anims = anims.filter(Boolean);
+        var over = false, last = null, since = 0, cap = 0;
+        function release() {
+            if (over) return;
+            over = true;
+            clearTimeout(cap);
+            holding = Math.max(0, holding - 1);
+            view.__muiHold = false;
+            anims.forEach(function (a) { try { a.play(); } catch (e) { } });
+            if (done) done();
+        }
+        if (!anims.length) { release(); return; }
+        anims.forEach(function (a) { a.pause(); });
+        holding++;
+        view.__muiHold = true;
+        cap = setTimeout(release, HOLD_MS);
+        (function frame(now) {
+            if (over) return;
+            if (!view.isConnected || view.classList.contains('hide')) { release(); return; }
+            if (pageReady(view, r)) {
+                var size = pageSize(view);
+                if (size !== last) { last = size; since = now || performance.now(); }
+                else if ((now || performance.now()) - since >= SETTLE_MS) { release(); return; }
+            }
+            requestAnimationFrame(frame);
+        })();
+    }
+    function pageReady(view, r) {
+        if (r.path === 'item') {
+            var name = view.querySelector('.detailTextContainer .itemName-primary');
+            return !!(name && name.textContent.trim());
+        }
+        if (view.classList.contains('withTabs')) {
+            if (!view.querySelector('.tabContent.is-active')) return false;
+            var spot = spotlightTarget(); // a page with a banner waits for its rows and the banner
+            return !spot || (!spot.pending && !!spot.sections.querySelector(':scope > .mui-spotlight'));
+        }
+        return true;
+    }
+    function pageSize(view) {
+        var f = pageFrame(view) || view, header = document.querySelector('.skinHeader');
+        return f.scrollHeight + 'x' + f.scrollWidth + '|' + (header ? header.offsetHeight : 0);
     }
 
     function afterShow(view, r) {
@@ -245,11 +315,13 @@
     }
 
     // Detail pages: the poster and the lines of text come in one after another once Emby has filled them in.
-    // Also called from the DOM observer, so it runs before the filled-in page is first painted.
+    // Also called from the DOM observer, so it runs before the filled-in page is first painted; not while the page
+    // is held (holdEntrance runs it when the page comes in).
     function checkChoreo() {
         if (!choreo) return;
         var view = choreo.view;
         if (Date.now() > choreo.until || !view.isConnected) { choreo = null; return; }
+        if (view.__muiHold) return;
         var name = view.querySelector('.detailTextContainer .itemName-primary');
         if (!name || !name.textContent.trim()) return;
         choreo = null;
@@ -299,12 +371,21 @@
         tabsQueued = requestAnimationFrame(function () { tabsQueued = 0; syncTabs(false); });
     }
 
+    // phones: the tab we leave keeps its place in the document (see "the document scrolls")
+    function onBeforeTabChange(e) {
+        var bar = e.target;
+        if (docScroll && bar && bar.classList && bar.classList.contains('tabs-viewmenubar')) docSave(pageFrame());
+    }
+
     // a tab switch: the new tab's content slides in from the side of the tab that was picked
     function onTabChange(e) {
         setTimeout(function () { syncTabs(false); updateSpotlights(); updatePageArt(); }, 0);
         var d = e.detail || {}, bar = e.target, to = d.selectedTabIndex, from = d.previousIndex;
-        if (!bar || !bar.classList || !bar.classList.contains('tabs-viewmenubar') || reduceMotion || !window.MutationObserver) return;
+        if (!bar || !bar.classList || !bar.classList.contains('tabs-viewmenubar')) return;
         if (to == null || from == null || +from < 0 || +to === +from) return;
+        // Emby has made the new tab active by now: it comes back where it was left
+        if (docScroll) docRestore(pageFrame());
+        if (reduceMotion || !window.MutationObserver) return;
         var view = document.querySelector('.view.withTabs:not(.hide)');
         if (!view) return;
         var dx = (+to > +from ? 1 : -1) * 18, done = false;
@@ -313,7 +394,8 @@
             // one movement: the cards it brings (or Emby builds again) come with it, they don't rise in as well
             revealUntil = 0;
             revealPending = [];
-            slide(c, isPhone() ? dx / 2 : dx, isPhone() ? 200 : 260);
+            // its content moves, not the tab itself, whose A-Z index is fixed to the screen
+            slide(c.querySelector(':scope > .scrollSlider, :scope > .mui-tabbody') || c, isPhone() ? dx / 2 : dx, isPhone() ? 200 : 260);
         }
         // Emby has usually activated the content already (between beforetabchange and tabchange, in this same
         // task, so nothing has been painted yet)
@@ -383,7 +465,7 @@
             var sig = t.className + '|' + t.textContent;
             if (sig === titleSig) return;
             titleSig = sig;
-            rise(t, 0, 5, 320);
+            fadeIn(t, 5, 320);
         }).observe(t, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     }
 
@@ -397,22 +479,24 @@
         if (scope && scope.querySelectorAll) scope.querySelectorAll('img.cardImage:not(.mui-ld)').forEach(checkImg);
     }
 
-    var revealUntil = 0, revealPending = [], revealFrame = 0, revealSeen = typeof WeakSet === 'function' ? new WeakSet() : null;
+    var revealUntil = 0, revealPending = [], revealSeen = typeof WeakSet === 'function' ? new WeakSet() : null;
     var lastScroll = 0, lastPick = 0;
     function revealCards(view) {
         if (reduceMotion || !document.body.animate) return;
         revealUntil = Date.now() + 2500;
         queueReveal(view.querySelectorAll('.card'));
     }
+    // The cards start rising at once, not a frame later: Emby's virtual grids fill their cards inside an animation
+    // frame, and a reveal put off to the next one let that frame paint them fully shown, after which they dropped
+    // back to transparent and rose (a flash, then the same cards again).
     function queueReveal(cards, again) {
         for (var i = 0; i < cards.length; i++) {
             if (again && revealSeen) revealSeen.delete(cards[i]);
             revealPending.push(cards[i]);
         }
-        if (!revealFrame) revealFrame = requestAnimationFrame(flushReveal);
+        flushReveal();
     }
     function flushReveal() {
-        revealFrame = 0;
         var vh = window.innerHeight, vw = window.innerWidth, batch = [];
         revealPending.forEach(function (card) {
             if (!card.isConnected || (revealSeen && revealSeen.has(card))) return;
@@ -521,7 +605,10 @@
     }
     function onViewBeforeHide(e) {
         var view = e.target;
-        if (!view || !view.classList || !view.classList.contains('itemView')) return;
+        if (!view || !view.classList) return;
+        // phones: where the page was left, for when it comes back (see "the document scrolls")
+        if (docScroll && view.classList.contains('page')) docSave(pageFrame(view));
+        if (!view.classList.contains('itemView')) return;
         flyBack = posterSpot(view);
         rememberHero(view);
     }
@@ -1437,7 +1524,7 @@
         var state = view.__muiParallax = { hero: hero, frame: 0 };
         function apply() {
             state.frame = 0;
-            var st = view.scrollTop, h = state.hero.offsetHeight || 1;
+            var st = docScroll ? docY() : view.scrollTop, h = state.hero.offsetHeight || 1;
             if (st > h * 1.2) { state.hero.style.opacity = '0'; return; }
             state.hero.style.transform = reduceMotion ? '' : 'translate3d(0,' + (st * 0.38).toFixed(1) + 'px,0)';
             state.hero.style.opacity = Math.max(0, 1 - st / (h * 0.9)).toFixed(3);
@@ -1842,7 +1929,11 @@
     };
     MuiTab.prototype.onPause = function () { };
     MuiTab.prototype.destroy = function () { if (this.io) this.io.disconnect(); this.view = this.body = null; };
-    MuiTab.prototype.scrollToBeginning = function () { if (this.view) this.view.scrollTop = 0; };
+    MuiTab.prototype.scrollToBeginning = function () {
+        if (!this.view) return;
+        if (docScroll) docScrollTo(0, 'smooth');
+        else this.view.scrollTop = 0;
+    };
     MuiTab.prototype.hasFocus = function () { return false; };
     MuiTab.prototype.autoFocus = function () { return false; };
     MuiTab.prototype.refresh = function () { return Promise.resolve(); };
@@ -2260,6 +2351,95 @@
         page();
     });
 
+    // ---------- phones: the document scrolls, the way an ordinary site does ----------
+
+    // Safari shrinks its toolbar as a page scrolls, shows the page under the status bar and the toolbar, and goes
+    // back to the top on a tap on the status bar, but only while the document itself scrolls (Chrome on Android
+    // hides its address bar the same way). Emby locks the document and scrolls a container per page instead: the
+    // page itself or its tab, an emby-scroller marked data-bindheader. On phones that container is let out into the
+    // document (modernui.css, html.mui-docscroll) and its scroller is told so: positions, sizes and scrolling go to
+    // the document, and the document's scroll events go on to the container, where Emby's virtual grids and its
+    // header listen. Each page and each tab keeps its own place, as it did in its own container.
+    var FRAME = '.scrollFrameY[data-bindheader="true"]';
+    var docEl = document.scrollingElement || document.documentElement, docScroll = false, docReady = false;
+    function docY() { return Math.max(0, docEl.scrollTop); }
+    function docScrollTo(y, behavior) {
+        y = Math.max(0, Math.round(y || 0));
+        try { docEl.scrollTo({ top: y, behavior: behavior || 'instant' }); } catch (e) { docEl.scrollTop = y; }
+    }
+    function docSave(frame) { if (frame) frame.__muiDocY = docY(); }
+    function docRestore(frame) { docScrollTo(frame && frame.__muiDocY || 0); }
+    // what scrolls a page: the page itself, or its active tab (one of Emby's or one of ours)
+    function pageFrame(page) {
+        page = page || document.querySelector('.page:not(.hide):not(.dialog)');
+        if (!page || !page.matches) return null;
+        if (page.matches(FRAME)) return page;
+        return page.querySelector(':scope > .tabContent.is-active') || page.querySelector(':scope > ' + FRAME);
+    }
+    function isDocScroller(s) {
+        var f = s && s.frame;
+        return docScroll && !!f && !(s.options && s.options.horizontal) && f.getAttribute('data-bindheader') === 'true' && !f.closest('.dialog');
+    }
+    // Emby's scroller (smoothscroller.js), for the containers that scroll pages. Scrolling to an element (focus
+    // scrolling, for keyboards and remotes) goes through slideTo and does nothing there; touch doesn't use it.
+    function patchScroller() {
+        return Emby.importModule('./modules/scroller/smoothscroller.js').then(function (m) {
+            var proto = (m && m.default || m).prototype;
+            if (!proto || typeof proto.getScrollTop !== 'function') return false;
+            if (proto.__muiDoc) return true;
+            proto.__muiDoc = true;
+            function over(name, fn) {
+                var own = proto[name];
+                if (typeof own === 'function') proto[name] = function () { return isDocScroller(this) ? fn.apply(this, arguments) : own.apply(this, arguments); };
+            }
+            over('getScrollTop', docY);
+            over('getLastScrollTop', docY);
+            over('getScrollHeight', function () { return docEl.scrollHeight; });
+            // the screen, where the container's box was: Emby's virtual grids measure what is in view against it
+            over('getScrollContainerBoundingClientRect', function () {
+                var f = this.frame.getBoundingClientRect(), h = Math.max(window.innerHeight, docEl.clientHeight);
+                return { left: f.left, right: f.right, width: f.width, x: f.left, top: 0, y: 0, bottom: h, height: h };
+            });
+            over('scrollToPosition', function (pos) {
+                var top = pos && (pos.position != null ? pos.position : pos.top);
+                if (top != null) docScrollTo(top, pos.behavior || 'smooth');
+                return Promise.resolve();
+            });
+            over('scrollBy', function (delta) { if (delta) docScrollTo(docY() + delta); });
+            return true;
+        });
+    }
+    function onDocScroll() {
+        if (!docScroll) return;
+        var f = pageFrame();
+        if (f) f.dispatchEvent(new Event('scroll'));
+    }
+    // the page's scrolling moves between the document and its container (at start, and when a phone turns
+    // sideways, which is no phone layout any more): it keeps its place, and Emby's scrollers and virtual grids
+    // measure again
+    function syncDocScroll() {
+        var on = docReady && isPhone();
+        if (on === docScroll) return;
+        var f = pageFrame(), y = f ? (docScroll ? docY() : f.scrollTop) : 0;
+        docScroll = on;
+        root.classList.toggle('mui-docscroll', on);
+        if (on) {
+            if (f) f.scrollTop = 0;
+            docScrollTo(y);
+        } else {
+            docScrollTo(0);
+            if (f) f.scrollTop = y;
+        }
+        document.querySelectorAll(FRAME).forEach(function (fr) {
+            if (fr.scroller && typeof fr.scroller.notifyResized === 'function') fr.scroller.notifyResized();
+            fr.querySelectorAll('.itemsContainer').forEach(function (ic) {
+                var vs = ic.scroller;
+                if (vs && typeof vs._scrollTargetSizeChanged === 'function') vs._scrollTargetSizeChanged([]);
+            });
+        });
+        if (f) f.dispatchEvent(new Event('scroll'));
+    }
+
     // ---------- video player: play / pause feedback ----------
 
     var lastInput = 0;
@@ -2315,7 +2495,13 @@
         document.addEventListener('viewshow', onViewShow, true);
         document.addEventListener('viewbeforehide', onViewBeforeHide, true);
         document.addEventListener('viewhide', function () { setTimeout(updateSpotlights, 0); }, true);
+        document.addEventListener('beforetabchange', onBeforeTabChange, true);
         document.addEventListener('tabchange', onTabChange, true);
+        window.addEventListener('scroll', onDocScroll, { passive: true });
+        if (phoneQuery) {
+            if (phoneQuery.addEventListener) phoneQuery.addEventListener('change', syncDocScroll);
+            else if (phoneQuery.addListener) phoneQuery.addListener(syncDocScroll);
+        }
         window.addEventListener('hashchange', function () { setTimeout(updateSpotlights, 50); });
         window.addEventListener('resize', function () { queueTabs(); queueNav(); });
         document.addEventListener('load', onImageEvent, true);
@@ -2353,7 +2539,7 @@
                         // a new set of header tabs (another page) fades in, before it is first painted
                         if (!tabsFaded && (cl.contains('emby-tab-button') || (n.firstElementChild && n.querySelector('.emby-tab-button')))) {
                             var bar = n.closest('.tabs-viewmenubar');
-                            if (bar) { tabsFaded = true; rise(bar.querySelector('.emby-tabs-slider') || bar, 0, 0, 320); }
+                            if (bar) { tabsFaded = true; fadeIn(bar.querySelector('.emby-tabs-slider') || bar, 0, 320); }
                         }
                         if (!n.firstElementChild) return;
                         n.querySelectorAll('img.cardImage').forEach(checkImg);
@@ -2366,8 +2552,9 @@
                 });
                 if (cards.length) queueReveal(cards);
                 // A virtual grid reuses its cards. A whole batch refilled while nobody scrolls is a new sort or
-                // filter (or data that arrived late), not scrolling: those rise in again.
-                if (refilled.length) {
+                // filter (or data that arrived late), not scrolling: those rise in again. Not on phones (no cards
+                // rise in there), nor while a page waits to come in (its cards come with it).
+                if (refilled.length && !isPhone() && !holding) {
                     if (now < revealUntil) queueReveal(refilled);
                     else if (refilled.length >= 6 && (now - lastScroll > 300 || now - lastPick < 1500)) queueReveal(refilled, true);
                 }

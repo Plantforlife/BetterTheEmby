@@ -2245,36 +2245,50 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
         height: auto !important;
     }
 
-    /* The page scrolls under Safari's bars, the way an ordinary site does: Emby scrolls inside a container per page
-       (.scrollFrameY: the page itself or its tab), not the document, so that container reaches past both edges
-       into those strips and starts its content as much lower again. Scrolled content then passes under the status
-       bar and the toolbar; at the top the strip shows the page's art. */
-    html.mui.mui-phonelayout {
-        --mui-edge-top: 64px;
-        --mui-edge-bottom: 104px;
-    }
-
-    html.mui.mui-phonelayout .view.scrollFrameY,
-    html.mui.mui-phonelayout .view .scrollFrameY,
-    html.mui.mui-phonelayout .page.scrollFrameY {
-        top: calc(-1 * var(--mui-edge-top)) !important;
-        bottom: calc(-1 * var(--mui-edge-bottom)) !important;
-        height: auto !important;
-        box-sizing: border-box;
-        padding-top: var(--mui-edge-top) !important;
-        padding-bottom: var(--mui-edge-bottom) !important;
-        scroll-padding-top: var(--mui-edge-top);
-    }
-
-    /* the banner reaches up under the status bar too (its text sits at its bottom, where it was) */
-    html.mui.mui-phonelayout .mui-spotlight {
-        margin-top: calc(-1 * (var(--mui-pull, 0px) + var(--mui-edge-top)));
-        height: calc(clamp(420px, 72vh, 640px) + var(--mui-edge-top));
-    }
-
     /* (while music plays, the footer carries the player bar in the album's colour, see albumtint.js) */
     html.mui.mui-phonelayout:not(.albumtint-footer) .appfooter {
         background-color: var(--mui-bar, #141414) !important;
         transition: background-color .9s ease;
     }
+}
+
+/* Phones: the page scrolls the document, the way an ordinary site does (html.mui-docscroll, which modernui.js sets
+   on phones once Emby's scroller knows about it). Safari then shrinks its toolbar as the page scrolls, shows the page
+   under the status bar and the toolbar, and goes back to the top on a tap on the status bar; it does none of that
+   while a container inside a locked document scrolls, which is how Emby works. So the document is unlocked, and
+   the page and what scrolls it (the page itself, or its active tab) are let out of their full-screen boxes into
+   the flow of the document. Pages Emby has hidden (display: none) and dialogs stay as they are. */
+html.mui.mui-docscroll:not(.withDialogOpen) {
+    overflow-y: auto !important;
+}
+
+html.mui.mui-docscroll,
+html.mui.mui-docscroll body {
+    height: auto !important;
+}
+
+html.mui.mui-docscroll body {
+    overflow: visible !important;
+    overflow-x: clip !important;
+    contain: none !important;
+}
+
+html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY[data-bindheader="true"], :has(> .scrollFrameY[data-bindheader="true"])) {
+    position: relative !important;
+    top: auto !important;
+    bottom: auto !important;
+    min-height: 100vh;
+    min-height: 100svh;
+    contain: none !important;
+}
+
+html.mui.mui-docscroll .page:not(.hide):not(.dialog) > .tabContent.is-active,
+html.mui.mui-docscroll .page:not(.hide):not(.dialog) > .scrollFrameY[data-bindheader="true"],
+html.mui.mui-docscroll .page.scrollFrameY[data-bindheader="true"]:not(.hide):not(.dialog) {
+    position: relative !important;
+    top: auto !important;
+    bottom: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+    contain: none !important;
 }

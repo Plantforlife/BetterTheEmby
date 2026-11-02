@@ -50,7 +50,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 - No tab bar along the bottom; search in the top right; albums three to a row.
 - Calmer motion: one short fade per page.
-- Pages scroll under Safari's status bar and toolbar like an ordinary site, with no bands above or below.
+- Pages scroll as a whole, like an ordinary site: Safari's toolbar shrinks away as you scroll, the page goes on under the status bar and the toolbar, and a tap on the status bar goes back to the top. Each page and tab keeps its place when you come back to it.
 - **Real full screen on iPhone**: in Safari, Share → *Add to Home Screen*. Opened from the Home Screen, Emby runs without Safari's bars and the page reaches under the status bar.
 
 ### Metadata: NetEase Cloud Music and Apple Music
