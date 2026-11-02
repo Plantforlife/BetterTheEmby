@@ -31,7 +31,7 @@ define(['loading', 'emby-input', 'emby-button', 'emby-checkbox', 'emby-textarea'
         shortVersionNamesDesc: 'A detail page\'s version picker shows what comes after the first " - " of each name, leaving off the title it starts with.',
         search: 'Search',
         smartSearch: 'Title search',
-        smartSearchDesc: 'Shows, films and albums; an episode or song only when its own name matches.',
+        smartSearchDesc: 'Shows, films, albums and album artists; albums also match their album artist. Episodes and songs match only their own name.',
         pinyinSearch: 'Pinyin search',
         pinyinSearchDesc: 'Full pinyin or initials (gdyg → 孤独摇滚), with n and l alike.',
         pinyinIndex: 'Pinyin A–Z index',

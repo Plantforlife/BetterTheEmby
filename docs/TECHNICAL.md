@@ -228,11 +228,12 @@ A video with several files (versions) has a *Version* picker on its detail page:
 
 `SearchView.prototype.fetchSections` (`./search/search.js`) is replaced for any search with text:
 
-- Shows, films and albums come from a list of them fetched once (per library, kept 10 minutes) and matched in the browser: name or original title contains the search (best), then pinyin initials, then full pinyin. `n` and `l` count as the same sound on both sides. Typing `gdyg` or `guduyaogun` finds 孤独摇滚.
+- Shows, films and albums come from a list of them fetched once (per library, kept 10 minutes) and matched in the browser: name or original title contains the search (best), then pinyin initials, then full pinyin. Albums also match their `AlbumArtists` names (`AlbumArtist` as a fallback), with a lower score than an equivalent title match. Track performers do not expand album results. `n` and `l` count as the same sound on both sides. Typing `gdyg` or `guduyaogun` finds 孤独摇滚.
+- Album artists come from `Artists/AlbumArtists` with the current user and optional library `ParentId`, rather than the general item query. Their names use the same pinyin matching. This catalogue has its own 10-minute cache; a failed request can retry and does not discard successful title results.
 - Episodes and songs are asked from the server (`SearchTerm`, 80 at most) and kept only when their own name contains the search; Emby also finds them by their show's, album's or artist's name.
-- The page lists one section per kind (Shows, Movies, Albums, Episodes, Songs) with large headings; empty kinds are left out. The first match's art lights the page, and comes back with the page.
-- One search costs at most two server requests (plus the title list once), instead of Emby's search request and one request per kind.
-- The drawer's search box (`.txtNavDrawerSearch`) suggests from the same search; Enter opens this search page (Emby would open its list view in search mode).
+- The page lists one section per kind (Shows, Movies, Albums, Album artists, Episodes, Songs) with large headings; empty kinds are left out. The first match's art lights the page, and comes back with the page.
+- One search costs at most two server requests (plus the title and artist catalogues once), instead of Emby's search request and one request per kind.
+- The drawer's search box (`.txtNavDrawerSearch`) suggests from the same search; album artists precede their albums so a long discography does not fill all suggestion slots. Enter opens this search page (Emby would open its list view in search mode).
 - `pinyin.js` maps 20,924 CJK characters to their most common pinyin (generated with pypinyin).
 
 ## Pinyin A–Z index

@@ -48,7 +48,7 @@ namespace BetterTheEmby
 
         // ----- search -----
 
-        /// <summary>Search shows titles (shows, films, albums); an episode or a song only when its own name matches.</summary>
+        /// <summary>Search titles and album artists; albums also match their album artist, episodes and songs their own name.</summary>
         public bool EnableSmartSearch { get; set; } = true;
 
         /// <summary>Search by pinyin and pinyin initials, with n and l alike.</summary>

@@ -43,9 +43,9 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 ### Search
 
-- Lists **Shows, Movies, Albums**, and **Episodes / Songs only when their own name matches**. Searching a show's name no longer lists all of its episodes.
+- Lists **Shows, Movies, Albums and Album artists**. Albums match their title or album artist; **Episodes / Songs appear only when their own name matches**. Searching a show's name no longer lists all of its episodes.
 - **Pinyin**: full pinyin or initials (`gdyg` and `guduyaogun` both find 孤独摇滚), with n and l treated alike.
-- Fast: titles are matched in the browser; one search costs at most two server requests.
+- Fast: titles and album artists are cached per library and matched in the browser; a later search costs at most two server requests.
 - The drawer's search box suggests the same results and opens the search page on Enter.
 
 ### Phones

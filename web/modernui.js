@@ -1930,8 +1930,8 @@
     // ---------- search: titles, by name or pinyin, not everything that mentions them ----------
 
     // Emby's search finds an episode or a song by its show's, album's or artist's name too, so a show's name
-    // brings up all its episodes; and it knows no pinyin. Here shows, films and albums are matched in the browser,
-    // against a list of them fetched once, by name, original title, pinyin or pinyin initials (gdyg, guduyaogun,
+    // brings up all its episodes; and it knows no pinyin. Here shows, films, albums and album artists are matched
+    // in the browser against cached lists, by name, original title, pinyin or pinyin initials (gdyg, guduyaogun,
     // with n and l alike); episodes and songs come from the server and stay only when their own name matches. The
     // search page lists them by kind, one heading under another, and the first match's art lights the page. The
     // drawer's search box suggests the same and, on Enter, opens that page (Emby would open its own list).
@@ -1939,6 +1939,7 @@
         { type: 'Series', name: L('节目', 'Shows'), list: { shape: 'auto', fields: ['Name', 'ProductionYear'], focusTransformTitleAdjust: true, reportSearched: true } },
         { type: 'Movie', name: L('电影', 'Movies'), list: { shape: 'auto', fields: ['Name', 'ProductionYear'], focusTransformTitleAdjust: true, reportSearched: true } },
         { type: 'MusicAlbum', name: L('专辑', 'Albums'), list: { shape: 'auto', fields: ['Name', 'ParentName'], focusTransformTitleAdjust: true, reportSearched: true } },
+        { type: 'MusicArtist', name: L('专辑艺人', 'Album artists'), list: { shape: 'auto', fields: ['Name'], focusTransformTitleAdjust: true, reportSearched: true } },
         { type: 'Episode', name: L('集', 'Episodes'), own: true, list: { shape: 'auto', fields: ['ParentName', 'Name'], focusTransformTitleAdjust: true, reportSearched: true } },
         { type: 'Audio', name: L('歌曲', 'Songs'), own: true, list: { shape: 'auto', preferArtistTitle: true, fields: ['ParentName', 'Name'], action: 'play', sideFooter: true, focusTransformTitleAdjust: true, reportSearched: true } }
     ];
@@ -1958,8 +1959,15 @@
         if (k.full.indexOf(q.l) > 0) return 50;
         return 0;
     }
-    // the shows, films and albums (of one library, or all), with their search keys; fetched again after a while
-    var titleLists = {};
+    function searchEntry(it) {
+        // AlbumArtists identifies the album credit; track performers must not expand album-name matches.
+        var artists = it.Type === 'MusicAlbum' ? (it.AlbumArtists || []).map(function (a) { return a.Name; }).filter(Boolean) : [];
+        if (it.Type === 'MusicAlbum' && !artists.length && it.AlbumArtist) artists.push(it.AlbumArtist);
+        return { it: it, k: nameKeys(it.Name), k2: it.OriginalTitle && it.OriginalTitle !== it.Name ? nameKeys(it.OriginalTitle) : null,
+            artists: artists.map(nameKeys) };
+    }
+    // The title and album-artist catalogues are cached independently per library, and failed lookups can retry.
+    var titleLists = {}, albumArtistLists = {};
     function titleList(a, parentId) {
         var key = parentId || '', hit = titleLists[key];
         if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.p;
@@ -1969,12 +1977,25 @@
         };
         if (parentId) query.ParentId = parentId;
         var p = Promise.all([a.getItems(a.getCurrentUserId(), query), SETTINGS.pinyinSearch !== false ? loadPinyin() : null]).then(function (r) {
-            return (r[0].Items || []).map(function (it) {
-                return { it: it, k: nameKeys(it.Name), k2: it.OriginalTitle && it.OriginalTitle !== it.Name ? nameKeys(it.OriginalTitle) : null };
-            });
+            return (r[0].Items || []).map(searchEntry);
         });
         titleLists[key] = { p: p, at: Date.now() };
         p.catch(function () { delete titleLists[key]; });
+        return p;
+    }
+    function albumArtistList(a, parentId) {
+        var key = parentId || '', hit = albumArtistLists[key];
+        if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.p;
+        // MusicArtist items are not reliably included by the general item query. Use Emby's album-artist
+        // endpoint so results include only artists credited on albums in this user's selected library.
+        var query = { UserId: a.getCurrentUserId(), Recursive: true, Fields: 'PrimaryImageAspectRatio,OriginalTitle',
+            EnableImageTypes: 'Primary,Backdrop,Thumb', ImageTypeLimit: 1, EnableTotalRecordCount: false };
+        if (parentId) query.ParentId = parentId;
+        var p = Promise.all([a.getJSON(a.getUrl('Artists/AlbumArtists', query)), SETTINGS.pinyinSearch !== false ? loadPinyin() : null]).then(function (r) {
+            return (r[0].Items || []).map(searchEntry);
+        });
+        albumArtistLists[key] = { p: p, at: Date.now() };
+        p.catch(function () { if (albumArtistLists[key] && albumArtistLists[key].p === p) delete albumArtistLists[key]; });
         return p;
     }
     // episodes or songs whose own name has the search in it
@@ -1993,16 +2014,18 @@
         var own = n && (hasCjk(n) || n.length >= 2);
         return Promise.all([
             titleList(a, parentId),
+            albumArtistList(a, parentId).catch(function () { return []; }),
             own ? ownNameMatches(a, 'Episode', term, parentId, signal) : [],
             own ? ownNameMatches(a, 'Audio', term, parentId, signal) : []
         ]).then(function (r) {
             var hits = [];
-            r[0].forEach(function (e) {
+            r[0].concat(r[1]).forEach(function (e) {
                 var score = Math.max(nameScore(e.k, q), nameScore(e.k2, q) - 4);
+                e.artists.forEach(function (k) { score = Math.max(score, nameScore(k, q) - 15); });
                 if (score) hits.push({ it: e.it, score: score });
             });
             hits.sort(function (x, y) { return y.score - x.score || String(x.it.SortName || x.it.Name).localeCompare(String(y.it.SortName || y.it.Name), 'zh-Hans-CN'); });
-            var found = { Series: [], Movie: [], MusicAlbum: [], Episode: r[1], Audio: r[2] };
+            var found = { Series: [], Movie: [], MusicAlbum: [], MusicArtist: [], Episode: r[2], Audio: r[3] };
             hits.forEach(function (h) { var list = found[h.it.Type]; if (list && list.length < SEARCH_LIMIT) list.push(h.it); });
             return found;
         });
@@ -2035,7 +2058,7 @@
                     var sections = SEARCH_KINDS.filter(function (kind) { return found[kind.type].length; }).map(function (kind) {
                         return { Id: kind.type, Name: kind.name, Monitor: [], ListOptions: Object.assign({}, kind.list), Items: found[kind.type] };
                     });
-                    if (!sections.length) sections.push({ Id: 'error', ScrollDirection: 'Vertical', ViewType: 'text', SectionType: 'text', TextInfo: { Text: L('没有找到匹配的节目或专辑', 'Nothing matches') } });
+                    if (!sections.length) sections.push({ Id: 'error', ScrollDirection: 'Vertical', ViewType: 'text', SectionType: 'text', TextInfo: { Text: L('没有找到匹配的内容', 'Nothing matches') } });
                     searchArt(self, sections[0].Items || []);
                     return sections;
                 });
@@ -2060,7 +2083,7 @@
             if (isBox(t) || (t && t.classList && t.classList.contains('searchfields-txtSearch'))) {
                 // the list of titles is ready by the time the first letters are typed
                 var a = api();
-                if (a) titleList(a, null);
+                if (a) { titleList(a, null); albumArtistList(a, null).catch(function () { }); }
             }
             if (!isBox(t) || typeof t.getItems !== 'function' || t.__muiItems) return;
             t.__muiItems = true;
@@ -2068,7 +2091,7 @@
                 var term = (this.value || '').trim(), n = searchKey(term);
                 if (!n || (!hasCjk(n) && n.length < 2)) return Promise.resolve({ Items: [], TotalRecordCount: 0 });
                 return runSearch(api(), term, null).then(function (found) {
-                    var items = [].concat(found.Series, found.Movie, found.MusicAlbum, found.Episode, found.Audio).slice(0, 20);
+                    var items = [].concat(found.Series, found.Movie, found.MusicArtist, found.MusicAlbum, found.Episode, found.Audio).slice(0, 20);
                     return { Items: items, TotalRecordCount: items.length };
                 });
             };
