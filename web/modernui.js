@@ -364,7 +364,32 @@
                 pill.offsetWidth; // apply the jump before turning the slide back on
                 pill.style.transition = '';
             }
+            fitTabBar(slider, active, fresh || instant);
         });
+    }
+    // Phones: a tab bar wider than the screen (a library's folder tabs) scrolls sideways over a glass track, fading
+    // out on the side(s) with more tabs (modernui.css), and brings the active tab to the middle when it changes
+    function fitTabBar(slider, active, instant) {
+        var bar = slider.parentNode;
+        if (!bar || !bar.classList || !bar.classList.contains('tabs-viewmenubar')) return;
+        var over = isPhone() && bar.scrollWidth > bar.clientWidth + 1;
+        bar.classList.toggle('mui-tabs-overflow', over);
+        if (!over) { bar.__muiActive = null; return; }
+        if (!bar.__muiEdges) {
+            bar.__muiEdges = function () {
+                var max = bar.scrollWidth - bar.clientWidth;
+                bar.classList.toggle('mui-tabs-start', bar.scrollLeft <= 6);
+                bar.classList.toggle('mui-tabs-end', bar.scrollLeft >= max - 6);
+            };
+            bar.addEventListener('scroll', bar.__muiEdges, { passive: true });
+        }
+        if (instant || bar.__muiActive !== active) {
+            bar.__muiActive = active;
+            var br = bar.getBoundingClientRect(), ar = active.getBoundingClientRect();
+            var left = Math.max(0, Math.min(bar.scrollWidth - bar.clientWidth, bar.scrollLeft + ar.left - br.left - (br.width - ar.width) / 2));
+            try { bar.scrollTo({ left: left, behavior: instant || reduceMotion ? 'instant' : 'smooth' }); } catch (e) { bar.scrollLeft = left; }
+        }
+        bar.__muiEdges();
     }
     function queueTabs() {
         if (tabsQueued) return;
