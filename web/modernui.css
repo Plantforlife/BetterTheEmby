@@ -2568,9 +2568,21 @@ html.mui.mui-docscroll .page.scrollFrameY[data-bindheader="true"]:not(.hide):not
     contain: none !important;
 }
 
-/* Option menus of selects (version, audio, subtitles): Emby reserves 3.99em in front of each entry for the check
-   mark, with the mark centred in it, which left a wide empty strip before the text. 2.6em is enough. (Menus with
-   cover pictures use other classes.) */
-html.mui .actionSheetItemImageContainer-customwidth:not(.d):not(.d) {
-    width: 2.6em !important;
+/* The menu of a select (version, audio, subtitles), placed at the select's left edge by modernui.js: each entry's
+   text lines up with the select's own text, and the check mark of the chosen entry sits at the right end instead of
+   in a column in front of every entry. */
+html.mui .actionSheet.mui-select-menu .actionSheetScroller {
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+}
+
+html.mui .actionSheet.mui-select-menu .actionSheetItemImageContainer {
+    order: 2;
+    width: 2.2em !important;
+    margin-left: auto;
+}
+
+html.mui .actionSheet.mui-select-menu .listItemBody {
+    padding-left: 5px !important;
+    padding-right: 4px !important;
 }

@@ -426,6 +426,32 @@
         });
     }
 
+    // The menu of a select (version, audio, subtitles) opens as an action sheet that Emby places 26px left of the
+    // select, to make room for a check-mark column in front of every entry; the entries' text then lined up with
+    // nothing. It is placed at the select's own left edge instead, with the text in line with the select's text and
+    // the check mark at the right end (modernui.css, .mui-select-menu). Phones keep Emby's bottom sheets.
+    var selectOpened = null;
+    function alignSelectMenu(sheet, retried) {
+        var from = selectOpened;
+        if (!from || Date.now() - from.at > 1500 || !from.wrapper.isConnected || isPhone()) return;
+        if (sheet.style.position !== 'fixed' || !sheet.style.left) {
+            // not placed by Emby yet (or a bottom sheet): look once more after it has had a frame
+            if (!retried) requestAnimationFrame(function () { alignSelectMenu(sheet, true); });
+            return;
+        }
+        sheet.classList.add('mui-select-menu');
+        function place() {
+            if (!sheet.isConnected) return;
+            var w = from.wrapper.getBoundingClientRect();
+            var left = Math.min(w.left, window.innerWidth - sheet.offsetWidth - 8);
+            sheet.style.left = Math.max(8, left) + 'px';
+            sheet.style.minWidth = w.width + 'px';
+        }
+        place();
+        // Emby may place it again once it has measured it
+        requestAnimationFrame(place);
+    }
+
     function afterShow(view, r) {
         syncTabs(true);
         syncNav(false);
@@ -2785,6 +2811,8 @@
         document.addEventListener('click', function (e) {
             if (!e.target || !e.target.closest) return;
             if (e.target.closest('.actionSheet')) lastPick = Date.now(); // a sort or filter pick refills the grid
+            var picker = e.target.closest('.emby-select-wrapper, label.selectLabel');
+            if (picker) selectOpened = { wrapper: picker.querySelector('.emby-select-wrapper') || picker, at: Date.now() };
             noteCardClick(e);
         }, true);
         document.addEventListener('scroll', function () {
@@ -2812,6 +2840,10 @@
                     rec.addedNodes.forEach(function (n) {
                         if (n.nodeType !== 1) return;
                         if (n.classList.contains('selectSource') || (n.firstElementChild && n.querySelector('select.selectSource'))) shortVersionNames(n);
+                        if (selectOpened) {
+                            var sheet = n.classList.contains('actionSheet') ? n : n.firstElementChild && n.querySelector('.actionSheet');
+                            if (sheet) alignSelectMenu(sheet);
+                        }
                         if (n.classList.contains('verticalSection') || n.querySelector('.verticalSection')) homeAlbumTitles(n);
                         if (isCardImage(n)) { checkImg(n); return; }
                         var cl = n.classList;

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.10 — 2026-11-02
+
+- Select menus (version, audio, subtitles) open at the select's own left edge, with each entry's text in line with the select's text and the check mark at the right end. Emby placed them 26px to the left of the select, for a check-mark column in front of every entry, so the text lined up with nothing. This replaces 1.0.2.9's narrower column. Phones keep Emby's bottom sheets.
+
 ## 1.0.2.9 — 2026-11-02
 
 - Option menus of selects (version, audio, subtitles): the strip in front of each entry, kept free for the check mark, is 2.6em wide instead of Emby's 3.99em, so the text starts closer to the left edge.
