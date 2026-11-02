@@ -2222,9 +2222,14 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
         display: inline-flex !important;
     }
 
-    /* albums three to a row */
+    /* albums three to a row, in grids and in the rows of the home page (Emby fits at least two square cards across
+       a screen there, and three posters: the same three now) */
     html.mui.mui-phonelayout .vertical-wrap > .squareCard {
         width: 33.333% !important;
+    }
+
+    html.mui.mui-phonelayout .squareCard-horiz {
+        width: calc(93vw / max((var(--square-cards, 3) + var(--user-cards-size-adjust, 0)), 3)) !important;
     }
 
     /* Safari (26) paints its status bar and toolbar solid in the background colour of a position:fixed element at
@@ -2298,6 +2303,29 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
     min-height: 100vh;
     min-height: 100svh;
     contain: none !important;
+}
+
+/* Emby hides its header by sliding it up all but the strip under the status bar
+   (translate: 0 calc(-100% + env(safe-area-inset-top))): that strip, frosted, stays over the status bar as a band
+   the page never scrolls under, and Safari paints its status bar in its colour too. Here the header goes all the way
+   up, without a background while it is away, and the page scrolls on under the status bar as on any site. */
+html.mui.mui-docscroll .skinHeader.skinHeader.headroom-hidden:not(.videoOsdHeader) {
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+}
+
+@supports (translate: none) {
+    html.mui.mui-docscroll .skinHeader.headroom-hidden {
+        translate: 0 -100% !important;
+    }
+}
+
+@supports not (translate: none) {
+    html.mui.mui-docscroll .skinHeader.headroom-hidden {
+        transform: translateY(-100%) !important;
+    }
 }
 
 html.mui.mui-docscroll .page:not(.hide):not(.dialog) > .tabContent.is-active,
