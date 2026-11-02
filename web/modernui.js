@@ -298,7 +298,13 @@
         prevOsd = isOsd;
         hookEmby();
         var detail = r.path === 'item';
-        if (detail && !restored) carryHero(view);
+        if (detail && !restored) {
+            // Only video details share the preceding video's hero. A person/album card already identifies
+            // the new layout: carrying a hero there left .mui-hashero padding after the art was removed.
+            var type = flyFrom && flyFrom.type;
+            if (type && !VIDEO_TYPES[type]) heroCarry = null;
+            else carryHero(view);
+        }
         var flying = startFlight(view, r, back, isOsd);
         // Album Tint animates the way into and out of the music player
         var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio(), entrance = [];
@@ -1476,6 +1482,7 @@
         function clear() {
             setPageBg(null);
             root.classList.remove('mui-videoitem', 'mui-haslogo-page');
+            if (view) view.classList.remove('mui-hashero');
             var carried = view && view.querySelector(':scope > .mui-hero[data-carried]');
             if (carried) leaveHero(carried);
         }
