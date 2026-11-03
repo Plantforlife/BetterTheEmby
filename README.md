@@ -52,6 +52,8 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 ### Phones
 
+- Show and episode pages have centered playback and native version, audio, and subtitle pickers. Swipe the episode row and select an episode to update the details in place. Shuffle and repeat appear with the music queue.
+
 - Album details show a larger cover on the left and the title, artist and metadata on the right, with full-width playback controls underneath. Long text wraps naturally.
 - No tab bar along the bottom; search in the top right; albums three to a row; floating header controls use dark glass for readable text over artwork; a library with many tabs scrolls them sideways.
 - Smaller lyrics and translations fit whole phrases on the full-screen player.

@@ -243,6 +243,9 @@ Emby's `AlphaPicker` lists the first character of each group of titles, at most 
 
 ## Phone layout
 
+- Phone video details keep the native series season selector and use a separate episode preview bound to the current view. The selected episode supplies its own playback sources and user data. Direct entries forward track choices to Emby's original controls. Ordinary HTML selects leave the picker to the browser.
+- The audio bar uses neutral glass. The phone player keeps the Emby queue and transport, surfaces shuffle and repeat beside the queue, and expands the lyrics after inactivity.
+
 Below 40em, with `EnablePhoneLayout`:
 
 - **Album header**: `updateItemPage` marks only `MusicAlbum` views `.mui-albumpage`, independently of Album Tint or artwork availability. The native detail container becomes a two-column grid: a 35vw cover clamped to 108–160px, then flexible title/artist and bottom-aligned metadata, with a 14px column gap. `display: contents` on the text wrapper lets the existing controls span both columns below without moving native nodes or changing focus/reading order. Title, artist and genres wrap; play/shuffle buttons have a 48px minimum height. The rules require `.mui-phonelayout` and the 40em media query, so larger screens and other item types keep their existing layout. Header/background visibility, document scrolling, palette extraction and animations are unchanged.

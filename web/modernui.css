@@ -317,23 +317,6 @@ html.mui .cardText-first {
         transform: scale(1.06);
     }
 
-    /* a soft glare that follows the pointer across the picture */
-    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable .cardImageContainer:not(.cardImageContainer-nowplaying)::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        border-radius: inherit;
-        background: radial-gradient(circle at var(--mui-gx, 50%) var(--mui-gy, 0%), rgba(255, 255, 255, .2) 0%, rgba(255, 255, 255, 0) 58%);
-        opacity: 0;
-        transition: opacity .4s ease;
-        pointer-events: none;
-    }
-
-    html.mui .itemsContainer:not(.detailImageContainer):not(.osdPosterContainer) > .card-hoverable:hover .cardImageContainer::after {
-        opacity: 1;
-    }
-
     /* the hover buttons fade in instead of popping in (Emby switches them from display:none) */
     @starting-style {
         html.mui .card-hoverable:hover .cardOverlayContainer {
@@ -2213,6 +2196,201 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
 
 /* ---------- phones ---------- */
 
+html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
+    background: rgba(24,24,28,.58) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(135%);
+    backdrop-filter: blur(22px) saturate(135%);
+}
+
+.mui-phone-video-head, .mui-phone-episodes { display: none; }
+.albumtint-phone-identity, .albumtint-phone-modes { display: none; }
+
+@media (max-width: 40em) {
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:not(.videoOsdBottom-video):not(.hide) {
+        flex-direction: column !important;
+        justify-content: flex-end;
+        box-sizing: border-box;
+        max-height: 100dvh;
+        padding: max(56px, calc(env(safe-area-inset-top) + 48px)) 18px max(12px, env(safe-area-inset-bottom));
+    }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) { height: 100dvh; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-maincontrols {
+        order: 3;
+        width: 100% !important;
+        max-height: none;
+        flex: 0 0 auto !important;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom :is(.lyricsSection,.osdPlayQueue):not(.hide) {
+        order: 2;
+        flex: 1 1 0 !important;
+        width: 100% !important;
+        min-height: 0;
+        max-height: none;
+        padding-inline: 0;
+    }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) .albumtint-phone-identity {
+        display: flex;
+        order: 0;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 12px;
+        padding: 0 0 12px;
+        text-align: start;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+    }
+    .albumtint-phone-identity img { width: 54px; height: 54px; object-fit: cover; border-radius: 8px; }
+    .albumtint-phone-identity img:not([src]) { display: none; }
+    .albumtint-phone-identity span { min-width: 0; }
+    .albumtint-phone-identity :is(strong,small) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .albumtint-phone-identity small { opacity: .65; margin-top: 4px; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) :is(.osdPosterContainer,.videoOsdText) {
+        display: none !important;
+    }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.osdPlayQueue:not(.hide)) .albumtint-phone-modes {
+        display: flex;
+        order: 1;
+        gap: 12px;
+        margin: 2px 0 12px;
+    }
+    .albumtint-phone-modes button {
+        flex: 1;
+        min-height: 42px;
+        color: inherit;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(255,255,255,.14);
+    }
+    .albumtint-phone-modes button[aria-pressed="true"] { background: rgba(255,255,255,.32); }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-contentbuttons :is(.btnOsdShuffle,.btnOsdRepeatMode),
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons-topright :is(.btnOsdShuffle,.btnOsdRepeatMode),
+    html.mui-phonelayout.albumtint-osd .btnVideoOsd-stop-center,
+    html.mui-phonelayout.albumtint-osd .albumtint-lyrics-full:has(.lyricsSection:not(.hide)) .videoOsdBottom-maincontrols {
+        display: none !important;
+    }
+    html.mui-phonelayout.albumtint-osd .videoOsd-belowtransportbuttons { width: 100%; display: flex; flex-direction: column; align-items: stretch; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons { width: 100%; justify-content: space-evenly; margin: 4px 0; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .osdIconButton .md-icon { font-size: 1.8rem; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .videoOsd-btnPause .md-icon { font-size: 2.5rem; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-contentbuttons { width: 100%; justify-content: space-evenly; }
+}
+
+@media (max-width: 40em) {
+    html.mui-phonelayout .mui-phone-video .mui-hero,
+    html.mui-phonelayout .mui-phone-video .itemBackdropContainer,
+    html.mui-phonelayout .mui-phone-video .detailMainContainer,
+    html.mui-phonelayout .mui-phone-rail-ready :is(.trackListSection,.moreFromSeasonSection) {
+        display: none !important;
+    }
+
+    html.mui-phonelayout .mui-phone-video-head {
+        display: block;
+        position: relative;
+        isolation: isolate;
+        color: #fff;
+        overflow: clip;
+    }
+
+    .mui-phone-video-art {
+        position: absolute;
+        z-index: -1;
+        inset: 0 0 auto;
+        height: clamp(310px, 56svh, 550px);
+        mask-image: linear-gradient(#000 48%, transparent);
+        -webkit-mask-image: linear-gradient(#000 48%, transparent);
+    }
+
+    .mui-phone-video-art img {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 24%;
+        filter: brightness(.78);
+    }
+
+    .mui-phone-video-body { padding: 5.5rem 16px 16px; text-align: center; }
+    .mui-phone-video-hasart .mui-phone-video-body { padding-top: clamp(175px, 32svh, 330px); }
+    .mui-phone-video-logo { width: min(48%, 190px); max-height: 95px; object-fit: contain; margin: 0 auto 12px; }
+    .mui-phone-video-title { margin: 0; font-size: clamp(16px, 4.5vw, 22px); overflow-wrap: anywhere; }
+    .mui-phone-video-facts, .mui-phone-video-genres { font-size: .9rem; margin: 9px 0; }
+    .mui-phone-video-facts:empty, .mui-phone-video-genres:empty, .mui-phone-video-status:empty { display: none; }
+    .mui-phone-video-play {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: min(100%, 320px);
+        min-height: 46px;
+        margin: 18px auto 12px;
+        border: 0;
+        border-radius: 999px;
+        background: #fff;
+        color: #141414;
+        font: inherit;
+        font-weight: 700;
+    }
+    .mui-phone-video-actions { display: flex; justify-content: center; gap: clamp(7px, 2.5vw, 14px); }
+    .mui-phone-video-control, .mui-phone-video-more, .mui-phone-video-fallback {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: 50%;
+        background: rgba(255,255,255,.13);
+        color: inherit;
+    }
+    .mui-phone-video-control .md-icon { font-size: 21px; }
+    .mui-phone-video-control[aria-pressed="true"] { background: rgba(255,255,255,.3); }
+    .mui-phone-video-control:disabled, .mui-phone-video-control:has(select:disabled), .mui-phone-video-play:disabled { opacity: .42; }
+    .mui-phone-video-control:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }
+    .mui-phone-video-control select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; }
+    .mui-phone-video-more { position: absolute; right: 16px; top: max(64px, calc(env(safe-area-inset-top) + 58px)); background: rgba(20,20,22,.72); }
+    .mui-phone-video-overview { margin: 16px 0 0; text-align: start; line-height: 1.5; }
+    .mui-phone-video-status:not(:empty) { margin-top: 10px; }
+    html.mui-phonelayout .mui-phone-episodes { display: block; padding: 0 0 16px; }
+    .mui-phone-episodes h2 { margin: 0 16px 8px; font-size: 1.15rem; }
+    .mui-phone-episode-strip {
+        display: flex;
+        overflow-x: auto;
+        padding: 5px 16px 8px;
+        gap: 12px;
+        scroll-snap-type: x proximity;
+        scroll-padding-inline: 16px;
+        scrollbar-width: none;
+    }
+    .mui-phone-episode-strip::-webkit-scrollbar { display: none; }
+    .mui-phone-episode {
+        flex: 0 0 clamp(145px, 43vw, 248px);
+        scroll-snap-align: start;
+        text-align: start;
+        color: inherit;
+        font: inherit;
+        background: none;
+        border: 0;
+        padding: 0;
+    }
+    .mui-phone-episode img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: rgba(255,255,255,.1); }
+    .mui-phone-episode[aria-current="true"] img { outline: 2px solid var(--theme-primary-color, #90caf9); outline-offset: 2px; }
+    .mui-phone-episode strong, .mui-phone-episode span { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; }
+    .mui-phone-episode strong { -webkit-line-clamp: 2; }
+    .mui-phone-episode span { -webkit-line-clamp: 3; font-size: .88rem; }
+    html.mui-phonelayout .mui-spotlight { touch-action: pan-y pinch-zoom; }
+    html.mui-phonelayout .mui-sl-slide img { animation: none; }
+    html.mui-phonelayout .mui-sl-info > *, html.mui-phonelayout .mui-sl-info.is-active > * {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}
+
 @media (max-width: 40em) {
     /* The album's cover and metadata share a row; the existing controls span both columns below them.
        Keep the native nodes and reading order, and let long titles/genres grow instead of clipping them. */
@@ -2361,14 +2539,7 @@ html.mui .mui-searchpage .sections .verticalSection + .verticalSection {
         border-top-color: transparent !important;
     }
 
-    html.mui.mui-phonelayout:not(.albumtint-footer) .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)) {
-        background-color: var(--mui-bar, #141414) !important;
-        transition: background-color .9s ease;
-    }
 
-    html.mui.mui-phonelayout.albumtint-footer .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)) {
-        background-color: var(--albumtint-footer) !important;
-    }
 }
 
 /* Phones: the page scrolls the document, the way an ordinary site does (html.mui-docscroll, which modernui.js sets

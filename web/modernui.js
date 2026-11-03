@@ -310,7 +310,7 @@
         // Album Tint animates the way into and out of the music player
         var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio(), entrance = [];
         if (!albumTint && !isOsd && isPhone()) {
-            if (!restored) entrance.push(rise(view, 0, 0, firstView ? 260 : 200));
+            if (!restored && !(r.path === 'item' && view.__muiPhoneVideo)) entrance.push(rise(view, 0, 0, firstView ? 260 : 200));
         } else if (!albumTint && !isOsd) {
             if (wasOsd || firstView) {
                 // leaving the video player (Emby brings back the page, the header and the drawer at once), or
@@ -726,7 +726,7 @@
 
     var tilt = null, tiltFrame = 0, tiltX = 0, tiltY = 0;
     function onPointerMove(e) {
-        if (e.pointerType !== 'mouse' || reduceMotion) return;
+        if (e.pointerType !== 'mouse' || reduceMotion || isPhone()) return;
         var t = e.target, card = t && t.closest ? t.closest('.card-hoverable') : null, ic = card && card.parentNode;
         var box = ic && ic.classList && ic.classList.contains('itemsContainer') && !ic.classList.contains('detailImageContainer') &&
             !ic.classList.contains('osdPosterContainer') ? card.querySelector(':scope > .cardBox') : null;
@@ -747,8 +747,6 @@
         var x = Math.min(1, Math.max(0, tiltX)), y = Math.min(1, Math.max(0, tiltY)), s = tilt.box.style;
         s.setProperty('--mui-rx', ((y - 0.5) * 8).toFixed(2) + 'deg');
         s.setProperty('--mui-ry', ((0.5 - x) * 10).toFixed(2) + 'deg');
-        s.setProperty('--mui-gx', (x * 100).toFixed(1) + '%');
-        s.setProperty('--mui-gy', (y * 100).toFixed(1) + '%');
         // the lift eases in first; after that the card follows the pointer closely
         if (!tilt.close && now - tilt.since > 320) {
             tilt.close = true;
@@ -1215,6 +1213,21 @@
             img.style.animation = 'none';
             img.offsetWidth;
             img.style.animation = '';
+            if (isPhone() && old >= 0 && !reduceMotion && host.animate) {
+                slides.concat(infos).forEach(function (node) {
+                    if (node.__muiSpotSlide) node.__muiSpotSlide.cancel();
+                });
+                var direction = manual || 1;
+                var dx = host.clientWidth * (direction < 0 ? -1 : 1);
+                var options = { duration: 360, easing: EASE };
+                [slides[i], infos[i], slides[old], infos[old]].forEach(function (node) {
+                    var incoming = node === slides[i] || node === infos[i];
+                    node.__muiSpotSlide = node.animate([
+                        { transform: 'translateX(' + (incoming ? dx : 0) + 'px)', opacity: 1 },
+                        { transform: 'translateX(' + (incoming ? 0 : -dx) + 'px)', opacity: 1 }
+                    ], options);
+                });
+            }
             spotArt(host, items[i]);
             if (old >= 0 || manual) schedule();
         }
@@ -1251,17 +1264,25 @@
         host.addEventListener('focusin', function () { hovering = true; setPaused(); });
         host.addEventListener('focusout', function () { hovering = false; setPaused(); schedule(); });
         document.addEventListener('visibilitychange', setPaused);
-        prev.addEventListener('click', function (e) { e.stopPropagation(); go(index - 1, true); });
-        next.addEventListener('click', function (e) { e.stopPropagation(); go(index + 1, true); });
+        prev.addEventListener('click', function (e) { e.stopPropagation(); go(index - 1, -1); });
+        next.addEventListener('click', function (e) { e.stopPropagation(); go(index + 1, 1); });
 
         // swipe on touch screens
-        var sx = null, sy = 0;
+        var sx = null, sy = 0, skipClick = 0;
+        host.addEventListener('click', function (e) {
+            if (Date.now() < skipClick) { e.preventDefault(); e.stopImmediatePropagation(); }
+        }, true);
+        host.addEventListener('pointercancel', function () { sx = null; });
         host.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse') { sx = e.clientX; sy = e.clientY; } });
         host.addEventListener('pointerup', function (e) {
             if (sx === null) return;
             var dx = e.clientX - sx, dy = e.clientY - sy;
             sx = null;
-            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(index + (dx < 0 ? 1 : -1), true);
+            if (Math.abs(dx) > 38 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+                skipClick = Date.now() + 300;
+                var step = dx < 0 ? 1 : -1;
+                go(index + step, step);
+            }
         });
 
         function layout() {
@@ -1468,11 +1489,27 @@
         if (!artPage) { setPageBg(null); return; }
         // a page that comes back shows the art it had (the banner's last picture, or the last card the pointer
         // rested on)
-        if (view && view.__muiArt) { setPageBg(view.__muiArt, 'lib'); return; }
+        if (view && view.__muiArt) {
+            setPageBg(view.__muiArt, 'lib');
+            if (!isPhone()) return;
+        }
         libraryArt(lib ? pid : null).then(function (urls) {
             if (token !== artToken || !urls.length) return;
             if (view && !view.__muiArt) view.__muiArt = urls[0]; // the banner's first picture: its picks are shuffled already
             setPageBg(view && view.__muiArt || urls[0], 'lib');
+            if (!view || !isPhone() || reduceMotion || urls.length < 2) return;
+            function rotate() {
+                if (token !== artToken || !view.isConnected || view.classList.contains('hide') || !isPhone()) return;
+                if (!document.hidden && !root.classList.contains('mui-onspotlight')) {
+                    var choices = urls.filter(function (url) { return url !== view.__muiArt; });
+                    if (choices.length) {
+                        view.__muiArt = choices[Math.floor(Math.random() * choices.length)];
+                        setPageBg(view.__muiArt, 'lib');
+                    }
+                }
+                setTimeout(rotate, SLIDE_MS);
+            }
+            setTimeout(rotate, SLIDE_MS);
         }, function () { });
     }
     // The banner's current picture lights the page behind it, so the banner fades into its own art. Skipped while
@@ -1489,7 +1526,7 @@
     // (pinnedCard: the card under the pointer whose art is showing)
     var hoverCard = null, hoverTimer = 0, pinnedCard = null;
     function onPointerOver(e) {
-        if (e.pointerType !== 'mouse' || !artPage) return;
+        if (e.pointerType !== 'mouse' || !artPage || isPhone()) return;
         var card = e.target && e.target.closest ? e.target.closest('.card') : null;
         if (card === hoverCard) return;
         hoverCard = card;
@@ -1558,6 +1595,7 @@
             if (token !== itemToken) return;
             // Scope the phone album header by item type, independently of Album Tint or available artwork.
             if (view) view.classList.toggle('mui-albumpage', item.Type === 'MusicAlbum');
+            if (view && /^(Series|Season|Episode)$/.test(item.Type)) phoneVideoDetails(view, item);
             if (item.Type === 'MusicArtist') { clear(); artistPage(view, item, token); return; }
             if (!VIDEO_TYPES[item.Type]) { clear(); return; }
             var bd = backdropOf(item), logo = logoOf(item);
@@ -1576,6 +1614,366 @@
                 });
             });
         }, function () { if (token === itemToken) clear(); });
+    }
+
+    // ---------- Phone video details: keep the native season navigation and preview episodes in place ----------
+
+    function phoneEpisodeClick(e) {
+        if (!isPhone() || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return false;
+        if (e.target.closest('button[data-action]:not([data-action="link"]),.cardOverlayButton,.cardOverlayFab-primary,.multiSelectCheckbox')) return false;
+        var card = e.target.closest('.allEpisodesItemsContainer .card,.mui-phone-episode');
+        var view = card && card.closest('.itemView'), state = view && view.__muiPhoneVideo;
+        var item = state && cardItem(card);
+        if (!item || !item.Id || (item.Type && item.Type !== 'Episode')) return false;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        state.select(item);
+        return true;
+    }
+
+    function phoneVideoDetails(view, base) {
+        if (!isPhone()) return;
+        var nativeTop = view.querySelector('.topDetailsContainer');
+        if (!nativeTop || !view.contains(nativeTop)) return;
+        if (view.__muiPhoneVideo && view.__muiPhoneVideo.baseId === base.Id) {
+            view.__muiPhoneVideo.sync();
+            return;
+        }
+        if (view.__muiPhoneVideo) view.__muiPhoneVideo.destroy();
+        var panel = el('section', 'mui-phone-video-head');
+        var art = el('div', 'mui-phone-video-art');
+        var body = el('div', 'mui-phone-video-body');
+        var badge = el('img', 'mui-phone-video-logo');
+        badge.alt = base.SeriesName || base.Name || '';
+        badge.hidden = true;
+        var title = el('h1', 'mui-phone-video-title');
+        var facts = el('p', 'mui-phone-video-facts secondaryText');
+        var genres = el('p', 'mui-phone-video-genres secondaryText');
+        var play = button(L('播放', 'Play'), 'play_arrow', 'mui-phone-video-play');
+        play.appendChild(el('span', '', L('播放', 'Play')));
+        var actions = el('div', 'mui-phone-video-actions');
+        var watched = button(L('已播放', 'Watched'), 'check_circle_outline');
+        var favorite = button(L('收藏', 'Favorite'), 'favorite_border');
+        actions.append(watched, favorite);
+        var specs = [
+            ['.selectSource', 'movie', L('版本', 'Version')],
+            ['.selectAudio', 'headphones', L('音频', 'Audio')],
+            ['.selectSubtitles', 'subtitles', L('字幕', 'Subtitles')]
+        ];
+        var selects = specs.map(function (spec) {
+            var control = el('label', 'mui-phone-video-control');
+            control.appendChild(icon(spec[1]));
+            var select = el('select');
+            select.setAttribute('aria-label', spec[2]);
+            select.title = spec[2];
+            control.appendChild(select);
+            actions.appendChild(control);
+            return select;
+        });
+        var overview = el('p', 'mui-phone-video-overview');
+        var more = button(L('更多', 'More'), 'more_horiz', 'mui-phone-video-more');
+        var status = el('div', 'mui-phone-video-status secondaryText');
+        status.setAttribute('role', 'status');
+        body.append(badge, title, facts, genres, play, actions, overview, status);
+        panel.append(art, body, more);
+        nativeTop.before(panel);
+        view.classList.add('mui-phone-video');
+        var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, sources = [];
+        var baseLogo = logoOf(base);
+        var currentArt = '', wantedArt = '', destroyed = false, pending = false;
+        var state = view.__muiPhoneVideo = { baseId: base.Id, select: selectEpisode, sync: sync, destroy: destroy };
+
+        function button(label, glyph, cls) {
+            var b = el('button', cls || 'mui-phone-video-control');
+            b.type = 'button';
+            b.setAttribute('aria-label', label);
+            b.title = label;
+            b.appendChild(icon(glyph));
+            return b;
+        }
+        function active() {
+            return !destroyed && view.isConnected && !view.classList.contains('hide') && isPhone();
+        }
+        function setArt(url) {
+            if (!url || url === wantedArt) return;
+            wantedArt = url;
+            var token = ++imageRequest;
+            if (url === currentArt) return;
+            var img = el('img');
+            img.alt = '';
+            img.decoding = 'async';
+            img.onerror = function () { if (token === imageRequest) wantedArt = currentArt; };
+            img.onload = function () {
+                if (destroyed || token !== imageRequest) return;
+                currentArt = url;
+                var old = art.lastElementChild;
+                art.appendChild(img);
+                panel.classList.add('mui-phone-video-hasart');
+                if (img.animate && !reduceMotion) {
+                    img.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: EASE });
+                    if (old) setTimeout(function () { old.remove(); }, 365);
+                } else if (old) old.remove();
+            };
+            img.src = url;
+        }
+        function artUrlFor(item) {
+            var bd = backdropOf(item) || backdropOf(base);
+            if (item.Type === 'Episode' && item.ImageTags && item.ImageTags.Primary) {
+                return imgUrl(item.Id, 'Primary', item.ImageTags.Primary, 960, 85);
+            }
+            return bd ? imgUrl(bd.id, 'Backdrop', bd.tag, 960, 85, 0) :
+                item.ImageTags && item.ImageTags.Primary ? imgUrl(item.Id, 'Primary', item.ImageTags.Primary, 720, 85) : '';
+        }
+        function rotateArt() {
+            clearTimeout(timer);
+            if (destroyed || selected.Type === 'Episode' || reduceMotion) return;
+            var tags = selected.BackdropImageTags;
+            var id = selected.Id;
+            if (!tags || !tags.length) {
+                tags = selected.ParentBackdropImageTags;
+                id = selected.ParentBackdropItemId;
+            }
+            if (!id || !tags || tags.length < 2) return;
+            timer = setTimeout(function () {
+                if (!view.isConnected) { destroy(); return; }
+                if (active() && !document.hidden) {
+                    var choices = tags.map(function (tag, i) { return imgUrl(id, 'Backdrop', tag, 960, 85, i); })
+                        .filter(function (url) { return url !== currentArt; });
+                    if (choices.length) setArt(choices[Math.floor(Math.random() * choices.length)]);
+                }
+                rotateArt();
+            }, SLIDE_MS);
+        }
+        function markButtons() {
+            var data = selected.UserData || {};
+            watched.setAttribute('aria-pressed', !!data.Played);
+            favorite.setAttribute('aria-pressed', !!data.IsFavorite);
+            favorite.firstChild.textContent = data.IsFavorite ? 'favorite' : 'favorite_border';
+        }
+        function render(item) {
+            var logo = logoOf(item) || baseLogo;
+            if (logo) {
+                var url = imgUrl(logo.id, 'Logo', logo.tag, 480, 90);
+                if (badge.getAttribute('src') !== url) {
+                    badge.hidden = true;
+                    badge.onload = function () { badge.hidden = false; };
+                    badge.onerror = function () { badge.hidden = true; };
+                    badge.src = url;
+                }
+            } else badge.hidden = true;
+            var number = item.Type === 'Episode' && item.IndexNumber != null;
+            title.textContent = (number ? L('第 ' + (item.ParentIndexNumber == null ? '?' : item.ParentIndexNumber) + ' 季 · 第 ' +
+                item.IndexNumber + ' 集 · ', 'S' + (item.ParentIndexNumber == null ? '?' : item.ParentIndexNumber) +
+                ' · E' + item.IndexNumber + ' · ') : '') + item.Name;
+            var minutes = item.RunTimeTicks && Math.round(item.RunTimeTicks / 600000000);
+            var date = item.PremiereDate && new Date(item.PremiereDate);
+            var source = sources.find(function (s) { return s.Id === selects[0].value; });
+            var stream = source && (source.MediaStreams || []).find(function (s) { return s.Type === 'Video'; });
+            facts.textContent = [minutes && L(minutes + ' 分钟', minutes + ' min'),
+                date && !isNaN(date) ? date.toLocaleDateString() : item.ProductionYear,
+                stream && stream.DisplayTitle].filter(Boolean).join('  ·  ');
+            genres.textContent = (item.Genres || base.Genres || []).slice(0, 4).join('  ·  ');
+            overview.textContent = stripTags(item.Overview);
+            overview.hidden = !overview.textContent;
+            setArt(artUrlFor(item));
+            markButtons();
+            if (rail) Array.prototype.forEach.call(rail.querySelectorAll('.mui-phone-episode'), function (card) {
+                card.setAttribute('aria-current', String(card.__muiItem.Id) === String(item.Id) ? 'true' : 'false');
+            });
+            rotateArt();
+        }
+        function options(select, values, value) {
+            var key = JSON.stringify(values);
+            if (select.__muiOptions !== key) {
+                select.__muiOptions = key;
+                select.replaceChildren.apply(select, values.map(function (v) { return new Option(v[1], v[0]); }));
+            }
+            if (value != null && values.some(function (v) { return String(v[0]) === String(value); })) select.value = value;
+            select.disabled = values.length < 2;
+        }
+        function sync() {
+            if (selected.Id !== base.Id || destroyed) return;
+            var nativeItem = view.controller && view.controller.currentItem;
+            if (nativeItem && nativeItem.Id === base.Id) selected = nativeItem;
+            specs.forEach(function (spec, i) {
+                var native = view.querySelector(spec[0]);
+                options(selects[i], native ? Array.prototype.map.call(native.options, function (o) {
+                    return [o.value, o.label];
+                }) : [], native && native.value);
+            });
+            sources = view.controller && view.controller._currentPlaybackMediaSources || [];
+            var primary = view.querySelector('.btnResume:not(.hide), .btnMainPlay:not(.hide)');
+            var label = primary && (primary.getAttribute('aria-label') || primary.title);
+            play.lastChild.textContent = label || L('播放', 'Play');
+            play.setAttribute('aria-label', play.lastChild.textContent);
+            play.disabled = !primary;
+            var nativeWatch = view.querySelector('.btnPlaystate:not(.hide)');
+            var nativeFavorite = view.querySelector('.btnUserRating:not(.hide)');
+            watched.disabled = !nativeWatch;
+            favorite.disabled = !nativeFavorite;
+            render(selected);
+            // The native buttons reflect subsequent user-data events even if the DTO was not replaced.
+            if (nativeWatch && nativeWatch.hasAttribute('aria-pressed')) watched.setAttribute('aria-pressed', nativeWatch.getAttribute('aria-pressed'));
+            if (nativeFavorite && nativeFavorite.hasAttribute('aria-pressed')) favorite.setAttribute('aria-pressed', nativeFavorite.getAttribute('aria-pressed'));
+        }
+        function tracks() {
+            var source = sources.find(function (s) { return s.Id === selects[0].value; }) || sources[0];
+            var streams = source && source.MediaStreams || [];
+            var audio = streams.filter(function (s) { return s.Type === 'Audio'; });
+            var subs = streams.filter(function (s) { return s.Type === 'Subtitle'; });
+            function names(list) { return list.map(function (s) { return [s.Index, s.DisplayTitle || s.Title || s.Language || s.Codec || s.Index]; }); }
+            options(selects[1], names(audio), source && source.DefaultAudioStreamIndex);
+            options(selects[2], [[-1, L('关', 'Off')]].concat(names(subs)), source && source.DefaultSubtitleStreamIndex != null ? source.DefaultSubtitleStreamIndex : -1);
+        }
+        selects.forEach(function (select, i) {
+            select.addEventListener('change', function () {
+                if (selected.Id === base.Id) {
+                    var native = view.querySelector(specs[i][0]);
+                    if (native) { native.value = select.value; native.dispatchEvent(new Event('change', { bubbles: true })); }
+                    sync();
+                } else if (i === 0) { tracks(); render(selected); }
+            });
+        });
+        function selectEpisode(item) {
+            if (item.Id === selected.Id && !pending) return;
+            var token = ++selection;
+            if (item.Id === base.Id) {
+                pending = false;
+                status.textContent = '';
+                selected = base;
+                sync();
+                return;
+            }
+            pending = true;
+            play.disabled = true;
+            status.textContent = L('正在载入剧集…', 'Loading episode…');
+            getItem(item.Id).then(function (full) {
+                if (!active() || token !== selection) return;
+                if (full.Type !== 'Episode') throw new Error('Not an episode');
+                var seriesId = base.Type === 'Series' ? base.Id : base.SeriesId;
+                if (seriesId && full.SeriesId !== seriesId) throw new Error('Different series');
+                selected = full;
+                sources = [];
+                watched.disabled = favorite.disabled = false;
+                play.lastChild.textContent = L('播放', 'Play');
+                play.setAttribute('aria-label', play.lastChild.textContent);
+                options(selects[0], []);
+                tracks();
+                render(full);
+                return Emby.importModule('./modules/common/playback/playbackmanager.js').then(function (p) {
+                    return (p.default || p).getPlaybackMediaSources(full);
+                }).then(function (list) {
+                    if (!active() || token !== selection) return;
+                    sources = list || [];
+                    options(selects[0], sources.map(function (s) {
+                        var name = s.Name || s.Id;
+                        var prefix = full.Name + ' - ';
+                        return [s.Id, SETTINGS.shortVersionNames !== false && name.indexOf(prefix) === 0 ? name.slice(prefix.length) : name];
+                    }));
+                    tracks();
+                    render(full);
+                });
+            }).then(function () {
+                if (token === selection) { pending = false; play.disabled = false; status.textContent = ''; }
+            }).catch(function () {
+                if (token !== selection) return;
+                pending = false;
+                play.disabled = false;
+                status.textContent = L('部分剧集信息未能加载，可重试或打开原详情。', 'Some episode details could not load. Retry or open the original details.');
+                var link = button(L('打开原详情', 'Open original details'), 'open_in_new', 'mui-phone-video-fallback');
+                link.onclick = function () { showItem(item); };
+                status.appendChild(link);
+            });
+        }
+        function toggle(field, nativeSelector, control) {
+            if (selected.Id === base.Id) {
+                var native = view.querySelector(nativeSelector);
+                if (native) native.click();
+                return;
+            }
+            var item = selected, a = api(), uid = a.getCurrentUserId();
+            var data = item.UserData || (item.UserData = {});
+            var on = !data[field];
+            control.disabled = true;
+            var result = field === 'Played' ? (on ? a.markPlayed(uid, [item.Id]) : a.markUnplayed(uid, [item.Id])) :
+                a.updateFavoriteStatus(uid, [item.Id], on);
+            result.then(function () { data[field] = on; }, function () {
+                status.textContent = L('更新失败，请重试。', 'Could not update. Try again.');
+            }).finally(function () {
+                control.disabled = false;
+                markButtons();
+            });
+        }
+        watched.onclick = function () { toggle('Played', '.btnPlaystate:not(.hide)', watched); };
+        favorite.onclick = function () { toggle('IsFavorite', '.btnUserRating:not(.hide)', favorite); };
+        more.onclick = function () {
+            if (selected.Id !== base.Id) showItem(selected);
+            else {
+                var native = view.querySelector('.btnMoreCommands:not(.hide)');
+                if (native) native.click();
+            }
+        };
+        play.onclick = function () {
+            if (selected.Id === base.Id) {
+                var native = view.querySelector('.btnResume:not(.hide), .btnMainPlay:not(.hide)');
+                if (native) native.click();
+                return;
+            }
+            var item = selected;
+            var opts = { items: [item], startPositionTicks: item.UserData && item.UserData.PlaybackPositionTicks || 0,
+                mediaSourceId: selects[0].value || undefined, audioStreamIndex: selects[1].value || undefined,
+                subtitleStreamIndex: selects[2].value || undefined };
+            Emby.importModule('./modules/common/playback/playbackactions.js').then(function (p) {
+                if (active() && selected === item) return (p.default || p).play(opts);
+            }).catch(function () { status.textContent = L('无法开始播放。', 'Could not start playback.'); });
+        };
+        function destroy() {
+            destroyed = true;
+            ++selection;
+            clearTimeout(timer);
+            if (observer) observer.disconnect();
+            panel.remove();
+            if (rail) rail.remove();
+            view.classList.remove('mui-phone-video', 'mui-phone-rail-ready');
+        }
+        observer = new MutationObserver(sync);
+        observer.observe(nativeTop, { childList: true, subtree: true, attributes: true,
+            attributeFilter: ['class', 'aria-pressed', 'disabled'] });
+        sync();
+        if (/^(Season|Episode)$/.test(base.Type)) {
+            var season = base.Type === 'Season' ? base.Id : base.SeasonId;
+            var a = api();
+            if (season && base.SeriesId && a) a.getEpisodes(base.SeriesId, {
+                SeasonId: season, UserId: a.getCurrentUserId(), Fields: 'Overview', EnableUserData: true
+            }).then(function (result) {
+                if (destroyed || !view.isConnected || !result.Items.length) return;
+                rail = el('section', 'mui-phone-episodes');
+                rail.appendChild(el('h2', '', base.SeasonName || (base.Type === 'Season' ? base.Name : L('剧集', 'Episodes'))));
+                var strip = el('div', 'mui-phone-episode-strip');
+                strip.setAttribute('aria-label', L('剧集', 'Episodes'));
+                result.Items.forEach(function (item) {
+                    var card = el('button', 'mui-phone-episode');
+                    card.type = 'button';
+                    card.__muiItem = item;
+                    var img = el('img');
+                    img.alt = '';
+                    img.loading = 'lazy';
+                    img.decoding = 'async';
+                    var tag = item.ImageTags && item.ImageTags.Primary;
+                    if (tag) img.src = imgUrl(item.Id, 'Primary', tag, 480, 80);
+                    card.append(img, el('strong', '', (item.IndexNumber != null ? item.IndexNumber + '. ' : '') + item.Name),
+                        el('span', 'secondaryText', stripTags(item.Overview)));
+                    strip.appendChild(card);
+                });
+                rail.appendChild(strip);
+                panel.after(rail);
+                view.classList.add('mui-phone-rail-ready');
+                render(selected);
+                var current = strip.querySelector('[aria-current="true"]');
+                if (current) strip.scrollLeft = current.offsetLeft - strip.firstElementChild.offsetLeft;
+            }).catch(function () { /* the native episode list remains available */ });
+        }
+        if (/^(Season|Episode)$/.test(base.Type)) slide(panel, -Math.min(48, window.innerWidth * .1), 300);
     }
 
     // ---------- artist pages: photo (or latest cover) as a rounded square, blurred art behind, about section ----------
@@ -2842,8 +3240,12 @@
         document.addEventListener('tabchange', onTabChange, true);
         window.addEventListener('scroll', onDocScroll, { passive: true });
         if (phoneQuery) {
-            if (phoneQuery.addEventListener) phoneQuery.addEventListener('change', syncDocScroll);
-            else if (phoneQuery.addListener) phoneQuery.addListener(syncDocScroll);
+            var onPhoneWidthChange = function () {
+                syncDocScroll();
+                updatePageArt();
+            };
+            if (phoneQuery.addEventListener) phoneQuery.addEventListener('change', onPhoneWidthChange);
+            else if (phoneQuery.addListener) phoneQuery.addListener(onPhoneWidthChange);
         }
         window.addEventListener('hashchange', function () { setTimeout(updateSpotlights, 50); });
         window.addEventListener('resize', function () { queueTabs(); queueNav(); });
@@ -2859,6 +3261,7 @@
             if (e.target.closest('.actionSheet')) lastPick = Date.now(); // a sort or filter pick refills the grid
             var picker = e.target.closest('.emby-select-wrapper, label.selectLabel');
             if (picker) selectOpened = { wrapper: picker.querySelector('.emby-select-wrapper') || picker, at: Date.now() };
+            if (phoneEpisodeClick(e)) return;
             noteCardClick(e);
         }, true);
         document.addEventListener('scroll', function () {

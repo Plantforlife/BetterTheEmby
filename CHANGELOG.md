@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2.18
+
+- Phone show and episode details use a full-width backdrop, centered playback, and five circular controls. Episode selection updates the detail panel without navigation. Version, audio, and subtitle menus use the browser's native select control.
+- Phone home banners slide horizontally. The drawer and bottom audio bar use neutral frosted glass.
+- The phone music player puts shuffle and repeat above the queue and lets lyrics expand after inactivity or a downward scroll.
+
 ## 1.0.2.17 — 2026-11-03
 
 - Phone album details place a larger cover beside the left-aligned title, artist and metadata. The existing play/shuffle buttons and favourite/more controls remain underneath across the full width. Long titles and genres wrap without clipping; the layout also works with Album Tint off and leaves desktop and other detail types unchanged.
