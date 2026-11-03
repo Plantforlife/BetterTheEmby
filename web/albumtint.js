@@ -42,6 +42,12 @@
             'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){' +
                 'background:rgba(24,24,28,.61)!important;backdrop-filter:blur(28px) saturate(125%)!important;-webkit-backdrop-filter:blur(28px) saturate(125%)!important}}',
         'html.albumtint-audio .appfooter .nowPlayingBar-footer{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}',
+        'html.albumtint-osd .dialog.albumtint-settings.dialog-animated:not(.dialog-close){' +
+            'animation:albumtint-settings-in 420ms cubic-bezier(.22,.8,.24,1) both!important}',
+        'html.albumtint-osd .dialog.albumtint-settings.dialog-close{' +
+            'animation:albumtint-settings-out 220ms ease-in both!important}',
+        '@keyframes albumtint-settings-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}',
+        '@keyframes albumtint-settings-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(12px)}}',
         // cover: one radius for image, frame and glow; an even halo all around in the album's light tone
         'html{--albumtint-radius:clamp(' + RADIUS_MIN + 'px,' + RADIUS_PCT + '%,' + RADIUS_MAX + 'px)}',
         // Emby clips around the cover (contain:paint on the card, overflow:hidden on the containers flush
@@ -1132,12 +1138,31 @@
             return;
         }
         hookBackdrop();
+        hookSettingsMenu();
         window.require(['playbackManager', 'events'], function (p, ev) {
             pm = p && p.default ? p.default : p;
             events = ev && ev.default ? ev.default : ev;
             ['playbackstart', 'playbackstop', 'playerchange', 'trackchange'].forEach(function (name) { events.on(pm, name, update); });
             update();
         }, function (e) { console.warn('[AlbumTint] playback hook unavailable', e); });
+    }
+
+    function hookSettingsMenu() {
+        if (!window.Emby || typeof Emby.importModule !== 'function') return;
+        Emby.importModule('./modules/actionsheet/actionsheet.js').then(function (mod) {
+            var menu = mod.default || mod;
+            if (menu.__albumtintSettingsMotion) return;
+            menu.__albumtintSettingsMotion = true;
+            var show = menu.show;
+            menu.show = function (options) {
+                var anchor = options && options.positionTo;
+                if (root.classList.contains('albumtint-osd') && anchor && anchor.closest &&
+                    anchor.closest('.btnVideoOsdSettings') && !matchMedia('(max-width: 40em), (prefers-reduced-motion: reduce)').matches) {
+                    options = Object.assign({}, options, { dialogClass: 'albumtint-settings' });
+                }
+                return show.call(this, options);
+            };
+        }).catch(function (error) { console.warn('[AlbumTint] settings motion unavailable', error); });
     }
 
     function start() {

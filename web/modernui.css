@@ -664,6 +664,8 @@ html.mui.mui-pagebg .mui-sl-shade {
     filter: drop-shadow(0 4px 20px rgba(0, 0, 0, .55));
 }
 
+.mui-sl-logo-slot > [hidden] { display: none; }
+
 .mui-sl-title {
     margin: 0 0 .32em;
     font-size: 3.1em;
@@ -2466,7 +2468,19 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     html.mui-phonelayout .mui-sl-slide,
     html.mui-phonelayout .mui-sl-info { transition: none; }
     html.mui-phonelayout .mui-sl-slide img { animation: none; }
-    html.mui-phonelayout .mui-sl-logo { width: min(68vw, 18em); height: clamp(58px, 12svh, 104px); object-fit: contain; }
+    html.mui-phonelayout .mui-sl-logo-slot {
+        height: clamp(58px, 12svh, 104px);
+        display: flex;
+        align-items: end;
+        margin-bottom: 1.1em;
+    }
+    html.mui-phonelayout .mui-sl-logo-slot > :is(.mui-sl-logo, .mui-sl-title) { margin-bottom: 0; }
+    html.mui-phonelayout .mui-sl-logo {
+        width: min(68vw, 18em);
+        height: 100%;
+        max-height: none;
+        object-fit: contain;
+    }
     html.mui-phonelayout .mui-sl-info > *, html.mui-phonelayout .mui-sl-info.is-active > * {
         opacity: 1;
         transform: none;

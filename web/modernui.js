@@ -306,13 +306,17 @@
             if (type && !VIDEO_TYPES[type]) heroCarry = null;
             else carryHero(view);
         }
+        var item = view.controller && view.controller.currentItem;
+        var entryType = item && String(item.Id) === String(r.params.id) ? item.Type :
+            flyFrom && String(flyFrom.id) === String(r.params.id) ? flyFrom.type : null;
         var flying = startFlight(view, r, back, isOsd);
         // Album Tint animates the way into and out of the music player
         var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio(), entrance = [];
         if (!albumTint && !isOsd && isPhone()) {
             if (!restored && !(r.path === 'item' && view.__muiPhoneVideo)) {
                 var surface = r.path === 'item' && view.querySelector('.itemMainScrollSlider') || view;
-                var entry = rise(surface, 0, 0, firstView ? 260 : 200);
+                var slideIn = detail && (!entryType || /^(Season|Episode)$/.test(entryType));
+                var entry = slideIn ? slide(surface, -36, 480) : rise(surface, 0, 0, firstView ? 260 : 200);
                 view.__muiPhoneEntry = entry;
                 entrance.push(entry);
             }
@@ -395,7 +399,7 @@
             var name = view.querySelector('.detailTextContainer .itemName-primary');
             var type = view.controller && view.controller.currentItem && view.controller.currentItem.Type;
             if (isPhone() && VIDEO_TYPES[type] && !view.__muiPhoneVideo) return false;
-            if (view.__muiPhoneVideo && view.__muiPhoneVideo.waitingForRail) return false;
+            if (view.__muiPhoneVideo && (view.__muiPhoneVideo.waitingForRail || view.__muiPhoneVideo.waitingForArt)) return false;
             return !!(name && name.textContent.trim());
         }
         if (view.classList.contains('withTabs')) {
@@ -1126,12 +1130,15 @@
             var info = el('div', 'mui-sl-info');
             var title = el('h1', 'mui-sl-title', it.Name);
             if (it.Logo) {
+                var logoSlot = el('div', 'mui-sl-logo-slot');
                 var logo = el('img', 'mui-sl-logo');
                 logo.alt = it.Name;
                 logo.decoding = 'async';
-                logo.onerror = function () { logo.replaceWith(title); };
+                logo.hidden = true;
+                logo.onload = function () { logo.hidden = false; title.hidden = true; };
                 logo.dataset.src = imgUrl(it.Id, 'Logo', it.Logo, 600, 90);
-                info.appendChild(logo);
+                logoSlot.append(logo, title);
+                info.appendChild(logoSlot);
             } else info.appendChild(title);
             info.appendChild(metaLine(it));
             if (it.Overview) info.appendChild(el('p', 'mui-sl-overview', it.Overview));
@@ -1194,7 +1201,7 @@
         infos.forEach(function (x) { host.appendChild(x); });
         if (items.length > 1) { host.appendChild(dots); host.appendChild(prev); host.appendChild(next); }
 
-        var index = -1, timer = 0, active = false, hovering = false;
+        var index = -1, timer = 0, active = false, hovering = false, swipeMotion, nextSlide;
         function art(i) {
             var img = slides[i].firstChild;
             if (!img.getAttribute('src')) {
@@ -1207,11 +1214,17 @@
         function go(i, manual) {
             var n = items.length;
             i = ((i % n) + n) % n;
+            if (swipeMotion && swipeMotion.playState === 'running') {
+                nextSlide = { index: i, direction: manual };
+                art(i);
+                return;
+            }
             if (i === index) return;
             var old = index;
             index = i;
             art(i);
             if (n > 1) art((i + 1) % n);
+            if (n > 2 && isPhone()) art((i + n - 1) % n);
             slides.forEach(function (s, k) { s.classList.toggle('is-active', k === i); });
             infos.forEach(function (x, k) { x.classList.toggle('is-active', k === i); });
             dotEls.forEach(function (d, k) {
@@ -1224,19 +1237,22 @@
             img.offsetWidth;
             img.style.animation = '';
             if (isPhone() && old >= 0 && !reduceMotion && host.animate) {
-                slides.concat(infos).forEach(function (node) {
-                    if (node.__muiSpotSlide) node.__muiSpotSlide.cancel();
-                });
                 var direction = manual || 1;
                 var dx = host.clientWidth * (direction < 0 ? -1 : 1);
                 var options = { duration: 360, easing: EASE };
                 [slides[i], infos[i], slides[old], infos[old]].forEach(function (node) {
                     var incoming = node === slides[i] || node === infos[i];
-                    node.__muiSpotSlide = node.animate([
+                    var motion = node.animate([
                         { transform: 'translateX(' + (incoming ? dx : 0) + 'px)', opacity: 1, visibility: 'visible' },
                         { transform: 'translateX(' + (incoming ? 0 : -dx) + 'px)', opacity: 1, visibility: 'visible' }
                     ], options);
+                    if (node === slides[i]) swipeMotion = motion;
                 });
+                swipeMotion.finished.then(function () {
+                    var queued = nextSlide;
+                    nextSlide = null;
+                    if (queued && active && host.isConnected) go(queued.index, queued.direction);
+                }, function () {});
             }
             spotArt(host, items[i]);
             if (old >= 0 || manual) schedule();
@@ -1291,7 +1307,7 @@
             if (Math.abs(dx) > 38 && Math.abs(dx) > Math.abs(dy) * 1.4) {
                 skipClick = Date.now() + 300;
                 var step = dx < 0 ? 1 : -1;
-                go(index + step, step);
+                go((nextSlide ? nextSlide.index : index) + step, step);
             }
         });
 
@@ -1813,14 +1829,20 @@
             wantedArt = url;
             var token = ++imageRequest;
             if (url === currentArt) return;
+            state.waitingForArt = !currentArt;
             var img = el('img');
             img.alt = '';
             img.decoding = 'async';
-            img.onerror = function () { if (token === imageRequest) wantedArt = currentArt; };
+            img.onerror = function () {
+                if (token !== imageRequest) return;
+                wantedArt = currentArt;
+                state.waitingForArt = false;
+            };
             img.onload = async function () {
                 // Keep the current blend intact if another episode is picked during the fade.
                 if (artFade) await artFade.finished.catch(function () {});
                 if (destroyed || token !== imageRequest) return;
+                state.waitingForArt = false;
                 currentArt = url;
                 var old = art.lastElementChild;
                 art.appendChild(img);
@@ -2159,11 +2181,6 @@
                     state.waitingForRail = false;
                 });
             }
-        }
-        var entry = view.__muiPhoneEntry;
-        if (/^(Season|Episode)$/.test(base.Type) && entry && entry.playState === 'paused') {
-            entry.effect.setKeyframes([{ transform: 'translateX(-36px)', opacity: .65 }, { transform: 'none', opacity: 1 }]);
-            entry.effect.updateTiming({ duration: 480 });
         }
     }
 
