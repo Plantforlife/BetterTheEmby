@@ -2216,16 +2216,21 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         padding: max(56px, calc(env(safe-area-inset-top) + 48px)) 18px max(12px, env(safe-area-inset-bottom));
     }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) { height: 100dvh; }
-    html.mui-phonelayout.albumtint-osd .videoOsdBottom:not(:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide))) .osdPosterContainer-remotecontrol {
+    html.mui.mui-phonelayout.albumtint-osd .videoOsdBottom:not(:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide))) .osdPosterContainer-remotecontrol {
+        --mui-player-cover: min(76vw, 39dvh, max(128px, calc(100dvh - 380px)));
+        flex: 0 0 auto !important;
+        width: var(--mui-player-cover) !important;
+        height: var(--mui-player-cover) !important;
+        max-height: none !important;
         padding: 0 !important;
-        margin: auto !important;
+        margin: 0 auto 12px !important;
         align-items: center;
         overflow: visible;
     }
-    html.mui-phonelayout.albumtint-osd .videoOsdBottom .osdRemoteControlImageCard {
-        width: min(76vw, 39dvh) !important;
-        height: auto !important;
-        max-width: none;
+    html.mui.mui-phonelayout.albumtint-osd .osdPosterContainer-remotecontrol > .osdRemoteControlImageCard {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: none !important;
         margin-inline: auto !important;
     }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom-maincontrols {

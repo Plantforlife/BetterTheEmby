@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.21
+
+- Keep the phone player's artwork centered at its intended square size when lyrics and the queue are closed.
+
 ## 1.0.2.20
 
 - The phone episode strip shows two and a half cards at the start and centers later selections with half of each neighbouring card visible.
