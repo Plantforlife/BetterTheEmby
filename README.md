@@ -52,6 +52,8 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 ### Phones
 
+- The phone episode strip starts with two and a half cards. Select a later episode to center it between its neighbours.
+
 - Compact episode details keep the episode strip near the first screen. Tap a truncated description to read it in full. Safari uses its native track picker, while other browsers show an anchored menu.
 
 - Show and episode pages have centered playback and native version, audio, and subtitle pickers. Swipe the episode row and select an episode to update the details in place. Shuffle and repeat appear with the music queue.

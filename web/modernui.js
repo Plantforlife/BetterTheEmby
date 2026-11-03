@@ -1636,7 +1636,7 @@
         if (!item || !item.Id || (item.Type && item.Type !== 'Episode')) return false;
         e.preventDefault();
         e.stopImmediatePropagation();
-        state.select(item);
+        state.select(item, card);
         return true;
     }
 
@@ -1894,6 +1894,22 @@
             });
             rotateArt();
         }
+        function centerEpisode(card, immediate) {
+            if (!card || !card.isConnected) return;
+            var strip = card.closest('.mui-phone-episode-strip, .childrenItemsScroller');
+            if (!strip || !strip.clientWidth) return;
+            var custom = strip.matches('.mui-phone-episode-strip');
+            var first = custom && card === strip.firstElementChild;
+            if (custom) strip.classList.toggle('mui-episode-centered', !first);
+            var bounds = strip.getBoundingClientRect(), tile = card.getBoundingClientRect();
+            var delta = (tile.left + tile.right - bounds.left - bounds.right) / 2;
+            var behavior = immediate || reduceMotion ? 'instant' : 'smooth';
+            if (custom) {
+                strip.scrollTo({ left: first ? 0 : strip.scrollLeft + delta, behavior: behavior });
+            } else if (strip.scrollToPosition && strip.getScrollLeft) {
+                strip.scrollToPosition({ position: cardItem(card)?.IndexNumber === 1 ? 0 : strip.getScrollLeft() + delta, behavior: behavior });
+            }
+        }
         function options(select, values, value) {
             var key = JSON.stringify(values);
             if (select.__muiOptions !== key) {
@@ -1945,8 +1961,8 @@
                 } else if (i === 0) { tracks(); render(selected); }
             });
         });
-        function selectEpisode(item) {
-            if (item.Id === selected.Id && !pending) return;
+        function selectEpisode(item, card) {
+            if (item.Id === selected.Id && !pending) { centerEpisode(card, false); return; }
             closeOverlays();
             ++imageRequest;
             wantedArt = currentArt;
@@ -1956,6 +1972,7 @@
                 status.textContent = '';
                 selected = base;
                 sync();
+                centerEpisode(card, false);
                 return;
             }
             pending = true;
@@ -1974,6 +1991,7 @@
                 options(selects[0], []);
                 tracks();
                 render(full);
+                if (card && String(cardItem(card)?.Id) === String(full.Id)) centerEpisode(card, false);
                 return Emby.importModule('./modules/common/playback/playbackmanager.js').then(function (p) {
                     return (p.default || p).getPlaybackMediaSources(full);
                 }).then(function (list) {
@@ -2091,7 +2109,7 @@
                 view.classList.add('mui-phone-rail-ready');
                 render(selected);
                 var current = strip.querySelector('[aria-current="true"]');
-                if (current) strip.scrollLeft = current.offsetLeft - strip.firstElementChild.offsetLeft;
+                centerEpisode(current, true);
             }).catch(function () { /* the native episode list remains available */ });
         }
         var entry = view.__muiPhoneEntry;

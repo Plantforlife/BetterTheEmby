@@ -2387,28 +2387,30 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     html.mui-phonelayout .mui-phone-video .topDetailsContainer:not(:has(.trackListSection:not(.hide))),
     html.mui-phonelayout .mui-phone-video.mui-phone-rail-ready .topDetailsContainer { display: none !important; }
     html.mui-phonelayout .mui-phone-video .seriesItemsSection { margin-block-start: 0; padding-block-start: 0; }
-    html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer { --card-width: 43vw; }
-    html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer > .card { width: clamp(126px, 43vw, 185px) !important; }
+    html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer { --card-width: calc(40vw - 16px); }
+    html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer > .card { width: var(--card-width) !important; }
     @media (max-height: 700px) {
         .mui-phone-video-body { padding-top: clamp(82px, 23svh, 155px); }
         .mui-phone-video-logo { height: 52px; }
     }
     .mui-phone-video-status:not(:empty) { margin-top: 10px; }
-    html.mui-phonelayout .mui-phone-episodes { display: block; padding: 0 0 16px; }
+    html.mui-phonelayout .mui-phone-episodes { display: block; container-type: inline-size; padding: 0 0 16px; }
     .mui-phone-episodes h2 { margin: 0 16px 8px; font-size: 1.15rem; }
     .mui-phone-episode-strip {
         display: flex;
         overflow-x: auto;
+        --mui-episode-width: calc((100cqi - 40px) / 2.5);
         padding: 5px 16px 8px;
+        padding-inline-end: max(16px, calc((100cqi - var(--mui-episode-width)) / 2));
         gap: 12px;
         scroll-snap-type: x proximity;
-        scroll-padding-inline: 16px;
         scrollbar-width: none;
     }
+    .mui-phone-episode-strip.mui-episode-centered { --mui-episode-width: calc((100cqi - 24px) / 2); }
     .mui-phone-episode-strip::-webkit-scrollbar { display: none; }
     .mui-phone-episode {
-        flex: 0 0 clamp(126px, 43vw, 185px);
-        scroll-snap-align: start;
+        flex: 0 0 var(--mui-episode-width);
+        scroll-snap-align: center;
         text-align: start;
         color: inherit;
         font: inherit;
@@ -2416,6 +2418,7 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         border: 0;
         padding: 0;
     }
+    .mui-phone-episode:first-child { scroll-snap-align: start; scroll-margin-inline-start: 16px; }
     .mui-phone-episode img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: rgba(255,255,255,.1); }
     .mui-phone-episode[aria-current="true"] img { outline: 2px solid var(--theme-primary-color, #90caf9); outline-offset: 2px; }
     .mui-phone-episode strong, .mui-phone-episode span { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; }

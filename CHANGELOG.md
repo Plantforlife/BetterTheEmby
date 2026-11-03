@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.20
+
+- The phone episode strip shows two and a half cards at the start and centers later selections with half of each neighbouring card visible.
+
 ## 1.0.2.19
 
 - Compact phone video details keep the episode strip in view and open long descriptions in a reader. Season and episode entrances move right in one 480 ms transition.
