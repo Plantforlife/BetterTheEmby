@@ -2214,6 +2214,18 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         padding: max(56px, calc(env(safe-area-inset-top) + 48px)) 18px max(12px, env(safe-area-inset-bottom));
     }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) { height: 100dvh; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:not(:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide))) .osdPosterContainer-remotecontrol {
+        padding: 0 !important;
+        margin: auto !important;
+        align-items: center;
+        overflow: visible;
+    }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom .osdRemoteControlImageCard {
+        width: min(76vw, 39dvh) !important;
+        height: auto !important;
+        max-width: none;
+        margin-inline: auto !important;
+    }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom-maincontrols {
         order: 3;
         width: 100% !important;
@@ -2327,7 +2339,18 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     }
 
     .mui-phone-video-body { padding: clamp(120px, 30svh, 265px) 16px 10px; text-align: center; }
-    .mui-phone-video-logo { width: min(48%, 190px); height: clamp(52px, 10svh, 88px); object-fit: contain; margin: 0 auto 8px; }
+    .mui-phone-video-logo {
+        width: min(48%, 190px);
+        height: clamp(52px, 10svh, 88px);
+        object-fit: contain;
+        margin: 0 auto 8px;
+        transform: scale(calc(1 - var(--mui-video-scroll, 0) * .18));
+    }
+    .mui-phone-video-logo.mui-logo-loading { visibility: hidden; }
+    .mui-phone-video-art {
+        transform-origin: center top;
+        transform: scale(calc(1.07 - var(--mui-video-scroll, 0) * .07));
+    }
     .mui-phone-video-title { margin: 0; font-size: clamp(16px, 4.5vw, 22px); overflow-wrap: anywhere; }
     .mui-phone-video-facts, .mui-phone-video-genres { font-size: .9rem; margin: 6px 0; }
     .mui-phone-video-facts:empty, .mui-phone-video-genres:empty, .mui-phone-video-status:empty { display: none; }
@@ -2347,7 +2370,7 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         font-weight: 700;
     }
     .mui-phone-video-actions { display: flex; justify-content: center; gap: clamp(7px, 2.5vw, 14px); }
-    .mui-phone-video-control, .mui-phone-video-more, .mui-phone-video-fallback {
+    .mui-phone-video-control, .mui-phone-video-fallback {
         position: relative;
         display: inline-grid;
         place-items: center;
@@ -2360,19 +2383,25 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         color: inherit;
     }
     .mui-phone-video-control .md-icon { font-size: 21px; }
-    .mui-phone-video-control[aria-pressed="true"] { background: rgba(255,255,255,.3); }
+    .mui-phone-video-control[aria-pressed="true"] { background: rgba(255,255,255,.38); }
+    .mui-phone-video-control { transition: background-color .18s ease, transform .18s var(--mui-ease); }
+    .mui-phone-video-control:active:not(:disabled) { transform: scale(.94); }
     .mui-phone-video-control:disabled, .mui-phone-video-control:has(select:disabled), .mui-phone-video-play:disabled { opacity: .42; }
     .mui-phone-video-control { -webkit-tap-highlight-color: transparent; }
-    .mui-phone-video-control:focus-visible, .mui-phone-video-control:has(select:focus-visible) { outline: 2px solid currentColor; outline-offset: 2px; }
+    .mui-phone-video-control:focus-visible, .mui-phone-video-control:has(select:focus-visible) { outline: 2px solid #87b9ff; outline-offset: 2px; }
     .mui-phone-video-control[aria-expanded="true"] { background: rgba(255,255,255,.22); border-color: transparent; }
     .mui-phone-video-control[aria-busy="true"] { cursor: progress; }
-    .mui-phone-video-control select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; }
-    .mui-phone-video-more { position: absolute; right: 16px; top: max(64px, calc(env(safe-area-inset-top) + 58px)); background: rgba(20,20,22,.72); }
+    .mui-phone-video-control select {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        font-size: 16px;
+        -webkit-tap-highlight-color: transparent;
+    }
     .mui-phone-video-overview {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 3;
-        overflow: hidden;
+        display: block;
         width: 100%;
         padding: 0;
         border: 0;
@@ -2382,6 +2411,13 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         margin: 12px 0 0;
         text-align: start;
         line-height: 1.45;
+    }
+    .mui-phone-video-overview-text {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        max-height: 4.35em;
     }
     .mui-phone-video-overview[hidden] { display: none; }
     html.mui-phonelayout .mui-phone-video .topDetailsContainer:not(:has(.trackListSection:not(.hide))),
@@ -2410,6 +2446,7 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     .mui-phone-episode-strip::-webkit-scrollbar { display: none; }
     .mui-phone-episode {
         flex: 0 0 var(--mui-episode-width);
+        transform-origin: top left;
         scroll-snap-align: center;
         text-align: start;
         color: inherit;
@@ -2420,16 +2457,31 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     }
     .mui-phone-episode:first-child { scroll-snap-align: start; scroll-margin-inline-start: 16px; }
     .mui-phone-episode img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: rgba(255,255,255,.1); }
-    .mui-phone-episode[aria-current="true"] img { outline: 2px solid var(--theme-primary-color, #90caf9); outline-offset: 2px; }
+    .mui-phone-episode[aria-current="true"] img { outline: 2px solid #29a2ff; outline-offset: 2px; }
+    .mui-phone-video .mui-current-episode .cardImageContainer { outline: 2px solid #29a2ff; outline-offset: -2px; }
     .mui-phone-episode strong, .mui-phone-episode span { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; }
     .mui-phone-episode strong { -webkit-line-clamp: 2; }
     .mui-phone-episode span { -webkit-line-clamp: 3; font-size: .88rem; }
     html.mui-phonelayout .mui-spotlight { touch-action: pan-y pinch-zoom; }
+    html.mui-phonelayout .mui-sl-slide,
+    html.mui-phonelayout .mui-sl-info { transition: none; }
     html.mui-phonelayout .mui-sl-slide img { animation: none; }
+    html.mui-phonelayout .mui-sl-logo { width: min(68vw, 18em); height: clamp(58px, 12svh, 104px); object-fit: contain; }
     html.mui-phonelayout .mui-sl-info > *, html.mui-phonelayout .mui-sl-info.is-active > * {
         opacity: 1;
         transform: none;
         transition: none;
+    }
+    html.mui-phonelayout .alphaPickerRow-vertical { touch-action: none; }
+    html.mui-phonelayout .alphaPickerButton-vertical {
+        min-width: 32px;
+        min-height: min(22px, 2.65dvh);
+        transform-origin: right center;
+    }
+    html.mui-phonelayout .alphaPickerButton-vertical.mui-alpha-preview {
+        transform: translateX(-5px) scale(1.32);
+        background: rgba(255,255,255,.2) !important;
+        color: white !important;
     }
 }
 
@@ -2515,13 +2567,28 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     }
 
     html.mui.mui-phonelayout .mui-albumpage .detailTextContainer > .mainDetailButtons {
-        margin-top: 24px;
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        justify-content: center;
+        gap: clamp(8px, 3vw, 16px);
+        margin-top: 16px;
     }
-
-    html.mui.mui-phonelayout .mui-albumpage .mainDetailButtons > :is(.btnMainPlay, .btnShuffle) {
-        min-height: 48px;
-        box-sizing: border-box;
+    html.mui.mui-phonelayout .mui-albumpage .mainDetailButtons > :is(.btnMainPlay, .btnResume, .btnShuffle, .btnUserRating, .btnMoreCommands):not(.hide) {
+        display: inline-grid !important;
+        place-items: center;
+        flex: 0 0 auto !important;
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border-radius: 50% !important;
     }
+    html.mui.mui-phonelayout .mui-albumpage .mainDetailButtons > button :is(.button-text, .detailButton-autotext-text) {
+        position: absolute;
+        clip-path: inset(50%);
+    }
+    html.mui.mui-phonelayout .mui-albumpage .mainDetailButtons > button .md-icon { margin: 0 !important; }
 
     /* no tab bar along the bottom (the drawer and the header do its job); the footer stays for the player bar */
     html.mui.mui-phonelayout .appfooter .dockedtabs {
@@ -2837,10 +2904,8 @@ html.mui.mui-docscroll #albumtint-bg {
     mask-image: linear-gradient(to bottom, transparent env(safe-area-inset-top, 0px), #000 calc(env(safe-area-inset-top, 0px) + 16vh), #000 calc(100% - 18vh), transparent 100%);
 }
 
-/* Emby hides its header by sliding it up all but the strip under the status bar
-   (translate: 0 calc(-100% + env(safe-area-inset-top))): that strip, frosted, stays over the status bar as a band
-   the page never scrolls under, and Safari paints its status bar in its colour too. Here the header goes all the way
-   up, without a background while it is away, and the page scrolls on under the status bar as on any site. */
+/* Keep the header rows reachable while scrolling. The fixed wrapper stays transparent and hidden
+   for Safari's edge sampling, and the visible rows keep their own painting layers. */
 html.mui.mui-docscroll .skinHeader.skinHeader.headroom-hidden:not(.videoOsdHeader) {
     background: transparent !important;
     -webkit-backdrop-filter: none !important;
@@ -2850,13 +2915,13 @@ html.mui.mui-docscroll .skinHeader.skinHeader.headroom-hidden:not(.videoOsdHeade
 
 @supports (translate: none) {
     html.mui.mui-docscroll .skinHeader.headroom-hidden {
-        translate: 0 -100% !important;
+        translate: none !important;
     }
 }
 
 @supports not (translate: none) {
     html.mui.mui-docscroll .skinHeader.headroom-hidden {
-        transform: translateY(-100%) !important;
+        transform: none !important;
     }
 }
 
@@ -2874,6 +2939,15 @@ html.mui.mui-docscroll .page.scrollFrameY[data-bindheader="true"]:not(.hide):not
 /* Video options share the detail artwork's corners; the menu clips full-width highlights to that outline. */
 html.mui .itemView .detailTextContainer select.detailTrackSelect {
     border-radius: 12px !important;
+}
+
+html.mui .itemView .detailTextContainer :is(.selectVideoContainer,.selectAudioContainer) .emby-select-wrapper-inline-disabled,
+html.mui .itemView .detailTextContainer :is(.selectVideo, .selectAudio).detailTrackSelect:disabled {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
 }
 
 html.mui .actionSheet.mui-video-select-menu {

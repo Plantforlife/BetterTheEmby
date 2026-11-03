@@ -36,7 +36,8 @@
         // Emby paints the bar's backdrop on .appfooter, which would stay behind as a strip while the bar fades.
         // From 50em up the footer holds nothing but the bar, so the backdrop moves onto the bar itself and fades
         // with it (below 50em the footer also carries Emby's bottom tabs and keeps its own backdrop).
-        'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){background:rgba(24,24,28,.92)!important}',
+        'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){' +
+            'border-radius:14px 14px 0 0;background:rgba(24,24,28,.92)!important}',
         '@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){' +
             'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){' +
                 'background:rgba(24,24,28,.61)!important;backdrop-filter:blur(28px) saturate(125%)!important;-webkit-backdrop-filter:blur(28px) saturate(125%)!important}}',
@@ -948,56 +949,64 @@
         }
         setPage(null);
     }
-    var cancelLyricsExit;
+    var cancelPanelMotion;
     function setOsd(on) {
         root.classList.toggle('albumtint-osd', on);
-        if (!on && cancelLyricsExit) cancelLyricsExit();
+        if (!on && cancelPanelMotion) cancelPanelMotion();
     }
 
     // Keep a short-lived visual copy while Emby immediately switches its native panel.
     document.addEventListener('click', function (event) {
         var toggle = event.target.closest && event.target.closest('.btnLyrics, .osdContentSectionToggleButton');
         if (!toggle || !root.classList.contains('albumtint-osd') || matchMedia('(max-width: 40em)').matches) return;
-        if (cancelLyricsExit) cancelLyricsExit();
+        if (cancelPanelMotion) cancelPanelMotion();
         if (matchMedia('(prefers-reduced-motion: reduce)').matches || !Element.prototype.animate) return;
         var bottom = toggle.closest('.videoOsdBottom');
-        var lyrics = bottom && bottom.querySelector('.lyricsSection:not(.hide)');
+        var panel = bottom && bottom.querySelector(':is(.lyricsSection,.osdPlayQueue,[data-contentsection="playqueue"].osdContentSection):not(.hide)');
         var controls = bottom && bottom.querySelector('.videoOsdBottom-maincontrols');
-        if (!lyrics || !controls) return;
-        var before = controls.getBoundingClientRect(), bounds = lyrics.getBoundingClientRect();
-        var clone = lyrics.cloneNode(true);
-        clone.setAttribute('aria-hidden', 'true');
-        clone.inert = true;
-        clone.querySelectorAll('[id]').forEach(function (node) { node.removeAttribute('id'); });
-        var scroll = lyrics.querySelector('.lyricsScroller');
+        if (!controls) return;
+        var before = controls.getBoundingClientRect(), bounds = panel && panel.getBoundingClientRect();
+        var clone = panel && panel.cloneNode(true);
+        if (clone) {
+            clone.setAttribute('aria-hidden', 'true');
+            clone.inert = true;
+            clone.querySelectorAll('[id]').forEach(function (node) { node.removeAttribute('id'); });
+        }
+        var scroll = panel && panel.querySelector('.lyricsScroller, .scrollFrameY');
         var scrollTop = scroll && scroll.scrollTop;
+        var motion = [], disposed = false;
+        function cleanup() {
+            disposed = true;
+            if (clone) clone.remove();
+            motion.forEach(function (animation) { animation.cancel(); });
+            if (cancelPanelMotion === cleanup) cancelPanelMotion = null;
+        }
+        cancelPanelMotion = cleanup;
         requestAnimationFrame(function () {
-            if (!lyrics.classList.contains('hide') || !bottom.isConnected || !root.classList.contains('albumtint-osd')) return;
-            Object.assign(clone.style, { position: 'fixed', pointerEvents: 'none', zIndex: '1000',
-                left: bounds.left + 'px', top: bounds.top + 'px', width: bounds.width + 'px', height: bounds.height + 'px' });
-            bottom.closest('.view').appendChild(clone);
-            var copyScroll = clone.querySelector('.lyricsScroller');
-            if (copyScroll) copyScroll.scrollTop = scrollTop || 0;
+            if (disposed || !bottom.isConnected || !root.classList.contains('albumtint-osd')) { cleanup(); return; }
+            var next = bottom.querySelector(':is(.lyricsSection,.osdPlayQueue,[data-contentsection="playqueue"].osdContentSection):not(.hide)');
+            if (next === panel) { cleanup(); return; }
             var after = controls.getBoundingClientRect();
             var timing = { duration: 420, easing: 'cubic-bezier(.22,.8,.24,1)' };
-            var exit = clone.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(36px)' }], timing);
-            var move = controls.animate([{ transform: 'translate(' + (before.left - after.left) + 'px,' +
-                (before.top - after.top) + 'px)' }, { transform: 'none' }], timing);
-            function cleanup() {
-                clone.remove();
-                exit.cancel();
-                move.cancel();
-                if (cancelLyricsExit === cleanup) cancelLyricsExit = null;
+            if (clone) {
+                Object.assign(clone.style, { position: 'fixed', pointerEvents: 'none', zIndex: '1000',
+                    left: bounds.left + 'px', top: bounds.top + 'px', width: bounds.width + 'px', height: bounds.height + 'px' });
+                bottom.closest('.view').appendChild(clone);
+                var copyScroll = clone.querySelector('.lyricsScroller, .scrollFrameY');
+                if (copyScroll) copyScroll.scrollTop = scrollTop || 0;
+                motion.push(clone.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(36px)' }], timing));
             }
-            cancelLyricsExit = cleanup;
-            exit.finished.then(cleanup, cleanup);
+            if (next) motion.push(next.animate([{ opacity: 0, transform: 'translateX(28px)' }, { opacity: 1, transform: 'none' }], timing));
+            motion.push(controls.animate([{ transform: 'translate(' + (before.left - after.left) + 'px,' +
+                (before.top - after.top) + 'px)' }, { transform: 'none' }], timing));
+            Promise.allSettled(motion.map(function (animation) { return animation.finished; })).then(cleanup);
         });
     }, true);
 
     function setupPhonePlayer(item) {
         var bottom = document.querySelector('.view-videoosd-videoosd:not(.hide) .videoOsdBottom');
         if (!bottom) return;
-        if (bottom.__albumtintItemId !== item.Id && cancelLyricsExit) cancelLyricsExit();
+        if (bottom.__albumtintItemId !== item.Id && cancelPanelMotion) cancelPanelMotion();
         bottom.__albumtintItemId = item.Id;
         if (!bottom.__albumtintPhone) {
             var identity = document.createElement('button');

@@ -3,6 +3,9 @@
 ## 1.0.2.20
 
 - The phone episode strip shows two and a half cards at the start and centers later selections with half of each neighbouring card visible.
+- Phone video details share five controls across video types, keep the header within reach during scrolling, and clamp the synopsis inside its own text container. Episode selections use a blue outline, a soft title transition, and a backdrop fade matching the home banner.
+- The phone library index supports touch scrubbing. Album actions are four circles in a row, and the player gives artwork more space when its side panels are closed.
+- The rounded audio bar keeps its frosted backdrop. Desktop lyrics and queue panels slide and fade when switching.
 
 ## 1.0.2.19
 
