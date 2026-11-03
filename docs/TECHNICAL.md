@@ -245,6 +245,7 @@ Emby's `AlphaPicker` lists the first character of each group of titles, at most 
 
 Below 40em, with `EnablePhoneLayout`:
 
+- **Album header**: `updateItemPage` marks only `MusicAlbum` views `.mui-albumpage`, independently of Album Tint or artwork availability. The native detail container becomes a two-column grid: a 35vw cover clamped to 108–160px, then flexible title/artist and bottom-aligned metadata, with a 14px column gap. `display: contents` on the text wrapper lets the existing controls span both columns below without moving native nodes or changing focus/reading order. Title, artist and genres wrap; play/shuffle buttons have a 48px minimum height. The rules require `.mui-phonelayout` and the 40em media query, so larger screens and other item types keep their existing layout. Header/background visibility, document scrolling, palette extraction and animations are unchanged.
 - The docked tab bar (`.appfooter .dockedtabs`) is hidden; the footer stays for the now-playing bar. Emby's header search button is shown.
 - Square cards in vertical grids are a third of the width (the virtual grid measures their CSS width); in the horizontal rows of the home page, three square cards fit across the screen like three posters (`.squareCard-horiz`: `93vw / max(--square-cards, 3)` instead of Emby's minimum of two).
 - Motion: a 200 ms fade per page; no poster flights, no detail-page choreography, no card reveals.

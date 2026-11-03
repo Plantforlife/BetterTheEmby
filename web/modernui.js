@@ -1556,6 +1556,8 @@
         }
         detailItem(view, r.params.id).then(function (item) {
             if (token !== itemToken) return;
+            // Scope the phone album header by item type, independently of Album Tint or available artwork.
+            if (view) view.classList.toggle('mui-albumpage', item.Type === 'MusicAlbum');
             if (item.Type === 'MusicArtist') { clear(); artistPage(view, item, token); return; }
             if (!VIDEO_TYPES[item.Type]) { clear(); return; }
             var bd = backdropOf(item), logo = logoOf(item);

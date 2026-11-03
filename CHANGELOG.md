@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.17 — 2026-11-03
+
+- Phone album details place a larger cover beside the left-aligned title, artist and metadata. The existing play/shuffle buttons and favourite/more controls remain underneath across the full width. Long titles and genres wrap without clipping; the layout also works with Album Tint off and leaves desktop and other detail types unchanged.
+
 ## 1.0.2.16 — 2026-11-02
 
 - Top-level library tabs use a clearer directional slide and fade: right-hand tabs enter from the right and left-hand tabs from the left. Motion scales with the viewport, waits for custom content/native scroll bodies, and cancels cleanly on rapid switches.
