@@ -1924,7 +1924,7 @@
             });
         }
         var pendingButtons = new Map();
-        function render(item) {
+        function render(item, initial) {
             var logo = logoOf(item) || baseLogo;
             if (logo) {
                 var url = imgUrl(logo.id, 'Logo', logo.tag, 480, 90);
@@ -1942,7 +1942,7 @@
                 episodeNumber + ' 集 · ', 'S' + (item.ParentIndexNumber == null ? '?' : item.ParentIndexNumber) +
                 ' · E' + episodeNumber + ' · ') : '') + item.Name;
             if (title.textContent !== name) {
-                var animateTitle = title.textContent && !reduceMotion && title.animate;
+                var animateTitle = !initial && title.textContent && !reduceMotion && title.animate;
                 title.textContent = name;
                 if (titleFade) titleFade.cancel();
                 if (animateTitle) titleFade = title.animate([
@@ -2054,11 +2054,12 @@
                 } else if (i === 0) { tracks(); render(selected); }
             });
         });
-        function selectEpisode(item, card) {
+        function selectEpisode(item, card, initial) {
             if (item.Id === selected.Id && !pending) { centerEpisode(card, false); return; }
             closeOverlays();
             ++imageRequest;
             wantedArt = currentArt;
+            state.waitingForArt = false;
             var token = ++selection;
             if (item.Id === base.Id) {
                 pending = false;
@@ -2072,32 +2073,30 @@
             pending = true;
             play.setAttribute('aria-busy', 'true');
             status.textContent = '';
-            getItem(item.Id).then(function (full) {
+            return getItem(item.Id).then(function (full) {
                 if (!active() || token !== selection) return;
                 if (full.Type !== 'Episode') throw new Error('Not an episode');
                 var seriesId = base.Type === 'Series' ? base.Id : base.SeriesId;
                 if (seriesId && full.SeriesId !== seriesId) throw new Error('Different series');
-                selected = full;
-                sources = [];
-                watched.disabled = favorite.disabled = false;
-                play.lastChild.textContent = L('播放', 'Play');
-                play.setAttribute('aria-label', play.lastChild.textContent);
-                options(selects[0], []);
-                tracks();
-                render(full);
-                if (card && String(cardItem(card)?.Id) === String(full.Id)) centerEpisode(card, false);
                 return Emby.importModule('./modules/common/playback/playbackmanager.js').then(function (p) {
                     return (p.default || p).getPlaybackMediaSources(full);
+                }).catch(function () {
+                    return full.MediaSources || [];
                 }).then(function (list) {
                     if (!active() || token !== selection) return;
+                    selected = full;
                     sources = list || [];
+                    play.disabled = watched.disabled = favorite.disabled = false;
+                    play.lastChild.textContent = L('播放', 'Play');
+                    play.setAttribute('aria-label', play.lastChild.textContent);
                     options(selects[0], sources.map(function (s) {
                         var name = s.Name || s.Id;
                         var prefix = full.Name + ' - ';
                         return [s.Id, SETTINGS.shortVersionNames !== false && name.indexOf(prefix) === 0 ? name.slice(prefix.length) : name];
                     }));
                     tracks();
-                    render(full);
+                    render(full, initial);
+                    if (card && String(cardItem(card)?.Id) === String(full.Id)) centerEpisode(card, initial);
                 });
             }).then(function () {
                 if (token === selection) { pending = false; play.removeAttribute('aria-busy'); }
@@ -2105,6 +2104,7 @@
                 if (token !== selection) return;
                 pending = false;
                 play.removeAttribute('aria-busy');
+                if (initial) return;
                 status.textContent = L('部分剧集信息未能加载，可重试或打开原详情。', 'Some episode details could not load. Retry or open the original details.');
                 var link = button(L('打开原详情', 'Open original details'), 'open_in_new', 'mui-phone-video-fallback');
                 link.onclick = function () { showItem(item); };
@@ -2224,6 +2224,9 @@
                     };
                     panel.after(rail);
                     view.classList.add('mui-phone-rail-ready');
+                    if (base.Type === 'Season' && selected.Id === base.Id && !pending && active()) {
+                        return selectEpisode(result.Items[0], strip.firstElementChild, true);
+                    }
                     render(selected);
                     var current = strip.querySelector('[aria-current="true"]');
                     centerEpisode(current, true);

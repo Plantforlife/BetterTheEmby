@@ -244,6 +244,7 @@ Emby's `AlphaPicker` lists the first character of each group of titles, at most 
 ## Phone layout
 
 - The phone season and episode strip sizes its cards against the actual container. Its leading position fits two and a half cards. Later selections use a centered snap point with half-card previews and trailing room to center the final card. Scroll only the strip when changing the selected episode.
+- A season opens with its first episode selected. Episode navigation publishes the details and available playback sources in the same render, and ignores responses for superseded selections.
 - The phone video panel keeps Emby's native season selection. Its synopsis clamps the inner text independently of button rendering, and its hero zoom follows the document offset without resizing the layout. Episode backdrop changes wait for the current 1100 ms blend before replacing a layer, keeping at most two visible images.
 - The phone alphabet index previews the letter in a centered, non-interactive overlay and commits on release, so dragging does not enqueue a request for each letter passed. The season and episode header groups search and native item commands, and the rail opens season selection or a full episode menu through Emby's action sheet.
 

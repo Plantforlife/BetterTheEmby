@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.23
+
+- Phone season details start on the first episode. An episode switch updates the title, technical information, track options and selection together.
+
 ## 1.0.2.22
 
 - Match the phone season and episode layout to the reference, with a blue play button, a compact floating header and blue season and episode controls.
