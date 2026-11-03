@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2.22
+
+- Match the phone season and episode layout to the reference, with a blue play button, a compact floating header and blue season and episode controls.
+- Show the current letter in the center of the screen while scrubbing the library index. Safari's native selectors retain keyboard focus feedback without drawing a ring on touch.
+
 ## 1.0.2.21
 
 - Keep the phone player's artwork centered at its intended square size when lyrics and the queue are closed.

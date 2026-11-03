@@ -54,6 +54,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 - The phone episode strip starts with two and a half cards. Select a later episode to center it between its neighbours.
 - Video details keep the header controls reachable on scroll, show a blue border on the selected episode, and open long descriptions in a reader. Drag the library letter index to choose a letter. Album playback actions sit together in one row.
+- Season and episode details use a compact floating header and a blue play button. The phone library index displays the current letter in the center while dragging.
 - Phone home banners reserve a fixed space for the title or logo and finish the current slide before switching again.
 
 - Compact episode details keep the episode strip near the first screen. Tap a truncated description to read it in full. Safari uses its native track picker, while other browsers show an anchored menu.
