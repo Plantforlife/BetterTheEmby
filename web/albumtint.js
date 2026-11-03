@@ -36,8 +36,11 @@
         // Emby paints the bar's backdrop on .appfooter, which would stay behind as a strip while the bar fades.
         // From 50em up the footer holds nothing but the bar, so the backdrop moves onto the bar itself and fades
         // with it (below 50em the footer also carries Emby's bottom tabs and keeps its own backdrop).
-        'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer){background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}',
-        'html.albumtint-audio .nowPlayingBar-footer{background:rgba(24,24,28,.57)!important;backdrop-filter:blur(22px) saturate(140%)!important;-webkit-backdrop-filter:blur(22px) saturate(140%)!important}',
+        'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){background:rgba(24,24,28,.92)!important}',
+        '@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){' +
+            'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){' +
+                'background:rgba(24,24,28,.61)!important;backdrop-filter:blur(28px) saturate(125%)!important;-webkit-backdrop-filter:blur(28px) saturate(125%)!important}}',
+        'html.albumtint-audio .appfooter .nowPlayingBar-footer{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}',
         // cover: one radius for image, frame and glow; an even halo all around in the album's light tone
         'html{--albumtint-radius:clamp(' + RADIUS_MIN + 'px,' + RADIUS_PCT + '%,' + RADIUS_MAX + 'px)}',
         // Emby clips around the cover (contain:paint on the card, overflow:hidden on the containers flush
@@ -945,11 +948,57 @@
         }
         setPage(null);
     }
-    function setOsd(on) { root.classList.toggle('albumtint-osd', on); }
+    var cancelLyricsExit;
+    function setOsd(on) {
+        root.classList.toggle('albumtint-osd', on);
+        if (!on && cancelLyricsExit) cancelLyricsExit();
+    }
+
+    // Keep a short-lived visual copy while Emby immediately switches its native panel.
+    document.addEventListener('click', function (event) {
+        var toggle = event.target.closest && event.target.closest('.btnLyrics, .osdContentSectionToggleButton');
+        if (!toggle || !root.classList.contains('albumtint-osd') || matchMedia('(max-width: 40em)').matches) return;
+        if (cancelLyricsExit) cancelLyricsExit();
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !Element.prototype.animate) return;
+        var bottom = toggle.closest('.videoOsdBottom');
+        var lyrics = bottom && bottom.querySelector('.lyricsSection:not(.hide)');
+        var controls = bottom && bottom.querySelector('.videoOsdBottom-maincontrols');
+        if (!lyrics || !controls) return;
+        var before = controls.getBoundingClientRect(), bounds = lyrics.getBoundingClientRect();
+        var clone = lyrics.cloneNode(true);
+        clone.setAttribute('aria-hidden', 'true');
+        clone.inert = true;
+        clone.querySelectorAll('[id]').forEach(function (node) { node.removeAttribute('id'); });
+        var scroll = lyrics.querySelector('.lyricsScroller');
+        var scrollTop = scroll && scroll.scrollTop;
+        requestAnimationFrame(function () {
+            if (!lyrics.classList.contains('hide') || !bottom.isConnected || !root.classList.contains('albumtint-osd')) return;
+            Object.assign(clone.style, { position: 'fixed', pointerEvents: 'none', zIndex: '1000',
+                left: bounds.left + 'px', top: bounds.top + 'px', width: bounds.width + 'px', height: bounds.height + 'px' });
+            bottom.closest('.view').appendChild(clone);
+            var copyScroll = clone.querySelector('.lyricsScroller');
+            if (copyScroll) copyScroll.scrollTop = scrollTop || 0;
+            var after = controls.getBoundingClientRect();
+            var timing = { duration: 420, easing: 'cubic-bezier(.22,.8,.24,1)' };
+            var exit = clone.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(36px)' }], timing);
+            var move = controls.animate([{ transform: 'translate(' + (before.left - after.left) + 'px,' +
+                (before.top - after.top) + 'px)' }, { transform: 'none' }], timing);
+            function cleanup() {
+                clone.remove();
+                exit.cancel();
+                move.cancel();
+                if (cancelLyricsExit === cleanup) cancelLyricsExit = null;
+            }
+            cancelLyricsExit = cleanup;
+            exit.finished.then(cleanup, cleanup);
+        });
+    }, true);
 
     function setupPhonePlayer(item) {
         var bottom = document.querySelector('.view-videoosd-videoosd:not(.hide) .videoOsdBottom');
         if (!bottom) return;
+        if (bottom.__albumtintItemId !== item.Id && cancelLyricsExit) cancelLyricsExit();
+        bottom.__albumtintItemId = item.Id;
         if (!bottom.__albumtintPhone) {
             var identity = document.createElement('button');
             identity.type = 'button';
@@ -974,7 +1023,7 @@
                 modes.appendChild(button);
             });
             bottom.prepend(identity, modes);
-            var idle;
+            var idle, holdingControls = false;
             function lyricsOpen() {
                 return root.classList.contains('albumtint-osd') &&
                     matchMedia('(max-width: 40em)').matches &&
@@ -983,28 +1032,58 @@
             }
             function showControls(show) {
                 clearTimeout(idle);
-                bottom.classList.toggle('albumtint-lyrics-full', !show && lyricsOpen());
-                if (show && lyricsOpen()) idle = setTimeout(function () {
-                    if (!bottom.contains(document.activeElement) || document.activeElement === identity) showControls(false);
+                var open = lyricsOpen();
+                var hidden = !show && open && !holdingControls;
+                var controls = bottom.querySelector('.videoOsdBottom-maincontrols');
+                if (controls) {
+                    if (!bottom.classList.contains('albumtint-lyrics-full')) {
+                        bottom.style.setProperty('--albumtint-controls-height', Math.ceil(controls.scrollHeight) + 'px');
+                    }
+                    if (hidden && controls.contains(document.activeElement)) identity.focus({ preventScroll: true });
+                    controls.inert = hidden;
+                }
+                bottom.classList.toggle('albumtint-lyrics-full', hidden);
+                if (!hidden && open && !holdingControls) idle = setTimeout(function () {
+                    showControls(false);
                 }, 3200);
             }
             identity.onclick = function () { showControls(bottom.classList.contains('albumtint-lyrics-full')); };
-            var touchY;
+            var touchY, touchHandled;
             bottom.addEventListener('touchstart', function (e) {
+                touchHandled = false;
                 touchY = e.touches.length === 1 && e.target.closest('.lyricsSection') ? e.touches[0].clientY : null;
+                if (touchY != null) clearTimeout(idle);
             }, { passive: true });
             bottom.addEventListener('touchmove', function (e) {
-                if (touchY == null || !lyricsOpen() || !e.touches.length) return;
+                if (touchHandled || touchY == null || !lyricsOpen() || !e.touches.length) return;
                 var dy = e.touches[0].clientY - touchY;
                 if (Math.abs(dy) < 24) return;
-                touchY = e.touches[0].clientY;
+                touchHandled = true;
                 showControls(dy > 0);
+                clearTimeout(idle);
             }, { passive: true });
+            function endTouch() {
+                if (touchY != null) showControls(!bottom.classList.contains('albumtint-lyrics-full'));
+                touchY = null;
+            }
+            bottom.addEventListener('touchend', endTouch, { passive: true });
+            bottom.addEventListener('touchcancel', endTouch, { passive: true });
             bottom.addEventListener('wheel', function (e) {
                 if (lyricsOpen() && e.target.closest('.lyricsSection') && Math.abs(e.deltaY) > 4) showControls(e.deltaY < 0);
             }, { passive: true });
             bottom.addEventListener('pointerdown', function (e) {
-                if (e.target.closest('.videoOsdBottom-maincontrols')) showControls(true);
+                if (!e.target.closest('.videoOsdBottom-maincontrols') || !lyricsOpen()) return;
+                holdingControls = true;
+                showControls(true);
+                function release(event) {
+                    if (event.pointerId !== e.pointerId) return;
+                    holdingControls = false;
+                    window.removeEventListener('pointerup', release, true);
+                    window.removeEventListener('pointercancel', release, true);
+                    showControls(true);
+                }
+                window.addEventListener('pointerup', release, true);
+                window.addEventListener('pointercancel', release, true);
             }, { passive: true });
             var wasLyricsOpen = false;
             new MutationObserver(function () {

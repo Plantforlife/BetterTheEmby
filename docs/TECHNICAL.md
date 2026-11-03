@@ -243,6 +243,9 @@ Emby's `AlphaPicker` lists the first character of each group of titles, at most 
 
 ## Phone layout
 
+- A single held entrance animation shifts the season or episode scroll surface from −36 px to rest in 480 ms. The description is clamped to three lines and expands through Emby’s history-aware dialog helper. Track options share their state across native Safari selects and anchored menus elsewhere.
+- The audio footer owns the backdrop filter so it samples the page underneath. Desktop lyric exit uses a transient inert visual copy. Phone lyric gestures animate the transport height, opacity and offset over 420 ms.
+
 - Phone video details keep the native series season selector and use a separate episode preview bound to the current view. The selected episode supplies its own playback sources and user data. Direct entries forward track choices to Emby's original controls. Ordinary HTML selects leave the picker to the browser.
 - The audio bar uses neutral glass. The phone player keeps the Emby queue and transport, surfaces shuffle and repeat beside the queue, and expands the lyrics after inactivity.
 

@@ -52,6 +52,8 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 ### Phones
 
+- Compact episode details keep the episode strip near the first screen. Tap a truncated description to read it in full. Safari uses its native track picker, while other browsers show an anchored menu.
+
 - Show and episode pages have centered playback and native version, audio, and subtitle pickers. Swipe the episode row and select an episode to update the details in place. Shuffle and repeat appear with the music queue.
 
 - Album details show a larger cover on the left and the title, artist and metadata on the right, with full-width playback controls underneath. Long text wraps naturally.

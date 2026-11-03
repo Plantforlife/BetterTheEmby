@@ -2268,14 +2268,27 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     .albumtint-phone-modes button[aria-pressed="true"] { background: rgba(255,255,255,.32); }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom-contentbuttons :is(.btnOsdShuffle,.btnOsdRepeatMode),
     html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons-topright :is(.btnOsdShuffle,.btnOsdRepeatMode),
-    html.mui-phonelayout.albumtint-osd .btnVideoOsd-stop-center,
-    html.mui-phonelayout.albumtint-osd .albumtint-lyrics-full:has(.lyricsSection:not(.hide)) .videoOsdBottom-maincontrols {
+    html.mui-phonelayout.albumtint-osd .btnVideoOsd-stop-center {
         display: none !important;
     }
     html.mui-phonelayout.albumtint-osd .videoOsd-belowtransportbuttons { width: 100%; display: flex; flex-direction: column; align-items: stretch; }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons { width: 100%; justify-content: space-evenly; margin: 4px 0; }
-    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .osdIconButton .md-icon { font-size: 1.8rem; }
-    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .videoOsd-btnPause .md-icon { font-size: 2.5rem; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .osdIconButton { min-width: 48px; min-height: 48px; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .osdIconButton .md-icon { font-size: 2rem; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .videoOsd-btnPause { min-width: 64px; min-height: 64px; }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide)) .videoOsdBottom-maincontrols {
+        max-height: var(--albumtint-controls-height, 420px);
+        min-height: 0;
+        overflow: clip;
+        transition: max-height 420ms var(--mui-ease), opacity 420ms var(--mui-ease), transform 420ms var(--mui-ease);
+    }
+    html.mui-phonelayout.albumtint-osd .albumtint-lyrics-full:has(.lyricsSection:not(.hide)) .videoOsdBottom-maincontrols {
+        max-height: 0;
+        opacity: 0;
+        transform: translateY(28px);
+        pointer-events: none;
+    }
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom-buttons .videoOsd-btnPause .md-icon { font-size: 2.8rem; }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom-contentbuttons { width: 100%; justify-content: space-evenly; }
 }
 
@@ -2313,11 +2326,10 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         filter: brightness(.78);
     }
 
-    .mui-phone-video-body { padding: 5.5rem 16px 16px; text-align: center; }
-    .mui-phone-video-hasart .mui-phone-video-body { padding-top: clamp(175px, 32svh, 330px); }
-    .mui-phone-video-logo { width: min(48%, 190px); max-height: 95px; object-fit: contain; margin: 0 auto 12px; }
+    .mui-phone-video-body { padding: clamp(120px, 30svh, 265px) 16px 10px; text-align: center; }
+    .mui-phone-video-logo { width: min(48%, 190px); height: clamp(52px, 10svh, 88px); object-fit: contain; margin: 0 auto 8px; }
     .mui-phone-video-title { margin: 0; font-size: clamp(16px, 4.5vw, 22px); overflow-wrap: anywhere; }
-    .mui-phone-video-facts, .mui-phone-video-genres { font-size: .9rem; margin: 9px 0; }
+    .mui-phone-video-facts, .mui-phone-video-genres { font-size: .9rem; margin: 6px 0; }
     .mui-phone-video-facts:empty, .mui-phone-video-genres:empty, .mui-phone-video-status:empty { display: none; }
     .mui-phone-video-play {
         display: flex;
@@ -2326,7 +2338,7 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         gap: 6px;
         width: min(100%, 320px);
         min-height: 46px;
-        margin: 18px auto 12px;
+        margin: 14px auto 10px;
         border: 0;
         border-radius: 999px;
         background: #fff;
@@ -2350,10 +2362,37 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     .mui-phone-video-control .md-icon { font-size: 21px; }
     .mui-phone-video-control[aria-pressed="true"] { background: rgba(255,255,255,.3); }
     .mui-phone-video-control:disabled, .mui-phone-video-control:has(select:disabled), .mui-phone-video-play:disabled { opacity: .42; }
-    .mui-phone-video-control:focus-within { outline: 2px solid currentColor; outline-offset: 2px; }
+    .mui-phone-video-control { -webkit-tap-highlight-color: transparent; }
+    .mui-phone-video-control:focus-visible, .mui-phone-video-control:has(select:focus-visible) { outline: 2px solid currentColor; outline-offset: 2px; }
+    .mui-phone-video-control[aria-expanded="true"] { background: rgba(255,255,255,.22); border-color: transparent; }
+    .mui-phone-video-control[aria-busy="true"] { cursor: progress; }
     .mui-phone-video-control select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; font-size: 16px; }
     .mui-phone-video-more { position: absolute; right: 16px; top: max(64px, calc(env(safe-area-inset-top) + 58px)); background: rgba(20,20,22,.72); }
-    .mui-phone-video-overview { margin: 16px 0 0; text-align: start; line-height: 1.5; }
+    .mui-phone-video-overview {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font: inherit;
+        margin: 12px 0 0;
+        text-align: start;
+        line-height: 1.45;
+    }
+    .mui-phone-video-overview[hidden] { display: none; }
+    html.mui-phonelayout .mui-phone-video .topDetailsContainer:not(:has(.trackListSection:not(.hide))),
+    html.mui-phonelayout .mui-phone-video.mui-phone-rail-ready .topDetailsContainer { display: none !important; }
+    html.mui-phonelayout .mui-phone-video .seriesItemsSection { margin-block-start: 0; padding-block-start: 0; }
+    html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer { --card-width: 43vw; }
+    html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer > .card { width: clamp(126px, 43vw, 185px) !important; }
+    @media (max-height: 700px) {
+        .mui-phone-video-body { padding-top: clamp(82px, 23svh, 155px); }
+        .mui-phone-video-logo { height: 52px; }
+    }
     .mui-phone-video-status:not(:empty) { margin-top: 10px; }
     html.mui-phonelayout .mui-phone-episodes { display: block; padding: 0 0 16px; }
     .mui-phone-episodes h2 { margin: 0 16px 8px; font-size: 1.15rem; }
@@ -2368,7 +2407,7 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     }
     .mui-phone-episode-strip::-webkit-scrollbar { display: none; }
     .mui-phone-episode {
-        flex: 0 0 clamp(145px, 43vw, 248px);
+        flex: 0 0 clamp(126px, 43vw, 185px);
         scroll-snap-align: start;
         text-align: start;
         color: inherit;
@@ -2904,3 +2943,60 @@ html.mui .actionSheet.mui-select-menu .listItemBody::before {
 html.mui .actionSheet.mui-select-menu .listItem-content:has(.actionSheetItemImageContainer:not(:empty)) .listItemBody::before {
     opacity: 1;
 }
+
+/* Phone track flyouts use the same edge-to-edge selected row as the desktop video menu. */
+.mui-phone-track-menu {
+    position: fixed;
+    z-index: 10000;
+    width: max-content;
+    min-width: min(140px, 100%);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 0;
+    border-radius: 12px;
+    background: rgb(37,36,42);
+    color: #fff;
+    box-shadow: 0 12px 32px rgba(0,0,0,.38);
+}
+.mui-phone-track-menu button {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 14px 10px 34px;
+    position: relative;
+    border: 0;
+    color: inherit;
+    background: none;
+    font: inherit;
+    text-align: start;
+    overflow-wrap: anywhere;
+    -webkit-tap-highlight-color: transparent;
+}
+.mui-phone-track-menu button[aria-selected="true"] { background: rgba(255,255,255,.78); color: #111; }
+.mui-phone-track-menu button[aria-selected="true"]::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: 15px;
+    top: calc(50% - 3px);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.mui-phone-track-menu button:focus-visible { outline: 2px solid #87b9ff; outline-offset: -3px; }
+.mui-phone-overview-reader {
+    width: min(calc(100% - 48px), 520px);
+    max-height: 68dvh;
+    overflow: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+    padding: 18px;
+    border: 0;
+    border-radius: 18px;
+    background: #111;
+    color: #fff;
+}
+.mui-phone-overview-reader::backdrop { background: rgba(0,0,0,.38); backdrop-filter: blur(16px); }
+.mui-phone-overview-reader p { margin: 4px 0 0; line-height: 1.6; white-space: pre-wrap; }
+.mui-phone-reader-close { display: grid; place-items: center; margin-inline-start: auto; width: 44px; height: 44px; border: 0; border-radius: 50%; color: inherit; background: #2a2a2a; }
+html:has(.mui-phone-overview-reader[open]) { overflow: hidden !important; }

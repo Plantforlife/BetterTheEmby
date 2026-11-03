@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2.19
+
+- Compact phone video details keep the episode strip in view and open long descriptions in a reader. Season and episode entrances move right in one 480 ms transition.
+- Phone Safari uses native track pickers. Other browsers use a compact anchored menu. Watched and favourite controls respond immediately and restore their prior state on failure.
+- The audio footer blurs the page behind it. Desktop lyrics animate out, and phone transport controls slide and resize the lyrics area.
+
 ## 1.0.2.18
 
 - Phone show and episode details use a full-width backdrop, centered playback, and five circular controls. Episode selection updates the detail panel without navigation. Version, audio, and subtitle menus use the browser's native select control.

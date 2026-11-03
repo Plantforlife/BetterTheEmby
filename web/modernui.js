@@ -310,7 +310,12 @@
         // Album Tint animates the way into and out of the music player
         var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio(), entrance = [];
         if (!albumTint && !isOsd && isPhone()) {
-            if (!restored && !(r.path === 'item' && view.__muiPhoneVideo)) entrance.push(rise(view, 0, 0, firstView ? 260 : 200));
+            if (!restored && !(r.path === 'item' && view.__muiPhoneVideo)) {
+                var surface = r.path === 'item' && view.querySelector('.itemMainScrollSlider') || view;
+                var entry = rise(surface, 0, 0, firstView ? 260 : 200);
+                view.__muiPhoneEntry = entry;
+                entrance.push(entry);
+            }
         } else if (!albumTint && !isOsd) {
             if (wasOsd || firstView) {
                 // leaving the video player (Emby brings back the page, the header and the drawer at once), or
@@ -388,6 +393,8 @@
     function pageReady(view, r) {
         if (r.path === 'item') {
             var name = view.querySelector('.detailTextContainer .itemName-primary');
+            var type = view.controller && view.controller.currentItem && view.controller.currentItem.Type;
+            if (isPhone() && /^(Series|Season|Episode)$/.test(type) && !view.__muiPhoneVideo) return false;
             return !!(name && name.textContent.trim());
         }
         if (view.classList.contains('withTabs')) {
@@ -814,6 +821,8 @@
         var view = e.target;
         if (!view || !view.classList) return;
         if (view.__muiRelease) view.__muiRelease(true);
+        if (view.__muiPhoneEntry) { view.__muiPhoneEntry.cancel(); view.__muiPhoneEntry = null; }
+        if (view.__muiPhoneVideo) view.__muiPhoneVideo.closeOverlays();
         if (view.__muiCancelTabEnter) view.__muiCancelTabEnter();
         stopTabSlide(view);
         // phones: where the page was left, for when it comes back (see "the document scrolls")
@@ -1660,17 +1669,31 @@
             ['.selectAudio', 'headphones', L('音频', 'Audio')],
             ['.selectSubtitles', 'subtitles', L('字幕', 'Subtitles')]
         ];
-        var selects = specs.map(function (spec) {
+        var safariPicker = /Version\/[\d.]+.*Safari\//i.test(navigator.userAgent) &&
+            !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\/|OPiOS|YaBrowser|DuckDuckGo|GSA\//i.test(navigator.userAgent);
+        var pickerButtons = [];
+        var menu = null, menuAnchor = null, reader = null;
+        var selects = specs.map(function (spec, index) {
             var control = el('label', 'mui-phone-video-control');
-            control.appendChild(icon(spec[1]));
+            if (safariPicker) control.appendChild(icon(spec[1]));
+            else {
+                control = button(spec[2], spec[1]);
+                control.setAttribute('aria-haspopup', 'listbox');
+                control.onclick = function () { openPicker(index, control); };
+                pickerButtons[index] = control;
+            }
             var select = el('select');
             select.setAttribute('aria-label', spec[2]);
             select.title = spec[2];
-            control.appendChild(select);
+            if (safariPicker) control.appendChild(select);
+            else select.hidden = true;
             actions.appendChild(control);
             return select;
         });
-        var overview = el('p', 'mui-phone-video-overview');
+        var overview = el('button', 'mui-phone-video-overview');
+        overview.type = 'button';
+        overview.setAttribute('aria-haspopup', 'dialog');
+        overview.onclick = openOverview;
         var more = button(L('更多', 'More'), 'more_horiz', 'mui-phone-video-more');
         var status = el('div', 'mui-phone-video-status secondaryText');
         status.setAttribute('role', 'status');
@@ -1681,7 +1704,7 @@
         var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, sources = [];
         var baseLogo = logoOf(base);
         var currentArt = '', wantedArt = '', destroyed = false, pending = false;
-        var state = view.__muiPhoneVideo = { baseId: base.Id, select: selectEpisode, sync: sync, destroy: destroy };
+        var state = view.__muiPhoneVideo = { baseId: base.Id, select: selectEpisode, sync: sync, destroy: destroy, closeOverlays: closeOverlays };
 
         function button(label, glyph, cls) {
             var b = el('button', cls || 'mui-phone-video-control');
@@ -1690,6 +1713,88 @@
             b.title = label;
             b.appendChild(icon(glyph));
             return b;
+        }
+        function closeMenu(restoreFocus) {
+            if (!menu) return;
+            menu.remove();
+            menu = null;
+            document.removeEventListener('pointerdown', dismissMenu, true);
+            document.removeEventListener('keydown', dismissMenu, true);
+            window.removeEventListener('scroll', dismissMenu, true);
+            window.removeEventListener('resize', dismissMenu);
+            menuAnchor.setAttribute('aria-expanded', 'false');
+            if (restoreFocus) menuAnchor.focus({ preventScroll: true });
+        }
+        function dismissMenu(event) {
+            if (event.type === 'keydown' && event.key !== 'Escape') return;
+            if (event.type === 'pointerdown' && (menu.contains(event.target) || menuAnchor.contains(event.target))) return;
+            if (event.type === 'scroll' && menu.contains(event.target)) return;
+            if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); }
+            closeMenu(event.key === 'Escape');
+        }
+        function openPicker(index, anchor) {
+            var select = selects[index];
+            if (select.disabled) return;
+            if (menu && menuAnchor === anchor) { closeMenu(true); return; }
+            closeMenu(false);
+            menuAnchor = anchor;
+            menu = el('div', 'mui-phone-track-menu');
+            menu.setAttribute('role', 'listbox');
+            menu.setAttribute('aria-label', specs[index][2]);
+            anchor.setAttribute('aria-expanded', 'true');
+            Array.prototype.forEach.call(select.options, function (option) {
+                var row = el('button', '', option.label);
+                row.type = 'button';
+                row.setAttribute('role', 'option');
+                row.setAttribute('aria-selected', option.selected);
+                row.onclick = function () {
+                    select.value = option.value;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    closeMenu(true);
+                };
+                menu.appendChild(row);
+            });
+            document.body.appendChild(menu);
+            var rect = anchor.getBoundingClientRect();
+            var viewport = window.visualViewport;
+            var right = viewport ? viewport.offsetLeft + viewport.width : document.documentElement.clientWidth;
+            var bottom = viewport ? viewport.offsetTop + viewport.height : innerHeight;
+            var left = viewport ? viewport.offsetLeft : 0;
+            var top = viewport ? viewport.offsetTop : 0;
+            menu.style.maxWidth = Math.max(0, right - left - 16) + 'px';
+            menu.style.maxHeight = Math.max(0, bottom - top - 16) + 'px';
+            menu.style.left = Math.max(left + 8, Math.min(rect.left, right - menu.offsetWidth - 8)) + 'px';
+            menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, bottom - menu.offsetHeight - 8)) + 'px';
+            document.addEventListener('pointerdown', dismissMenu, true);
+            document.addEventListener('keydown', dismissMenu, true);
+            window.addEventListener('scroll', dismissMenu, true);
+            window.addEventListener('resize', dismissMenu);
+            (menu.querySelector('[aria-selected="true"]') || menu.firstElementChild).focus({ preventScroll: true });
+        }
+        var dialogHelper;
+        function closeOverlays() {
+            closeMenu(false);
+            if (reader && dialogHelper) dialogHelper.close(reader);
+        }
+        function openOverview() {
+            if (overview.scrollHeight <= overview.clientHeight + 1 || reader) return;
+            Emby.importModule('./modules/dialoghelper/dialoghelper.js').then(function (mod) {
+                if (!active() || reader) return;
+                dialogHelper = mod.default || mod;
+                var content = el('div', 'mui-phone-overview-reader');
+                content.setAttribute('role', 'dialog');
+                content.setAttribute('aria-label', L('简介', 'Overview'));
+                var close = button(L('关闭', 'Close'), 'close', 'mui-phone-reader-close');
+                content.append(close, el('p', '', overview.textContent));
+                reader = dialogHelper.createDialog({ dialog: content, autoLowResLayout: false,
+                    blurBackground: true, removeOnClose: true, swipeClose: false });
+                close.onclick = function () { dialogHelper.close(content); };
+                content.addEventListener('close', function () {
+                    reader = null;
+                    if (active()) overview.focus({ preventScroll: true });
+                }, { once: true });
+                dialogHelper.open(content);
+            }).catch(function () { status.textContent = L('无法打开简介。', 'Could not open overview.'); });
         }
         function active() {
             return !destroyed && view.isConnected && !view.classList.contains('hide') && isPhone();
@@ -1710,8 +1815,8 @@
                 art.appendChild(img);
                 panel.classList.add('mui-phone-video-hasart');
                 if (img.animate && !reduceMotion) {
-                    img.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 360, easing: EASE });
-                    if (old) setTimeout(function () { old.remove(); }, 365);
+                    img.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 420, easing: EASE });
+                    if (old) setTimeout(function () { old.remove(); }, 425);
                 } else if (old) old.remove();
             };
             img.src = url;
@@ -1746,10 +1851,17 @@
         }
         function markButtons() {
             var data = selected.UserData || {};
-            watched.setAttribute('aria-pressed', !!data.Played);
-            favorite.setAttribute('aria-pressed', !!data.IsFavorite);
-            favorite.firstChild.textContent = data.IsFavorite ? 'favorite' : 'favorite_border';
+            var watchedKey = selected.Id + ':Played', favoriteKey = selected.Id + ':IsFavorite';
+            var played = pendingButtons.has(watchedKey) ? pendingButtons.get(watchedKey) : !!data.Played;
+            var liked = pendingButtons.has(favoriteKey) ? pendingButtons.get(favoriteKey) : !!data.IsFavorite;
+            watched.setAttribute('aria-pressed', played);
+            favorite.setAttribute('aria-pressed', liked);
+            watched.setAttribute('aria-busy', pendingButtons.has(watchedKey));
+            favorite.setAttribute('aria-busy', pendingButtons.has(favoriteKey));
+            watched.firstChild.textContent = played ? 'check_circle' : 'check_circle_outline';
+            favorite.firstChild.textContent = liked ? 'favorite' : 'favorite_border';
         }
+        var pendingButtons = new Map();
         function render(item) {
             var logo = logoOf(item) || baseLogo;
             if (logo) {
@@ -1790,6 +1902,8 @@
             }
             if (value != null && values.some(function (v) { return String(v[0]) === String(value); })) select.value = value;
             select.disabled = values.length < 2;
+            var proxy = pickerButtons[selects.indexOf(select)];
+            if (proxy) proxy.disabled = select.disabled;
         }
         function sync() {
             if (selected.Id !== base.Id || destroyed) return;
@@ -1812,9 +1926,6 @@
             watched.disabled = !nativeWatch;
             favorite.disabled = !nativeFavorite;
             render(selected);
-            // The native buttons reflect subsequent user-data events even if the DTO was not replaced.
-            if (nativeWatch && nativeWatch.hasAttribute('aria-pressed')) watched.setAttribute('aria-pressed', nativeWatch.getAttribute('aria-pressed'));
-            if (nativeFavorite && nativeFavorite.hasAttribute('aria-pressed')) favorite.setAttribute('aria-pressed', nativeFavorite.getAttribute('aria-pressed'));
         }
         function tracks() {
             var source = sources.find(function (s) { return s.Id === selects[0].value; }) || sources[0];
@@ -1836,6 +1947,9 @@
         });
         function selectEpisode(item) {
             if (item.Id === selected.Id && !pending) return;
+            closeOverlays();
+            ++imageRequest;
+            wantedArt = currentArt;
             var token = ++selection;
             if (item.Id === base.Id) {
                 pending = false;
@@ -1885,27 +1999,33 @@
                 status.appendChild(link);
             });
         }
-        function toggle(field, nativeSelector, control) {
-            if (selected.Id === base.Id) {
-                var native = view.querySelector(nativeSelector);
-                if (native) native.click();
-                return;
-            }
-            var item = selected, a = api(), uid = a.getCurrentUserId();
-            var data = item.UserData || (item.UserData = {});
-            var on = !data[field];
-            control.disabled = true;
-            var result = field === 'Played' ? (on ? a.markPlayed(uid, [item.Id]) : a.markUnplayed(uid, [item.Id])) :
-                a.updateFavoriteStatus(uid, [item.Id], on);
-            result.then(function () { data[field] = on; }, function () {
-                status.textContent = L('更新失败，请重试。', 'Could not update. Try again.');
+        function toggle(field) {
+            var item = selected, a = api();
+            if (!a) return;
+            var key = item.Id + ':' + field;
+            if (pendingButtons.has(key)) return;
+            var uid = a.getCurrentUserId(), data = item.UserData || (item.UserData = {});
+            var before = !!data[field], on = !before;
+            pendingButtons.set(key, on);
+            data[field] = on;
+            markButtons();
+            Promise.resolve().then(function () {
+                return field === 'Played' ? (on ? a.markPlayed(uid, [item.Id]) : a.markUnplayed(uid, [item.Id])) :
+                    a.updateFavoriteStatus(uid, [item.Id], on);
+            }).catch(function () {
+                data[field] = before;
+                if (selected.Id === item.Id) status.textContent = L('更新失败，请重试。', 'Could not update. Try again.');
             }).finally(function () {
-                control.disabled = false;
-                markButtons();
+                pendingButtons.delete(key);
+                if (selected.Id === item.Id) {
+                    selected.UserData = selected.UserData || {};
+                    selected.UserData[field] = data[field];
+                    markButtons();
+                }
             });
         }
-        watched.onclick = function () { toggle('Played', '.btnPlaystate:not(.hide)', watched); };
-        favorite.onclick = function () { toggle('IsFavorite', '.btnUserRating:not(.hide)', favorite); };
+        watched.onclick = function () { toggle('Played'); };
+        favorite.onclick = function () { toggle('IsFavorite'); };
         more.onclick = function () {
             if (selected.Id !== base.Id) showItem(selected);
             else {
@@ -1928,6 +2048,7 @@
             }).catch(function () { status.textContent = L('无法开始播放。', 'Could not start playback.'); });
         };
         function destroy() {
+            closeOverlays();
             destroyed = true;
             ++selection;
             clearTimeout(timer);
@@ -1973,7 +2094,11 @@
                 if (current) strip.scrollLeft = current.offsetLeft - strip.firstElementChild.offsetLeft;
             }).catch(function () { /* the native episode list remains available */ });
         }
-        if (/^(Season|Episode)$/.test(base.Type)) slide(panel, -Math.min(48, window.innerWidth * .1), 300);
+        var entry = view.__muiPhoneEntry;
+        if (/^(Season|Episode)$/.test(base.Type) && entry && entry.playState === 'paused') {
+            entry.effect.setKeyframes([{ transform: 'translateX(-36px)', opacity: .65 }, { transform: 'none', opacity: 1 }]);
+            entry.effect.updateTiming({ duration: 480 });
+        }
     }
 
     // ---------- artist pages: photo (or latest cover) as a rounded square, blurred art behind, about section ----------
