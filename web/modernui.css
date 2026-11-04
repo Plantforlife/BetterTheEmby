@@ -2541,11 +2541,27 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     html.mui-phonelayout .mui-sl-slide img { animation: none; }
     html.mui-phonelayout .mui-sl-logo-slot {
         height: clamp(58px, 12svh, 104px);
-        display: flex;
+        display: grid;
+        grid-template: minmax(0, 1fr) / minmax(0, 1fr);
         align-items: end;
+        justify-items: start;
         margin-bottom: 1.1em;
     }
-    html.mui-phonelayout .mui-sl-logo-slot > :is(.mui-sl-logo, .mui-sl-title) { margin-bottom: 0; }
+    html.mui-phonelayout .mui-sl-logo-slot > :is(.mui-sl-logo, .mui-sl-title) {
+        grid-area: 1 / 1;
+        margin-bottom: 0;
+        transition: opacity 240ms ease, visibility 0s;
+    }
+    html.mui-phonelayout .mui-sl-logo-slot > [hidden] {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 240ms ease, visibility 0s 240ms;
+    }
+    html.mui-phonelayout .mui-sl-logo-slot > .mui-sl-logo { display: block; }
+    html.mui-phonelayout .mui-sl-logo-slot > .mui-sl-title { display: -webkit-box; }
+    @media (prefers-reduced-motion: reduce) {
+        html.mui-phonelayout .mui-sl-logo-slot > :is(.mui-sl-logo, .mui-sl-title) { transition: none; }
+    }
     html.mui-phonelayout .mui-sl-logo {
         width: min(68vw, 18em);
         height: 100%;

@@ -1135,7 +1135,14 @@
                 logo.alt = it.Name;
                 logo.decoding = 'async';
                 logo.hidden = true;
-                logo.onload = function () { logo.hidden = false; title.hidden = true; };
+                logo.onload = function revealLogo() {
+                    if (swipeMotion && swipeMotion.playState === 'running') {
+                        swipeMotion.finished.then(revealLogo, revealLogo);
+                        return;
+                    }
+                    logo.hidden = false;
+                    title.hidden = true;
+                };
                 logo.dataset.src = imgUrl(it.Id, 'Logo', it.Logo, 600, 90);
                 logoSlot.append(logo, title);
                 info.appendChild(logoSlot);

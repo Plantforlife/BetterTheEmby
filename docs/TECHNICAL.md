@@ -48,6 +48,7 @@ Design references: the Apple TV app, Netflix's home banner, Infuse's detail page
   - A soft glow in the art's own color.
   - It changes every 8 s with a 1.1 s crossfade. The dot of the current slide fills up as a progress bar; dots and arrows switch slides, and you can swipe on touch screens.
   - It pauses while the pointer is over it, the tab is hidden, or the banner is scrolled out of view. Scrolled back to it, the current slide starts over.
+  - On phones the logo and its text fallback share a fixed grid cell. If the image arrives during a swipe, the current slide settles before the 240 ms crossfade. With reduced motion the logo appears immediately.
   - Content: 7 picks from the 30 newest movies and shows with backdrops, preferring ones with a title logo. The set stays the same for 30 minutes within a browser tab.
   - Backdrops are requested at 960–1920 px, never more.
 - **Detail pages** of movies, shows, seasons, episodes and collections (music stays with Album Tint):

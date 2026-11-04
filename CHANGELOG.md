@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.25
+
+- Let a late phone spotlight logo fade in after the swipe settles, keeping the title and metadata aligned throughout.
+
 ## 1.0.2.24
 
 - Commit a phone alphabet index tap once when WebKit also emits a native click after touch.
