@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.37
+
+- Phone episode rail: the blue outline jumps straight onto the tapped episode instead of sliding across the strip; only the strip scrolls to center it. The season heading now opens the same picker as the version selector — the native one on Safari, the anchored menu elsewhere. The header buttons on video details are one pane of light glass, aligned as in the reference.
+
 ## 1.0.2.36
 
 - Phone episode rail: the blue outline and the strip scroll now move on one eased 400 ms curve, so the outline glides straight to the new episode instead of overshooting and being dragged back. Rapid taps continue from the current position, a swipe during the motion keeps the finger in control, and a new width keeps the outline on its card. Switching seasons slides the new episodes in from the side of the season order.

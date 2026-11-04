@@ -1847,8 +1847,8 @@
         var seriesDetail = /^(Series|Season|Episode)$/.test(base.Type);
         view.classList.toggle('mui-phone-series-detail', seriesDetail);
         var seriesBackdrop = seriesDetail && backdropOf(base);
-        var artFrame = 0, activeSeason = null, seasonRequest = 0, seasonMenuOpen = false, ring, ringX = 0, railMotion = null;
-        var railResize = null, railWidth = 0, RAIL_MS = 400;
+        var artFrame = 0, activeSeason = null, seasonRequest = 0, seasonMenuOpen = false, ring, ringX = 0;
+        var railResize = null, railWidth = 0;
         var lastArtScroll, episodeCards = new Map(), currentCard = null, pendingId = null;
         var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, sources = [];
         var baseLogo = logoOf(base);
@@ -1928,27 +1928,25 @@
             if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); }
             closeMenu(event.key === 'Escape');
         }
-        function openPicker(index, anchor) {
-            var select = selects[index];
-            if (select.disabled) return;
+        // Anchored list of options (track versions, audio, subtitles, seasons): one menu for every picker.
+        function openListMenu(anchor, label, rows, choose) {
             if (menu && menuAnchor === anchor) { closeMenu(true); return; }
             closeMenu(false);
             menuAnchor = anchor;
             menu = el('div', 'mui-phone-track-menu');
             menu.setAttribute('role', 'listbox');
-            menu.setAttribute('aria-label', specs[index][2]);
+            menu.setAttribute('aria-label', label);
             anchor.setAttribute('aria-expanded', 'true');
-            Array.prototype.forEach.call(select.options, function (option) {
-                var row = el('button', '', option.label);
-                row.type = 'button';
-                row.setAttribute('role', 'option');
-                row.setAttribute('aria-selected', option.selected);
-                row.onclick = function () {
-                    select.value = option.value;
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
+            rows.forEach(function (row) {
+                var item = el('button', '', row.label);
+                item.type = 'button';
+                item.setAttribute('role', 'option');
+                item.setAttribute('aria-selected', !!row.selected);
+                item.onclick = function () {
+                    choose(row.value);
                     closeMenu(true);
                 };
-                menu.appendChild(row);
+                menu.appendChild(item);
             });
             document.body.appendChild(menu);
             var rect = anchor.getBoundingClientRect();
@@ -1968,6 +1966,16 @@
             if (anchor.matches(':focus-visible')) {
                 (menu.querySelector('[aria-selected="true"]') || menu.firstElementChild).focus({ preventScroll: true });
             }
+        }
+        function openPicker(index, anchor) {
+            var select = selects[index];
+            if (select.disabled) return;
+            openListMenu(anchor, specs[index][2], Array.prototype.map.call(select.options, function (option) {
+                return { value: option.value, label: option.label, selected: option.selected };
+            }), function (value) {
+                select.value = value;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            });
         }
         var dialogHelper;
         function closeOverlays() {
@@ -2082,7 +2090,7 @@
             if (card) card.setAttribute('aria-current', 'true');
             currentCard = card;
             // centerEpisode moves the outline; a selection it doesn't follow has no card to outline
-            if (ring && !card) { stopRail(); ring.hidden = true; }
+            if (ring && !card) ring.hidden = true;
         }
         function setRing(x) {
             ringX = x;
@@ -2095,14 +2103,6 @@
             var rtl = getComputedStyle(strip).direction === 'rtl';
             var left = card === strip.firstElementChild ? 0 : card.offsetLeft + (card.offsetWidth - strip.clientWidth) / 2;
             return Math.max(rtl ? -range : 0, Math.min(rtl ? 0 : range, left));
-        }
-        // keepSnap: another motion takes over at once. Snapping back on in between would let the browser
-        // pull the strip to the nearest card for a frame first.
-        function stopRail(keepSnap) {
-            if (!railMotion) return;
-            cancelAnimationFrame(railMotion.frame);
-            if (!keepSnap) railMotion.strip.style.scrollSnapType = '';
-            railMotion = null;
         }
         function setText(node, value) {
             if (node.textContent !== value) node.textContent = value;
@@ -2156,7 +2156,7 @@
             markButtons();
             markEpisode(pendingId || item.Id);
             // Text above the strip reflowed: keep a resting outline on its card.
-            if (ring && currentCard && !railMotion && !ring.hidden && Math.abs(ringX - currentCard.offsetLeft) >= 1) {
+            if (ring && currentCard && !ring.hidden && Math.abs(ringX - currentCard.offsetLeft) >= 1) {
                 setRing(currentCard.offsetLeft);
             }
             if (railTop !== null) {
@@ -2165,47 +2165,15 @@
             }
             rotateArt();
         }
-        // Moves the outline to a card and centers it. The strip's scroll and the outline follow one eased curve
-        // frame by frame: the outline rides inside the strip, so with the browser's own smooth scroll (its own
-        // duration and curve) it shot past the card and was dragged back. Seen on screen the outline now glides
-        // straight from the old card to the new one. A new selection continues from where both are; a finger on
-        // the strip takes the scroll over while the outline finishes its move.
+        // The outline jumps straight onto the tapped card; only the strip glides to center it (the outline
+        // rides along with its card). Two curves for the same move looked like the outline overshooting.
         function centerEpisode(card, immediate) {
             if (!card || !card.isConnected || !ring) return;
             var strip = card.closest('.mui-phone-episode-strip');
             if (!strip || !strip.clientWidth) return;
-            var x = card.offsetLeft, left = stripTarget(strip, card);
-            var wasHidden = ring.hidden, jump = immediate || reduceMotion || wasHidden;
-            stopRail(!jump);
             ring.hidden = false;
-            if (jump) {
-                setRing(x);
-                strip.scrollTo({ left: left, behavior: 'instant' });
-                return;
-            }
-            var motion = railMotion = { strip: strip, x0: ringX, x1: x, s0: strip.scrollLeft, s1: left, scroll: true, start: 0 };
-            if (Math.abs(motion.x1 - motion.x0) < 1 && Math.abs(motion.s1 - motion.s0) < 1) {
-                railMotion = null;
-                strip.style.scrollSnapType = '';
-                return;
-            }
-            // Snapping would pull each in-between position to a nearby card; the end position is a snap position.
-            strip.style.scrollSnapType = 'none';
-            motion.frame = requestAnimationFrame(function step(now) {
-                if (railMotion !== motion) return;
-                // Timed from the first frame, so a busy main thread doesn't make the motion start halfway.
-                if (!motion.start) motion.start = now;
-                var t = Math.min(1, (now - motion.start) / RAIL_MS), e = ease(t);
-                setRing(motion.x0 + (motion.x1 - motion.x0) * e);
-                if (motion.scroll) strip.scrollLeft = motion.s0 + (motion.s1 - motion.s0) * e;
-                if (t < 1) motion.frame = requestAnimationFrame(step);
-                else stopRail();
-            });
-        }
-        function takeOverRail(event) {
-            if (!railMotion || railMotion.strip !== event.currentTarget) return;
-            railMotion.scroll = false;
-            railMotion.strip.style.scrollSnapType = '';
+            setRing(card.offsetLeft);
+            strip.scrollTo({ left: stripTarget(strip, card), behavior: immediate || reduceMotion ? 'instant' : 'smooth' });
         }
         function options(select, values, value) {
             var key = JSON.stringify(values);
@@ -2372,7 +2340,6 @@
             ++selection;
             ++seasonRequest;
             if (artFrame) cancelAnimationFrame(artFrame);
-            stopRail();
             if (railResize) railResize.disconnect();
             if (artFade) artFade.cancel();
             if (titleFade) titleFade.cancel();
@@ -2427,23 +2394,45 @@
             status.textContent = '';
             episodeCards.clear();
             currentCard = null;
-            stopRail();
             var nextRail = el('section', 'mui-phone-episodes');
             var heading = el('div', 'mui-phone-episode-heading');
             var label = season.Name || L('剧集', 'Episodes');
-            var seasonLabel = el(seasons.length > 1 ? 'button' : 'h2', 'mui-phone-season-label', label);
-            if (seasons.length > 1) {
+            // Season choice works like the version selector: Safari opens its own picker for a native select,
+            // other browsers get the anchored menu.
+            function seasonFailed() {
+                if (active() && activeSeason === season) status.textContent = L('无法载入这一季，请重试', 'Could not load this season. Try again');
+            }
+            function pickSeason(seasonId) {
+                var next = seasons.find(function (entry) { return String(entry.Id) === String(seasonId); });
+                if (!next || next.Id === season.Id) return;
+                openSeason(next, seasons, false).catch(seasonFailed);
+            }
+            var seasonLabel;
+            if (seasons.length > 1 && safariPicker) {
+                seasonLabel = el('label', 'mui-phone-season-label mui-phone-season-select');
+                seasonLabel.append(document.createTextNode(label), icon('unfold_more'));
+                var seasonSelect = el('select');
+                seasonSelect.setAttribute('aria-label', L('选择季', 'Season'));
+                seasons.forEach(function (entry) {
+                    seasonSelect.appendChild(new Option(entry.Name, entry.Id, false, String(entry.Id) === String(season.Id)));
+                });
+                seasonSelect.addEventListener('pointerdown', function () { seasonSelect.classList.add('mui-pointer-focus'); });
+                seasonSelect.addEventListener('blur', function () { seasonSelect.classList.remove('mui-pointer-focus'); });
+                seasonSelect.addEventListener('change', function () { pickSeason(seasonSelect.value); });
+                seasonLabel.appendChild(seasonSelect);
+            } else if (seasons.length > 1) {
+                seasonLabel = el('button', 'mui-phone-season-label', label);
                 seasonLabel.type = 'button';
-                seasonLabel.setAttribute('aria-haspopup', 'dialog');
-                seasonLabel.setAttribute('aria-label', label);
+                seasonLabel.setAttribute('aria-haspopup', 'listbox');
+                seasonLabel.setAttribute('aria-label', L('选择季', 'Season'));
                 seasonLabel.appendChild(icon('unfold_more'));
                 seasonLabel.onclick = function () {
-                    showRailMenu(seasonLabel, seasons, season.Id, function (next) {
-                        if (next.Id !== season.Id) openSeason(next, seasons, false).catch(function () {
-                            if (active() && activeSeason === season) status.textContent = L('无法载入这一季，请重试', 'Could not load this season. Try again');
-                        });
-                    });
+                    openListMenu(seasonLabel, L('选择季', 'Season'), seasons.map(function (entry) {
+                        return { value: entry.Id, label: entry.Name, selected: String(entry.Id) === String(season.Id) };
+                    }), pickSeason);
                 };
+            } else {
+                seasonLabel = el('h2', 'mui-phone-season-label', label);
             }
             var allEpisodes = el('button', 'mui-phone-episode-more', L('更多', 'More'));
             allEpisodes.type = 'button';
@@ -2473,9 +2462,6 @@
             ring.setAttribute('aria-hidden', 'true');
             strip.appendChild(ring);
             nextRail.appendChild(strip);
-            ['pointerdown', 'touchstart', 'wheel'].forEach(function (type) {
-                strip.addEventListener(type, takeOverRail, { passive: true });
-            });
             // A new width (the phone turned, the 42% cards resized) moves every card: the outline follows its
             // card and the current episode is centered again.
             if (railResize) railResize.disconnect();
