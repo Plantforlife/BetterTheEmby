@@ -194,7 +194,10 @@
     function playingAudio() { try { return !!(pm && pm.isPlayingAudio()); } catch (e) { return false; } }
 
     function showItem(item) {
-        if (isPhone()) flyFrom = { id: item.Id, type: item.Type };
+        if (isPhone()) {
+            if (ignorePhoneCard(item.Id)) return;
+            flyFrom = { id: item.Id, type: item.Type };
+        }
         if (typeof window.require === 'function') {
             window.require(['appRouter'], function (r) {
                 r = r && r.default ? r.default : r;
@@ -279,7 +282,13 @@
 
     // ---------- page transitions ----------
 
-    var phoneRouteMotion = null, nativeRouteMotion = false;
+    var phoneRouteMotion = null, nativeRouteMotion = false, lastPhoneCard = null;
+    function ignorePhoneCard(id) {
+        var now = performance.now();
+        if (phoneRouteMotion || lastPhoneCard && lastPhoneCard.id === id && now < lastPhoneCard.until) return true;
+        lastPhoneCard = { id: id, until: now + 850 };
+        return false;
+    }
     function isMediaRoute(url) {
         var match = /(?:^|[!/])([^/?#!]+)(?:\?[^#]*)?$/i.exec(url || '');
         var path = match && match[1].toLowerCase().replace(/\.html$/, '');
@@ -308,7 +317,12 @@
                     if (method === 'tryRestoreView' && !Array.from(document.querySelectorAll('.page.view')).some(function (view) {
                         return view.__muiRouteUrl === options.url && view.allowRestore !== false;
                     })) return run();
-                    if (phoneRouteMotion) phoneRouteMotion.stop();
+                    if (phoneRouteMotion) {
+                        if (phoneRouteMotion.url === options.url && !phoneRouteMotion.signal?.aborted) {
+                            return phoneRouteMotion.result;
+                        }
+                        phoneRouteMotion.stop();
+                    }
                     return phoneRouteSlide(run, options, signal);
                 };
             });
@@ -317,7 +331,7 @@
 
     function phoneRouteSlide(run, options, signal) {
         var back = !!options.isBack, mode = back ? 'mui-phone-pop' : 'mui-phone-push';
-        var current = { stop: stop }, transition, result, timer;
+        var current = { stop: stop, url: options.url, signal: signal }, transition, result, timer;
         function cleanup() {
             clearTimeout(timer);
             if (signal) signal.removeEventListener('abort', stop);
@@ -332,6 +346,8 @@
         root.classList.add(mode);
         transition = document.startViewTransition(async function () {
             try {
+                // A skipped snapshot still invokes its callback. An aborted route must not mount a view.
+                if (signal) signal.throwIfAborted();
                 result = await run();
                 if (phoneRouteMotion !== current) return;
                 var view = result && result.classList ? result : document.querySelector('.page.view:not(.hide):not(.dialog)');
@@ -358,7 +374,8 @@
         if (signal) signal.addEventListener('abort', stop, { once: true });
         transition.ready.then(function () { clearTimeout(timer); }, cleanup);
         transition.finished.then(cleanup, cleanup);
-        return transition.updateCallbackDone.then(function () { return result; });
+        current.result = transition.updateCallbackDone.then(function () { return result; });
+        return current.result;
     }
 
     var prevOsd = false, firstView = true, choreo = null;
@@ -381,6 +398,8 @@
         var r = routeInfo(), isOsd = /^(videoosd|nowplaying)/.test(r.path), wasOsd = prevOsd;
         var detail = e.detail || {}, restored = !!detail.isRestored, back = restored || !!detail.isBack;
         view.__muiRouteUrl = detail.url;
+        lastPhoneCard = null;
+        if (view.__muiPhoneVideo) view.__muiPhoneVideo.updateScroll(true);
         prevOsd = isOsd;
         hookEmby();
         var detail = r.path === 'item';
@@ -895,6 +914,11 @@
         var it = cardItem(card);
         if (!it) return;
         if (isPhone()) {
+            if (!card.matches('.mui-gs-tile, .mui-series-cover') && ignorePhoneCard(it.Id)) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
             flyFrom = { id: it.Id, type: it.Type || card.getAttribute('data-type') || card.getAttribute('data-itemtype') };
             return;
         }
@@ -1822,18 +1846,18 @@
         view.classList.add('mui-phone-video');
         var seriesDetail = /^(Series|Season|Episode)$/.test(base.Type);
         view.classList.toggle('mui-phone-series-detail', seriesDetail);
-        var singleSeasonSeries = base.Type === 'Series' && base.ChildCount === 1;
         var seriesBackdrop = seriesDetail && backdropOf(base);
-        var nativeArtScroll = window.CSS && CSS.supports('animation-timeline', 'scroll(root block)') &&
-            CSS.supports('animation-range', '0px 50vw');
+        var artFrame = 0, activeSeason = null, seasonRequest = 0, seasonMenuOpen = false, ring, ringSlide;
         var lastArtScroll, episodeCards = new Map(), currentCard = null, pendingId = null;
         var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, sources = [];
         var baseLogo = logoOf(base);
         var currentArt = '', wantedArt = '', artFade, titleFade, destroyed = false, pending = false;
         var seriesGenres = base.Genres || [];
-        if (!seriesGenres.length && base.SeriesId) getItem(base.SeriesId).then(function (series) {
+        if (base.SeriesId && (!seriesGenres.length || !seriesBackdrop || !baseLogo)) getItem(base.SeriesId).then(function (series) {
             if (destroyed) return;
-            seriesGenres = series.Genres || [];
+            if (!seriesGenres.length) seriesGenres = series.Genres || [];
+            seriesBackdrop = seriesBackdrop || backdropOf(series);
+            baseLogo = baseLogo || logoOf(series);
             if (active()) render(selected);
         }).catch(function () {});
         var state = view.__muiPhoneVideo = { baseId: base.Id, select: selectEpisode, sync: sync, destroy: destroy,
@@ -1852,17 +1876,26 @@
             }).catch(function () {});
         }
 
-        function updateScroll() {
+        function updateScroll(immediate) {
             if (reduceMotion) return;
             if (seriesDetail) {
-                if (nativeArtScroll) return;
-                // The reference anchors the art to the viewport while its scale follows scroll distance.
-                var distance = docY(true) / window.innerWidth;
-                var progress = Math.max(-.06, Math.min(.5, distance));
-                if (progress !== lastArtScroll) {
-                    panel.style.setProperty('--mui-series-scroll', progress);
-                    lastArtScroll = progress;
+                if (immediate && artFrame) {
+                    cancelAnimationFrame(artFrame);
+                    artFrame = 0;
                 }
+                if (artFrame) return;
+                function paint() {
+                    artFrame = 0;
+                    if (!active()) return;
+                    var distance = Math.max(0, Math.min(.58, docY() / window.innerWidth));
+                    if (distance === lastArtScroll) return;
+                    lastArtScroll = distance;
+                    art.style.transform = 'translate3d(0,' + (distance * window.innerWidth) + 'px,0) scale(' +
+                        Math.max(.72, 1 - distance * .96) + ')';
+                    art.style.opacity = String(1 - .78 * distance / .58);
+                }
+                if (immediate) paint();
+                else artFrame = requestAnimationFrame(paint);
             } else {
                 panel.style.setProperty('--mui-video-scroll', Math.min(1, docY() / 240));
             }
@@ -2047,6 +2080,16 @@
             if (currentCard) currentCard.removeAttribute('aria-current');
             if (card) card.setAttribute('aria-current', 'true');
             currentCard = card;
+            if (!ring) return;
+            var from = !ring.hidden && getComputedStyle(ring).transform;
+            if (ringSlide) ringSlide.cancel();
+            ring.hidden = !card;
+            if (!card) return;
+            var to = 'translate3d(' + card.offsetLeft + 'px,0,0)';
+            ring.style.transform = to;
+            if (from && !reduceMotion && ring.animate) {
+                ringSlide = ring.animate([{ transform: from }, { transform: to }], { duration: 280, easing: EASE });
+            }
         }
         function setText(node, value) {
             if (node.textContent !== value) node.textContent = value;
@@ -2074,7 +2117,8 @@
             } else badge.hidden = true;
             var number = item.Type === 'Episode' && item.IndexNumber != null;
             var episodeNumber = number ? String(item.IndexNumber).padStart(2, '0') : '';
-            var name = (number ? L('第 ' + (item.ParentIndexNumber == null ? '?' : item.ParentIndexNumber) + ' 季 · 第 ' +
+            var isSpecial = item.ParentIndexNumber === 0 || activeSeason?.IndexNumber === 0;
+            var name = (isSpecial && number ? L('特别篇 · ', 'Specials · ') : number ? L('第 ' + (item.ParentIndexNumber == null ? '?' : item.ParentIndexNumber) + ' 季 · 第 ' +
                 episodeNumber + ' 集 · ', 'S' + (item.ParentIndexNumber == null ? '?' : item.ParentIndexNumber) +
                 ' · E' + episodeNumber + ' · ') : '') + item.Name;
             if (title.textContent !== name) {
@@ -2093,7 +2137,7 @@
                 date && !isNaN(date) ? date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : item.ProductionYear,
                 stream && stream.DisplayTitle].filter(Boolean).join('  ·  '));
             setText(genres, (item.Genres && item.Genres.length ? item.Genres : seriesGenres).slice(0, 4).join('  ·  '));
-            setText(overviewText, stripTags(singleSeasonSeries && base.Overview || item.Overview));
+            setText(overviewText, stripTags(base.Type === 'Series' && base.Overview || item.Overview));
             overview.hidden = !overviewText.textContent;
             setArt(artUrlFor(item));
             markButtons();
@@ -2192,7 +2236,7 @@
                 if (!active() || token !== selection) return;
                 if (full.Type !== 'Episode') throw new Error('Not an episode');
                 var seriesId = base.Type === 'Series' ? base.Id : base.SeriesId;
-                if (seriesId && full.SeriesId !== seriesId) throw new Error('Different series');
+                if (seriesId && full.SeriesId && String(full.SeriesId) !== String(seriesId)) throw new Error('Different series');
                 return Emby.importModule('./modules/common/playback/playbackmanager.js').then(function (p) {
                     return (p.default || p).getPlaybackMediaSources(full);
                 }).catch(function () {
@@ -2275,98 +2319,146 @@
             closeOverlays();
             destroyed = true;
             ++selection;
+            ++seasonRequest;
+            if (artFrame) cancelAnimationFrame(artFrame);
+            if (ringSlide) ringSlide.cancel();
             if (artFade) artFade.cancel();
             if (titleFade) titleFade.cancel();
             clearTimeout(timer);
             if (observer) observer.disconnect();
             panel.remove();
             if (rail) rail.remove();
-            view.classList.remove('mui-phone-video', 'mui-phone-rail-ready', 'mui-phone-series-detail', 'mui-phone-series-rail', 'mui-phone-rail-synopsis');
+            view.classList.remove('mui-phone-video', 'mui-phone-rail-ready', 'mui-phone-series-detail', 'mui-phone-series-rail',
+                'mui-phone-rail-synopsis', 'mui-phone-rail-specials');
         }
         observer = new MutationObserver(sync);
         observer.observe(nativeTop, { childList: true, subtree: true, attributes: true,
             attributeFilter: ['class', 'aria-pressed', 'disabled'] });
         sync();
         updateScroll();
-        if (singleSeasonSeries || /^(Season|Episode)$/.test(base.Type)) {
-            var seasonId = base.Type === 'Season' ? base.Id : base.SeasonId;
-            var seriesId = singleSeasonSeries ? base.Id : base.SeriesId;
-            var a = api();
-            if ((seasonId || singleSeasonSeries) && seriesId && a) {
-                state.waitingForRail = true;
-                var userId = a.getCurrentUserId();
-                // Only a confirmed single-season show uses in-place episode previews.
-                // Other shows keep Emby's series, season and episode pages as separate levels.
-                var seasonDetails = a.getSeasons(seriesId, { UserId: userId }).then(function (seasons) {
-                    var only = seasons.Items.length === 1 && seasons.Items[0];
-                    return only && (!seasonId || String(only.Id) === String(seasonId)) ? only : null;
-                });
-                seasonDetails.then(async function (seasonInfo) {
-                    if (!seasonInfo || destroyed || !view.isConnected) return;
-                    var season = seasonInfo.Id;
-                    var result = await a.getEpisodes(seriesId, {
-                        SeasonId: season, UserId: userId, Fields: 'Overview', EnableUserData: true
-                    });
-                    if (destroyed || !view.isConnected || !result.Items.length) return;
-                    rail = el('section', 'mui-phone-episodes');
-                    var heading = el('div', 'mui-phone-episode-heading');
-                    var seasonLabel = el('h2', 'mui-phone-season-label', seasonInfo.Name || L('剧集', 'Episodes'));
-                    var allEpisodes = el('button', 'mui-phone-episode-more', L('更多', 'More'));
-                    allEpisodes.type = 'button';
-                    heading.append(seasonLabel, allEpisodes);
-                    rail.appendChild(heading);
-                    var strip = el('div', 'mui-phone-episode-strip');
-                    strip.setAttribute('aria-label', L('剧集', 'Episodes'));
-                    result.Items.forEach(function (item) {
-                        var card = el('button', 'mui-phone-episode');
-                        card.type = 'button';
-                        card.__muiItem = item;
-                        episodeCards.set(String(item.Id), card);
-                        card.dataset.played = !!(item.UserData && item.UserData.Played);
-                        var img = el('img');
-                        img.alt = '';
-                        img.loading = 'lazy';
-                        img.decoding = 'async';
-                        var tag = item.ImageTags && item.ImageTags.Primary;
-                        if (tag) img.src = imgUrl(item.Id, 'Primary', tag, 480, 80);
-                        card.append(img, el('strong', '', (item.IndexNumber != null ? item.IndexNumber + '. ' : '') + item.Name),
-                            el('span', 'secondaryText', stripTags(item.Overview)));
-                        strip.appendChild(card);
-                    });
-                    rail.appendChild(strip);
-                    allEpisodes.onclick = function () {
-                        showRailMenu(allEpisodes, result.Items, selected.Id, function (item) {
-                            var card = Array.from(strip.children).find(function (node) { return node.__muiItem.Id === item.Id; });
-                            selectEpisode(item, card);
+        var seasonId = base.Type === 'Season' ? base.Id : base.SeasonId;
+        var seriesId = base.Type === 'Series' ? base.Id : base.SeriesId;
+        var a = seriesDetail && seriesId && api();
+        if (a) {
+            state.waitingForRail = true;
+            a.getSeasons(seriesId, { UserId: a.getCurrentUserId() }).then(function (result) {
+                var seasons = (result.Items || []).filter(function (season) { return season && season.Id; });
+                var target = seasons.find(function (season) { return String(season.Id) === String(seasonId); }) ||
+                    seasons.find(function (season) { return Number(season.IndexNumber) > 0; }) || seasons[0];
+                if (target) return openSeason(target, seasons, true);
+            }).catch(function () { /* The native lists remain available if the first request fails. */ }).finally(function () {
+                state.waitingForRail = false;
+            });
+        }
+
+        async function openSeason(season, seasons, initial) {
+            if (!active()) return;
+            var request = ++seasonRequest;
+            var result = await a.getEpisodes(seriesId, {
+                SeasonId: season.Id, UserId: a.getCurrentUserId(), Fields: 'Overview', EnableUserData: true
+            });
+            if (!active() || request !== seasonRequest) return;
+            var seen = new Set();
+            var episodes = (result.Items || []).filter(function (item) {
+                if (!item || !item.Id || item.Type && item.Type !== 'Episode' ||
+                    item.SeasonId && String(item.SeasonId) !== String(season.Id) || seen.has(String(item.Id))) return false;
+                seen.add(String(item.Id));
+                return true;
+            });
+            if (!episodes.length && !rail) return;
+            activeSeason = season;
+            ++selection;
+            pending = false;
+            pendingId = null;
+            play.removeAttribute('aria-busy');
+            status.textContent = '';
+            episodeCards.clear();
+            currentCard = null;
+            if (ringSlide) ringSlide.cancel();
+            var nextRail = el('section', 'mui-phone-episodes');
+            var heading = el('div', 'mui-phone-episode-heading');
+            var label = season.Name || L('剧集', 'Episodes');
+            var seasonLabel = el(seasons.length > 1 ? 'button' : 'h2', 'mui-phone-season-label', label);
+            if (seasons.length > 1) {
+                seasonLabel.type = 'button';
+                seasonLabel.setAttribute('aria-haspopup', 'dialog');
+                seasonLabel.setAttribute('aria-label', label);
+                seasonLabel.appendChild(icon('unfold_more'));
+                seasonLabel.onclick = function () {
+                    showRailMenu(seasonLabel, seasons, season.Id, function (next) {
+                        if (next.Id !== season.Id) openSeason(next, seasons, false).catch(function () {
+                            if (active() && activeSeason === season) status.textContent = L('无法载入这一季，请重试', 'Could not load this season. Try again');
                         });
-                    };
-                    panel.after(rail);
-                    view.classList.add('mui-phone-rail-ready');
-                    view.classList.toggle('mui-phone-series-rail', singleSeasonSeries);
-                    view.classList.toggle('mui-phone-rail-synopsis', !!base.Overview || result.Items.some(function (item) { return !!item.Overview; }));
-                    if ((base.Type === 'Season' || singleSeasonSeries) && selected.Id === base.Id && !pending && active()) {
-                        return selectEpisode(result.Items[0], strip.firstElementChild, true);
-                    }
-                    render(selected);
-                    var current = strip.querySelector('[aria-current="true"]');
-                    centerEpisode(current, true);
-                }).catch(function () { /* the native episode list remains available */ }).finally(function () {
-                    state.waitingForRail = false;
+                    });
+                };
+            }
+            var allEpisodes = el('button', 'mui-phone-episode-more', L('更多', 'More'));
+            allEpisodes.type = 'button';
+            allEpisodes.disabled = !episodes.length;
+            heading.append(seasonLabel, allEpisodes);
+            nextRail.appendChild(heading);
+            var strip = el('div', 'mui-phone-episode-strip');
+            strip.setAttribute('aria-label', L('剧集', 'Episodes'));
+            episodes.forEach(function (item) {
+                var card = el('button', 'mui-phone-episode');
+                card.type = 'button';
+                card.__muiItem = item;
+                episodeCards.set(String(item.Id), card);
+                card.dataset.played = !!(item.UserData && item.UserData.Played);
+                var img = el('img');
+                img.alt = '';
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                var tag = item.ImageTags && item.ImageTags.Primary;
+                if (tag) img.src = imgUrl(item.Id, 'Primary', tag, 480, 80);
+                card.append(img, el('strong', '', (item.IndexNumber != null ? item.IndexNumber + '. ' : '') + item.Name),
+                    el('span', 'secondaryText', stripTags(item.Overview)));
+                strip.appendChild(card);
+            });
+            ring = el('div', 'mui-phone-episode-ring');
+            ring.hidden = true;
+            ring.setAttribute('aria-hidden', 'true');
+            strip.appendChild(ring);
+            nextRail.appendChild(strip);
+            allEpisodes.onclick = function () {
+                showRailMenu(allEpisodes, episodes, selected.Id, function (item) {
+                    selectEpisode(item, episodeCards.get(String(item.Id)));
                 });
+            };
+            if (rail) rail.replaceWith(nextRail);
+            else panel.after(nextRail);
+            rail = nextRail;
+            view.classList.add('mui-phone-rail-ready', 'mui-phone-series-rail');
+            view.classList.toggle('mui-phone-rail-specials', seasons.some(function (entry) { return entry.IndexNumber === 0; }));
+            view.classList.toggle('mui-phone-rail-synopsis', !!base.Overview || episodes.some(function (item) { return !!item.Overview; }));
+            var first = initial && episodes.find(function (item) { return String(item.Id) === String(base.Id); }) || episodes[0];
+            if (first) {
+                var card = episodeCards.get(String(first.Id));
+                if (first.Id !== selected.Id) return selectEpisode(first, card, true);
+                render(selected, true);
+                centerEpisode(card, true);
+            } else {
+                selected = season;
+                sources = [];
+                play.disabled = watched.disabled = favorite.disabled = true;
+                selects.forEach(function (select) { options(select, []); });
+                render(season, true);
+                status.textContent = L('这一季暂无剧集', 'No episodes in this season');
             }
         }
 
         function showRailMenu(anchor, items, current, choose) {
-            if (!items || !items.length) return;
+            if (!items || !items.length || seasonMenuOpen) return;
+            seasonMenuOpen = true;
             Emby.importModule('./modules/actionsheet/actionsheet.js').then(function (mod) {
                 if (!active()) return;
                 return (mod.default || mod).show({ positionTo: anchor, positionY: 'above', hasItemSelectionState: true,
-                    items: items.map(function (item) { return { id: item.Id, name: item.Name, selected: item.Id === current }; })
+                    items: items.map(function (item) { return { id: String(item.Id), name: item.Name, selected: String(item.Id) === String(current) }; })
                 }).then(function (id) {
-                    var item = items.find(function (entry) { return entry.Id === id; });
-                    if (item && active()) choose(item);
+                    var item = items.find(function (entry) { return String(entry.Id) === String(id); });
+                    if (item && active() && anchor.isConnected) choose(item);
                 });
-            }).catch(function () {});
+            }).catch(function () {}).finally(function () { seasonMenuOpen = false; });
         }
     }
 

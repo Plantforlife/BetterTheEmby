@@ -2238,10 +2238,6 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
 @keyframes mui-route-under-push { from { transform: translateX(0); } to { transform: translateX(-30%); } }
 @keyframes mui-route-under-pop { from { transform: translateX(-30%); } to { transform: translateX(0); } }
 
-@keyframes mui-phone-art-scroll {
-    from { transform: translateY(0) scale(1); opacity: 1; }
-    to { transform: translateY(50vw) scale(.52); opacity: 0; }
-}
 .albumtint-phone-identity, .albumtint-phone-modes { display: none; }
 
 @media (max-width: 40em) {
@@ -2352,7 +2348,8 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     html.mui-phonelayout .mui-phone-video .mui-hero,
     html.mui-phonelayout .mui-phone-video .itemBackdropContainer,
     html.mui-phonelayout .mui-phone-video .detailMainContainer,
-    html.mui-phonelayout .mui-phone-series-rail .seriesItemsSection:has(.allEpisodesItemsContainer),
+    html.mui-phonelayout .mui-phone-series-rail .seriesItemsSection,
+    html.mui-phonelayout .mui-phone-rail-specials .specialsSection,
     html.mui-phonelayout .mui-phone-rail-ready :is(.trackListSection,.moreFromSeasonSection) {
         display: none !important;
     }
@@ -2486,20 +2483,14 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     .mui-phone-series-detail { --mui-episode-blue: #37a6ff; }
     .mui-phone-series-detail .mui-phone-video-art {
         /* The panel clips this overscan so the shrinking image always covers both edges. */
-        inset-inline: -50%;
+        inset-inline: -20%;
         mask-image: linear-gradient(#000 40%, rgba(0,0,0,.78) 67%, transparent);
-        transform: translateY(calc(var(--mui-series-scroll, 0) * 100vw))
-            scale(calc(1 - var(--mui-series-scroll, 0) * .96));
-        opacity: min(1, calc(1 - var(--mui-series-scroll, 0) * 2));
+        transform: none;
         pointer-events: none;
     }
-    @supports (animation-timeline: scroll(root block)) and (animation-range: 0px 50vw) {
-        @media (prefers-reduced-motion: no-preference) {
-            html.mui-docscroll .mui-phone-series-detail .mui-phone-video-art {
-                animation: mui-phone-art-scroll linear both;
-                animation-timeline: scroll(root block);
-                animation-range: 0px 50vw;
-            }
+    @media (prefers-reduced-motion: no-preference) {
+        html.mui-docscroll .mui-phone-series-detail .mui-phone-video-art {
+            will-change: transform, opacity;
         }
     }
     .mui-phone-series-detail .mui-phone-video-logo { transform: none; }
@@ -2541,7 +2532,6 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         margin: 0 16px;
         color: var(--mui-episode-blue, #37a6ff);
     }
-    html.mui-phonelayout .mui-phone-series-detail .mui-phone-episodes { margin-block-start: -28px; }
     .mui-phone-episode-heading > button {
         display: inline-flex;
         align-items: center;
@@ -2554,6 +2544,7 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         -webkit-tap-highlight-color: transparent;
     }
     .mui-phone-episode-heading .mui-phone-season-label { margin: 0 6px; font: inherit; font-weight: 600; }
+    .mui-phone-episode-heading button.mui-phone-season-label { gap: 4px; margin: 0; }
     .mui-phone-episode-heading .mui-phone-episode-more { font-size: .9rem; }
     .mui-phone-episode-strip {
         position: relative;
@@ -2583,7 +2574,18 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     }
     .mui-phone-episode:first-child { scroll-snap-align: start; scroll-margin-inline-start: 16px; }
     .mui-phone-episode img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; background: rgba(255,255,255,.1); }
-    .mui-phone-episode[aria-current="true"] img { outline: 2px solid #29a2ff; outline-offset: 2px; }
+    .mui-phone-episode-ring {
+        position: absolute;
+        z-index: 1;
+        top: 5px;
+        left: 0;
+        width: var(--mui-episode-width);
+        aspect-ratio: 16 / 9;
+        border-radius: 10px;
+        outline: 2px solid #29a2ff;
+        outline-offset: 2px;
+        pointer-events: none;
+    }
     .mui-phone-episode[data-played="true"]::after {
         content: "✓";
         position: absolute;

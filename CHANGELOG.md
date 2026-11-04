@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2.35
+
+- Suppress duplicate phone card navigation and recover artwork after scrolling or returning to a cached page.
+- Open phone shows directly to the episode rail. Switch seasons and specials in place, with a moving blue outline for the selected episode.
+
 ## 1.0.2.34
 
 - Apply the detail button reflections on desktop over Emby's native shadow reset.

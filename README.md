@@ -60,7 +60,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 - Compact episode details keep the episode strip near the first screen. Tap a truncated description to read it in full. Safari uses its native track picker, while other browsers show an anchored menu.
 
-- Show and episode pages have centered playback, softly lit buttons and native version, audio, and subtitle pickers. A single-season show opens with the first episode selected. Multi-season shows use separate season and episode pages, just as on desktop. Shuffle and repeat appear with the music queue.
+- Phone shows open to the episode strip with the first regular episode selected. Use the season menu to switch seasons or open specials in the same page. The blue outline slides to the newly selected episode. Shuffle and repeat appear with the music queue.
 - Long phone synopses open in a reader. Browser Back closes it and returns to the same place on the episode page.
 
 - Album details show a larger cover on the left and the title, artist and metadata on the right, with full-width playback controls underneath. Long text wraps naturally.
