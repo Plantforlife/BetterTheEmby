@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.38
+
+- Phone home: no banner, so the page opens on My Media. Library tiles sit three to a screen, Continue Watching cards at two to a screen, and each row heading shows the library's own name with a blue 更多 link, as in the reference.
+
 ## 1.0.2.37
 
 - Phone episode rail: the blue outline jumps straight onto the tapped episode instead of sliding across the strip; only the strip scrolls to center it. The season heading now opens the same picker as the version selector — the native one on Safari, the anchored menu elsewhere. The header buttons on video details are one pane of light glass, aligned as in the reference.

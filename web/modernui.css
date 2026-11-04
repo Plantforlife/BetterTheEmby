@@ -2628,6 +2628,8 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     .mui-phone-episode strong { -webkit-line-clamp: 2; }
     .mui-phone-episode span { -webkit-line-clamp: 3; font-size: .88rem; }
     html.mui-phonelayout .mui-spotlight { touch-action: pan-y pinch-zoom; }
+    /* Phones have no banner (see spotlightTarget); a banner built before the window narrowed goes too. */
+    html.mui.mui-phonelayout .mui-spotlight { display: none !important; }
     html.mui-phonelayout .mui-sl-slide,
     html.mui-phonelayout .mui-sl-info { transition: none; }
     html.mui-phonelayout .mui-sl-slide img { animation: none; }
@@ -2820,6 +2822,27 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
 
     html.mui.mui-phonelayout .squareCard-horiz {
         width: calc(93vw / max((var(--square-cards, 3) + var(--user-cards-size-adjust, 0)), 3)) !important;
+    }
+
+    /* The row's heading: the title on the left, "更多" in blue on the right (see decorateSectionTitles). */
+    html.mui.mui-phonelayout .sectionTitleTextButton.mui-section-more-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    html.mui.mui-phonelayout .mui-section-more-row .sectionTitleMoreIcon { display: none; }
+    html.mui.mui-phonelayout .mui-section-more { color: #37a6ff; font-size: .95rem; font-weight: 600; }
+
+    /* Home rows as the phone reference has them: three library tiles across, and the wide cards of Continue
+       Watching at two to a screen. */
+    html.mui.mui-phonelayout .verticalSection .backdropCard:not(.backdropCard-horiz) {
+        width: 36.5vw !important;
+    }
+
+    html.mui.mui-phonelayout .backdropCard-horiz {
+        width: 62vw !important;
     }
 
     /* Safari (26) paints its status bar and toolbar solid in the background colour of a position:fixed element at

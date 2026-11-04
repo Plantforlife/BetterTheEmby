@@ -1155,6 +1155,8 @@
     // where a banner belongs right now: the home tab of the home page, or a library's suggestions tab.
     // Returns null for other pages, or { pending: true } while Emby is still filling in the sections.
     function spotlightTarget() {
+        // Phones open straight onto My Media: no banner. The home's blurred art still comes from the library's picks.
+        if (isPhone()) return null;
         var r = routeInfo(), parentId = null, home = r.path === 'home' || r.path === 'home.html';
         if (!home) {
             if (!/^(videos|tv|movies)$/.test(r.path) || !r.params.parentId || r.params.tab !== 'suggestions') return null;
@@ -3297,8 +3299,25 @@
     }
     // Native home rows use the same titles as folder tabs. Their heading links identify the library;
     // album artists and albums in other libraries can share a name, so neither names nor artists scope this.
+    // Phone rows show the library's own name (Emby prefixes "最新" / "Latest") and a blue "更多" at the far end
+    // of the title row instead of the chevron, as in the reference layout.
+    function decorateSectionTitles(scope) {
+        if (!isPhone() || !scope || !scope.querySelectorAll) return;
+        var links = scope.matches && scope.matches('.sectionTitleTextButton') ? [scope] : scope.querySelectorAll('.sectionTitleTextButton');
+        Array.prototype.forEach.call(links, function (link) {
+            var title = link.querySelector('.sectionTitle');
+            if (!title) return;
+            if (title.__muiTitle == null) title.__muiTitle = title.textContent;
+            var short = title.__muiTitle.replace(/^(最新|Latest)\s*/i, '');
+            if (title.textContent !== short) title.textContent = short;
+            link.classList.add('mui-section-more-row');
+            if (!link.querySelector('.mui-section-more')) link.appendChild(el('span', 'mui-section-more', L('更多', 'More')));
+        });
+    }
+
     function homeAlbumTitles(scope) {
         var path = routeInfo().path;
+        if (scope && scope.nodeType === 1) decorateSectionTitles(scope);
         if (!scope || (path !== 'home' && path !== 'home.html') || !FOLDER_TABS.some(function (c) { return !!c.strip; })) return;
         var section = scope.closest && scope.closest('.verticalSection');
         if (section) homeAlbumSectionTitles(section);
