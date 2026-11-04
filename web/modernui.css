@@ -2449,8 +2449,14 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     html.mui-phonelayout .mui-phone-episodes { display: block; container-type: inline-size; padding: 0 0 16px; }
     .mui-phone-series-detail { --mui-episode-blue: #37a6ff; }
     .mui-phone-series-detail .mui-phone-video-art {
+        /* The panel clips this overscan so the shrinking image always covers both edges. */
+        inset-inline: -50%;
         mask-image: linear-gradient(#000 40%, rgba(0,0,0,.78) 67%, transparent);
+        transform: translateY(calc(var(--mui-series-scroll, 0) * 100vw))
+            scale(calc(1 - var(--mui-series-scroll, 0) * .96));
+        opacity: min(1, calc(1 - var(--mui-series-scroll, 0) * 2));
     }
+    .mui-phone-series-detail .mui-phone-video-logo { transform: none; }
     .mui-phone-series-detail .mui-phone-video-art img { filter: brightness(.9); }
     .mui-phone-series-detail .mui-phone-video-title { font-size: clamp(14px, 3.75vw, 18px); font-weight: 600; }
     .mui-phone-series-detail :is(.mui-phone-video-facts,.mui-phone-video-genres) {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.31
+
+- Match the reference phone series scroll: the backdrop stays anchored as it zooms out and fades, and the logo and episode controls scroll at full size.
+
 ## 1.0.2.30
 
 - Keep the phone episode strip in place when switching to an episode with a longer or shorter synopsis.

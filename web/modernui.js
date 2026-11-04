@@ -1756,7 +1756,14 @@
         }
 
         function updateScroll() {
-            if (!reduceMotion) panel.style.setProperty('--mui-video-scroll', Math.min(1, docY() / 240));
+            if (reduceMotion) return;
+            if (seriesDetail) {
+                // The reference anchors the art to the viewport while its scale follows scroll distance.
+                var distance = docY(true) / window.innerWidth;
+                panel.style.setProperty('--mui-series-scroll', Math.max(-.06, Math.min(.5, distance)));
+            } else {
+                panel.style.setProperty('--mui-video-scroll', Math.min(1, docY() / 240));
+            }
         }
 
         function button(label, glyph, cls) {
@@ -3482,7 +3489,10 @@
     // header listen. Each page and each tab keeps its own place, as it did in its own container.
     var FRAME = '.scrollFrameY[data-bindheader="true"]';
     var docEl = document.scrollingElement || document.documentElement, docScroll = false, docReady = false;
-    function docY() { return Math.max(0, docEl.scrollTop); }
+    function docY(includeOverscroll) {
+        var y = docEl.scrollTop;
+        return includeOverscroll === true ? y : Math.max(0, y);
+    }
     function docScrollTo(y, behavior) {
         y = Math.max(0, Math.round(y || 0));
         try { docEl.scrollTo({ top: y, behavior: behavior || 'instant' }); } catch (e) { docEl.scrollTop = y; }
@@ -3631,7 +3641,7 @@
             else if (phoneQuery.addListener) phoneQuery.addListener(onPhoneWidthChange);
         }
         window.addEventListener('hashchange', function () { setTimeout(updateSpotlights, 50); });
-        window.addEventListener('resize', function () { queueTabs(); queueNav(); });
+        window.addEventListener('resize', function () { queueTabs(); queueNav(); onDocScroll(); });
         document.addEventListener('load', onImageEvent, true);
         document.addEventListener('error', onImageEvent, true);
         document.addEventListener('pointerup', onInput, true);
