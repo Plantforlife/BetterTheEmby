@@ -1015,9 +1015,9 @@
             if (next === panel) return;
             if (panelMotion) panelMotion.cleanup();
             panelMotion = state;
-            // One curve and one duration for every part of the toggle (panel, copy, cover, title, controls): the
-            // whole player moves as a single piece, at the same speed as the rest of the interface.
-            var timing = { duration: 360, easing: 'cubic-bezier(.22,.8,.24,1)' };
+            // Same curve and duration as the page slides of the main interface (the show and episode transitions),
+            // for every part of the toggle: panel, copy, cover, title lines, controls.
+            var timing = { duration: 300, easing: 'cubic-bezier(.22,.75,.22,1)' };
             // A short shift read as no motion against the dark player on a wide screen; the panel now comes
             // from further out, while phones keep the small vertical rise.
             var out = phone ? 'translateY(16px)' : 'translateX(72px)';
@@ -1031,7 +1031,8 @@
                 motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, transform: out }], timing));
             }
             if (next) {
-                var enter = { opacity: .4, transform: phone ? 'translateY(16px)' : 'translateX(72px)' };
+                // The desktop panel slides in solid, like a page; the phone one rises with a soft fade.
+                var enter = phone ? { opacity: .4, transform: 'translateY(16px)' } : { transform: 'translateX(72px)' };
                 if (returning && next === previous.panel) {
                     var destination = next.getBoundingClientRect();
                     enter.opacity = returning.opacity;

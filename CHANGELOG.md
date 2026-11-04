@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.44
+
+- Audio player: the lyrics and queue toggle now uses the curve and duration of the interface's page slides (300 ms, ease-out) for every part, and the desktop panel slides in solid instead of half transparent.
+
 ## 1.0.2.43
 
 - Audio player: the lyrics and queue toggle now moves every part — panel, cover, title lines and controls — on one 360 ms curve, so the whole player switches in step instead of trailing behind.
