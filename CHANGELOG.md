@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.39
+
+- Phone audio player: opening and closing the lyrics (and play queue) panel fades and rises it over 420 ms, as on the desktop player; closing no longer snaps shut.
+
 ## 1.0.2.38
 
 - Phone home: no banner, so the page opens on My Media. Library tiles sit three to a screen, Continue Watching cards at two to a screen, and each row heading shows the library's own name with a blue 更多 link, as in the reference.

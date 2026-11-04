@@ -969,19 +969,21 @@
         return node && { bounds: node.getBoundingClientRect(), opacity: getComputedStyle(node).opacity };
     }
 
-    // Keep a short-lived visual copy while Emby immediately switches its native panel.
+    // Keep a short-lived visual copy while Emby immediately switches its native panel. On phones the panel is the
+    // whole screen, so it fades and rises in place; the desktop panel slides sideways next to the cover.
     document.addEventListener('click', function (event) {
         var toggle = event.target.closest && event.target.closest('.btnLyrics, .osdContentSectionToggleButton');
-        if (!toggle || !root.classList.contains('albumtint-osd') || matchMedia('(max-width: 40em)').matches) return;
+        if (!toggle || !root.classList.contains('albumtint-osd')) return;
         if (matchMedia('(prefers-reduced-motion: reduce)').matches || !Element.prototype.animate) {
             cancelPanelMotion();
             return;
         }
+        var phone = matchMedia('(max-width: 40em)').matches;
         var bottom = toggle.closest('.videoOsdBottom');
         var panel = bottom && bottom.querySelector(':is(.lyricsSection,.osdPlayQueue,[data-contentsection="playqueue"].osdContentSection):not(.hide)');
         var controls = bottom && bottom.querySelector('.videoOsdBottom-maincontrols');
-        if (!controls) return;
-        var before = controls.getBoundingClientRect(), leaving = panelPose(panel);
+        if (!bottom || !panel && !controls) return;
+        var before = controls && controls.getBoundingClientRect(), leaving = panelPose(panel);
         var previous = panelMotion, returning = previous && panelPose(previous.clone);
         var clone = panel && panel.cloneNode(true);
         if (clone) {
@@ -1005,8 +1007,8 @@
             if (next === panel) return;
             if (panelMotion) panelMotion.cleanup();
             panelMotion = state;
-            var after = controls.getBoundingClientRect();
             var timing = { duration: 420, easing: 'cubic-bezier(.22,.8,.24,1)' };
+            var out = phone ? 'translateY(18px)' : 'translateX(36px)';
             if (clone) {
                 var bounds = leaving.bounds;
                 Object.assign(clone.style, { position: 'fixed', pointerEvents: 'none', zIndex: '1000',
@@ -1014,10 +1016,10 @@
                 bottom.closest('.view').appendChild(clone);
                 var copyScroll = clone.querySelector('.lyricsScroller, .scrollFrameY');
                 if (copyScroll) copyScroll.scrollTop = scrollTop || 0;
-                motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, transform: 'translateX(36px)' }], timing));
+                motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, transform: out }], timing));
             }
             if (next) {
-                var enter = { opacity: 0, transform: 'translateX(28px)' };
+                var enter = { opacity: 0, transform: phone ? 'translateY(18px)' : 'translateX(28px)' };
                 if (returning && next === previous.panel) {
                     var destination = next.getBoundingClientRect();
                     enter.opacity = returning.opacity;
@@ -1026,8 +1028,12 @@
                 }
                 motion.push(next.animate([enter, { opacity: 1, transform: 'none' }], timing));
             }
-            motion.push(controls.animate([{ transform: 'translate(' + (before.left - after.left) + 'px,' +
-                (before.top - after.top) + 'px)' }, { transform: 'none' }], timing));
+            // The desktop controls slide by the panel's width; on phones their height transition already covers it.
+            if (controls && !phone) {
+                var after = controls.getBoundingClientRect();
+                motion.push(controls.animate([{ transform: 'translate(' + (before.left - after.left) + 'px,' +
+                    (before.top - after.top) + 'px)' }, { transform: 'none' }], timing));
+            }
             Promise.allSettled(motion.map(function (animation) { return animation.finished; })).then(cleanup);
         });
     }, true);
