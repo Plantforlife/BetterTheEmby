@@ -1984,17 +1984,18 @@
             if (resize && !immediate && !reduceMotion && card.animate) {
                 before = Array.from(strip.children, function (tile) { return [tile, tile.getBoundingClientRect()]; });
             }
-            if (custom) {
+            if (resize || (custom && immediate)) {
                 strip.querySelectorAll('.mui-phone-episode').forEach(function (tile) {
                     if (tile.__muiRecenter) tile.__muiRecenter.cancel();
                 });
                 strip.classList.toggle('mui-episode-centered', !first);
             }
-            var bounds = strip.getBoundingClientRect(), tile = card.getBoundingClientRect();
-            var delta = (tile.left + tile.right - bounds.left - bounds.right) / 2;
             var behavior = immediate || reduceMotion ? 'instant' : 'smooth';
             if (custom) {
-                strip.scrollTo({ left: first ? 0 : strip.scrollLeft + delta, behavior: before ? 'instant' : behavior });
+                // Offset geometry excludes any in-flight card transform.
+                var left = card.offsetLeft + (card.offsetWidth - strip.clientWidth) / 2;
+                strip.scrollTo({ left: first ? 0 : left, behavior: before ? 'instant' : behavior });
+                var bounds = before && strip.getBoundingClientRect();
                 if (before) before.forEach(function (entry) {
                     var tile = entry[0], start = entry[1], end = tile.getBoundingClientRect();
                     if (!end.width || Math.max(start.right, end.right) < bounds.left || Math.min(start.left, end.left) > bounds.right) return;
@@ -2004,6 +2005,8 @@
                     ], { duration: 420, easing: EASE });
                 });
             } else if (strip.scrollToPosition && strip.getScrollLeft) {
+                var nativeBounds = strip.getBoundingClientRect(), tile = card.getBoundingClientRect();
+                var delta = (tile.left + tile.right - nativeBounds.left - nativeBounds.right) / 2;
                 if (nativeCurrent) nativeCurrent.classList.remove('mui-current-episode');
                 nativeCurrent = card;
                 nativeCurrent.classList.add('mui-current-episode');

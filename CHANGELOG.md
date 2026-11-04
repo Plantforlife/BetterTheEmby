@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.27
+
+- Keep episode card resizing smooth when another episode is selected mid-animation, and center the latest selection using the rail's layout coordinates.
+
 ## 1.0.2.26
 
 - Continue interrupted desktop lyrics and queue transitions from the current position instead of jumping to the old destination.

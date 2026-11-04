@@ -2488,6 +2488,7 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     .mui-phone-episode-heading .mui-phone-season-picker .md-icon { font-size: 18px; }
     .mui-phone-episode-heading .mui-phone-episode-more { font-size: .9rem; }
     .mui-phone-episode-strip {
+        position: relative;
         display: flex;
         overflow-x: auto;
         --mui-episode-width: calc((100cqi - 40px) / 2.5);
