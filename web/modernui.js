@@ -1741,7 +1741,7 @@
         }).catch(function () {});
         var state = view.__muiPhoneVideo = { baseId: base.Id, select: selectEpisode, sync: sync, destroy: destroy,
             closeOverlays: closeOverlays, updateScroll: updateScroll, openCommands: openCommands };
-        if (seriesDetail) syncPhoneVideoHeader();
+        syncPhoneVideoHeader();
 
         function openCommands(anchor) {
             var a = api(), item = selected;
@@ -1934,6 +1934,14 @@
         }
         var pendingButtons = new Map();
         function render(item, initial) {
+            // Episode text and track facts can take a different number of lines. Keep a rail
+            // already being browsed in place while its header reflows, without padding out
+            // missing text or moving the viewport when it is still at the top.
+            var railTop = null;
+            if (!initial && rail && view.closest('html.mui-docscroll') && docY() > 0) {
+                var bounds = rail.getBoundingClientRect();
+                if (bounds.bottom > 0 && bounds.top < window.innerHeight) railTop = bounds.top;
+            }
             var logo = logoOf(item) || baseLogo;
             if (logo) {
                 var url = imgUrl(logo.id, 'Logo', logo.tag, 480, 90);
@@ -1973,6 +1981,10 @@
             if (rail) Array.prototype.forEach.call(rail.querySelectorAll('.mui-phone-episode'), function (card) {
                 card.setAttribute('aria-current', String(card.__muiItem.Id) === String(item.Id) ? 'true' : 'false');
             });
+            if (railTop !== null) {
+                var shift = rail.getBoundingClientRect().top - railTop;
+                if (Math.abs(shift) >= 1) docScrollTo(docY() + shift);
+            }
             rotateArt();
         }
         function centerEpisode(card, immediate) {
@@ -2272,17 +2284,19 @@
     }
 
     function syncPhoneVideoHeader() {
-        var search = document.querySelector('.skinHeader:not(.videoOsdHeader) .headerSearchButton');
-        if (!search || search.parentElement.querySelector('.mui-phone-header-more')) return;
-        var button = el('button', 'headerButton mui-phone-header-more');
-        button.type = 'button';
-        button.setAttribute('aria-label', L('更多', 'More'));
-        button.appendChild(icon('more_horiz'));
-        button.onclick = function () {
-            var view = document.querySelector('.itemView.mui-phone-series-detail:not(.hide)');
-            if (view && view.__muiPhoneVideo) view.__muiPhoneVideo.openCommands(button);
-        };
-        search.after(button);
+        document.querySelectorAll('.skinHeader:not(.videoOsdHeader) .headerSearchButton').forEach(function (search) {
+            if (search.parentElement.querySelector('.mui-phone-header-more')) return;
+            var button = el('button', 'headerButton mui-phone-header-more');
+            button.type = 'button';
+            button.setAttribute('aria-label', L('更多', 'More'));
+            button.setAttribute('aria-haspopup', 'dialog');
+            button.appendChild(icon('more_horiz'));
+            button.onclick = function () {
+                var view = document.querySelector('.itemView.mui-phone-video:not(.hide)');
+                if (view && view.__muiPhoneVideo) view.__muiPhoneVideo.openCommands(button);
+            };
+            search.after(button);
+        });
     }
 
     // ---------- artist pages: photo (or latest cover) as a rounded square, blurred art behind, about section ----------

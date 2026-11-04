@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2.30
+
+- Keep the phone episode strip in place when switching to an episode with a longer or shorter synopsis.
+- Put item commands in the floating header for all phone video details. Use quieter controls for unavailable playback options.
+
 ## 1.0.2.29
 
 - Close the phone synopsis reader with browser Back while keeping the episode page, selection and scroll position.

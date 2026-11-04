@@ -2391,11 +2391,16 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         background: rgba(255,255,255,.13);
         color: inherit;
     }
-    .mui-phone-video-control .md-icon { font-size: 21px; }
-    .mui-phone-video-control[aria-pressed="true"] { background: rgba(255,255,255,.38); }
+    .mui-phone-video-control .md-icon { font-size: 20px; }
+    .mui-phone-video-control[aria-pressed="true"] { background: rgba(255,255,255,.28); }
     .mui-phone-video-control { transition: background-color .18s ease, transform .18s var(--mui-ease); }
-    .mui-phone-video-control:active:not(:disabled) { transform: scale(.94); }
-    .mui-phone-video-control:disabled, .mui-phone-video-control:has(select:disabled), .mui-phone-video-play:disabled { opacity: .42; }
+    .mui-phone-video-control:active:not(:disabled):not(:has(select:disabled)) { transform: scale(.96); }
+    .mui-phone-video-control:is(:disabled, :has(select:disabled)) {
+        background: transparent;
+        border-color: transparent;
+        color: rgba(255,255,255,.42);
+    }
+    .mui-phone-video-play:disabled { opacity: .42; }
     .mui-phone-video-control { -webkit-tap-highlight-color: transparent; }
     .mui-phone-video-control:focus-visible,
     .mui-phone-video-control:has(select:focus-visible:not(.mui-pointer-focus)) { outline: 2px solid #87b9ff; outline-offset: 2px; }
@@ -2447,23 +2452,23 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         mask-image: linear-gradient(#000 40%, rgba(0,0,0,.78) 67%, transparent);
     }
     .mui-phone-series-detail .mui-phone-video-art img { filter: brightness(.9); }
-    .mui-phone-series-detail .mui-phone-video-title { font-size: clamp(14px, 3.75vw, 18px); font-weight: 650; }
+    .mui-phone-series-detail .mui-phone-video-title { font-size: clamp(14px, 3.75vw, 18px); font-weight: 600; }
     .mui-phone-series-detail :is(.mui-phone-video-facts,.mui-phone-video-genres) {
         font-size: clamp(12px, 3.6vw, 16px);
         margin-block: 10px;
         color: rgba(255,255,255,.64);
     }
-    .mui-phone-series-detail .mui-phone-video-genres { font-weight: 650; }
+    .mui-phone-series-detail .mui-phone-video-genres { font-weight: 500; }
     .mui-phone-series-detail .mui-phone-video-play {
         width: min(80%, 320px);
         min-height: 44px;
         margin-block: 17px 9px;
         background: #0867b6;
         color: #fff;
-        box-shadow: inset 0 0 0 1px rgba(100,201,255,.5);
+        box-shadow: none;
     }
     .mui-phone-series-detail .mui-phone-video-play .md-icon { display: none; }
-    .mui-phone-series-detail .mui-phone-video-actions { gap: clamp(2px, 1.45vw, 8px); }
+    .mui-phone-series-detail .mui-phone-video-actions { gap: 8px; }
     .mui-phone-series-detail .mui-phone-video-overview { font-size: clamp(13px, 3.6vw, 16px); line-height: 1.38; }
     .mui-phone-series-detail .mui-phone-video-overview-text { max-height: 4.14em; }
     .mui-phone-episode-heading {
@@ -2895,11 +2900,11 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 4px 16px rgba(0, 0, 0, .22);
     }
 
-    html.mui.mui-phonelayout:has(.mui-phone-series-detail:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerCastButton,.headerUserButton,.headerSettingsButton),
-    html.mui.mui-phonelayout:has(.mui-phone-series-detail:not(.hide)) .skinHeader:not(.videoOsdHeader):has(.headerBackButton:not(.hide)) .headerMenuButton {
+    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerCastButton,.headerUserButton,.headerSettingsButton),
+    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader):has(.headerBackButton:not(.hide)) .headerMenuButton {
         display: none !important;
     }
-    html.mui.mui-phonelayout:has(.mui-phone-series-detail:not(.hide)) .skinHeader:not(.videoOsdHeader) .mui-phone-header-more {
+    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .mui-phone-header-more {
         display: inline-grid;
         place-items: center;
         width: 44px;
@@ -2908,10 +2913,10 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         padding: 0;
         border: 0;
     }
-    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-series-detail:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerSearchButton,.mui-phone-header-more) {
+    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerSearchButton,.mui-phone-header-more) {
         background-color: rgba(24,24,28,.38) !important;
     }
-    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-series-detail:not(.hide)) .skinHeader:not(.videoOsdHeader) .headerRight {
+    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .headerRight {
         gap: 0;
         flex: 0 0 auto;
         border-radius: 999px;
@@ -2920,7 +2925,7 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         backdrop-filter: blur(10px) saturate(120%);
         box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
     }
-    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-series-detail:not(.hide)) .skinHeader:not(.videoOsdHeader) .headerRight :is(.headerSearchButton,.mui-phone-header-more) {
+    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .headerRight :is(.headerSearchButton,.mui-phone-header-more) {
         margin-inline: 0;
         background: none !important;
         -webkit-backdrop-filter: none;
