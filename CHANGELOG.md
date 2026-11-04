@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.34
+
+- Apply the detail button reflections on desktop over Emby's native shadow reset.
+
 ## 1.0.2.33
 
 - Give detail playback and secondary buttons a soft inset reflection.
