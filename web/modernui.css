@@ -2332,7 +2332,7 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         max-height: var(--albumtint-controls-height, 420px);
         min-height: 0;
         overflow: clip;
-        transition: max-height 420ms var(--mui-ease), opacity 420ms var(--mui-ease), transform 420ms var(--mui-ease);
+        transition: max-height 640ms var(--mui-ease), opacity 640ms var(--mui-ease), transform 640ms var(--mui-ease);
     }
     html.mui-phonelayout.albumtint-osd .albumtint-lyrics-full:has(.lyricsSection:not(.hide)) .videoOsdBottom-maincontrols {
         max-height: 0;

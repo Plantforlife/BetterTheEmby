@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.41
+
+- Audio player: the lyrics and queue panels now slide in and out over 640 ms on an evenly decelerating curve — a smooth scroll into place rather than a fade, on the desktop (96 px) and the phone (24 px).
+
 ## 1.0.2.40
 
 - Desktop audio player: the lyrics (and queue) panel now slides in and out 64 px, so the transition is visible on a wide screen.
