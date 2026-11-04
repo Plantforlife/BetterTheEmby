@@ -1847,7 +1847,8 @@
         var seriesDetail = /^(Series|Season|Episode)$/.test(base.Type);
         view.classList.toggle('mui-phone-series-detail', seriesDetail);
         var seriesBackdrop = seriesDetail && backdropOf(base);
-        var artFrame = 0, activeSeason = null, seasonRequest = 0, seasonMenuOpen = false, ring, ringSlide;
+        var artFrame = 0, activeSeason = null, seasonRequest = 0, seasonMenuOpen = false, ring, ringX = 0, railMotion = null;
+        var railResize = null, railWidth = 0, RAIL_MS = 400;
         var lastArtScroll, episodeCards = new Map(), currentCard = null, pendingId = null;
         var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, sources = [];
         var baseLogo = logoOf(base);
@@ -2080,16 +2081,28 @@
             if (currentCard) currentCard.removeAttribute('aria-current');
             if (card) card.setAttribute('aria-current', 'true');
             currentCard = card;
-            if (!ring) return;
-            var from = !ring.hidden && getComputedStyle(ring).transform;
-            if (ringSlide) ringSlide.cancel();
-            ring.hidden = !card;
-            if (!card) return;
-            var to = 'translate3d(' + card.offsetLeft + 'px,0,0)';
-            ring.style.transform = to;
-            if (from && !reduceMotion && ring.animate) {
-                ringSlide = ring.animate([{ transform: from }, { transform: to }], { duration: 280, easing: EASE });
-            }
+            // centerEpisode moves the outline; a selection it doesn't follow has no card to outline
+            if (ring && !card) { stopRail(); ring.hidden = true; }
+        }
+        function setRing(x) {
+            ringX = x;
+            ring.style.transform = 'translate3d(' + x + 'px,0,0)';
+        }
+        // the strip position that centers a card (the first card keeps the leading inset), in the strip's own
+        // scroll coordinates: offsetLeft and scrollLeft share them in both directions (RTL scrolls to negatives)
+        function stripTarget(strip, card) {
+            var range = strip.scrollWidth - strip.clientWidth;
+            var rtl = getComputedStyle(strip).direction === 'rtl';
+            var left = card === strip.firstElementChild ? 0 : card.offsetLeft + (card.offsetWidth - strip.clientWidth) / 2;
+            return Math.max(rtl ? -range : 0, Math.min(rtl ? 0 : range, left));
+        }
+        // keepSnap: another motion takes over at once. Snapping back on in between would let the browser
+        // pull the strip to the nearest card for a frame first.
+        function stopRail(keepSnap) {
+            if (!railMotion) return;
+            cancelAnimationFrame(railMotion.frame);
+            if (!keepSnap) railMotion.strip.style.scrollSnapType = '';
+            railMotion = null;
         }
         function setText(node, value) {
             if (node.textContent !== value) node.textContent = value;
@@ -2142,19 +2155,57 @@
             setArt(artUrlFor(item));
             markButtons();
             markEpisode(pendingId || item.Id);
+            // Text above the strip reflowed: keep a resting outline on its card.
+            if (ring && currentCard && !railMotion && !ring.hidden && Math.abs(ringX - currentCard.offsetLeft) >= 1) {
+                setRing(currentCard.offsetLeft);
+            }
             if (railTop !== null) {
                 var shift = rail.getBoundingClientRect().top - railTop;
                 if (Math.abs(shift) >= 1) docScrollTo(docY() + shift);
             }
             rotateArt();
         }
+        // Moves the outline to a card and centers it. The strip's scroll and the outline follow one eased curve
+        // frame by frame: the outline rides inside the strip, so with the browser's own smooth scroll (its own
+        // duration and curve) it shot past the card and was dragged back. Seen on screen the outline now glides
+        // straight from the old card to the new one. A new selection continues from where both are; a finger on
+        // the strip takes the scroll over while the outline finishes its move.
         function centerEpisode(card, immediate) {
-            if (!card || !card.isConnected) return;
+            if (!card || !card.isConnected || !ring) return;
             var strip = card.closest('.mui-phone-episode-strip');
             if (!strip || !strip.clientWidth) return;
-            var behavior = immediate || reduceMotion ? 'instant' : 'smooth';
-            var left = card.offsetLeft + (card.offsetWidth - strip.clientWidth) / 2;
-            strip.scrollTo({ left: card === strip.firstElementChild ? 0 : left, behavior: behavior });
+            var x = card.offsetLeft, left = stripTarget(strip, card);
+            var wasHidden = ring.hidden, jump = immediate || reduceMotion || wasHidden;
+            stopRail(!jump);
+            ring.hidden = false;
+            if (jump) {
+                setRing(x);
+                strip.scrollTo({ left: left, behavior: 'instant' });
+                return;
+            }
+            var motion = railMotion = { strip: strip, x0: ringX, x1: x, s0: strip.scrollLeft, s1: left, scroll: true, start: 0 };
+            if (Math.abs(motion.x1 - motion.x0) < 1 && Math.abs(motion.s1 - motion.s0) < 1) {
+                railMotion = null;
+                strip.style.scrollSnapType = '';
+                return;
+            }
+            // Snapping would pull each in-between position to a nearby card; the end position is a snap position.
+            strip.style.scrollSnapType = 'none';
+            motion.frame = requestAnimationFrame(function step(now) {
+                if (railMotion !== motion) return;
+                // Timed from the first frame, so a busy main thread doesn't make the motion start halfway.
+                if (!motion.start) motion.start = now;
+                var t = Math.min(1, (now - motion.start) / RAIL_MS), e = ease(t);
+                setRing(motion.x0 + (motion.x1 - motion.x0) * e);
+                if (motion.scroll) strip.scrollLeft = motion.s0 + (motion.s1 - motion.s0) * e;
+                if (t < 1) motion.frame = requestAnimationFrame(step);
+                else stopRail();
+            });
+        }
+        function takeOverRail(event) {
+            if (!railMotion || railMotion.strip !== event.currentTarget) return;
+            railMotion.scroll = false;
+            railMotion.strip.style.scrollSnapType = '';
         }
         function options(select, values, value) {
             var key = JSON.stringify(values);
@@ -2321,7 +2372,8 @@
             ++selection;
             ++seasonRequest;
             if (artFrame) cancelAnimationFrame(artFrame);
-            if (ringSlide) ringSlide.cancel();
+            stopRail();
+            if (railResize) railResize.disconnect();
             if (artFade) artFade.cancel();
             if (titleFade) titleFade.cancel();
             clearTimeout(timer);
@@ -2366,6 +2418,7 @@
                 return true;
             });
             if (!episodes.length && !rail) return;
+            var previous = activeSeason;
             activeSeason = season;
             ++selection;
             pending = false;
@@ -2374,7 +2427,7 @@
             status.textContent = '';
             episodeCards.clear();
             currentCard = null;
-            if (ringSlide) ringSlide.cancel();
+            stopRail();
             var nextRail = el('section', 'mui-phone-episodes');
             var heading = el('div', 'mui-phone-episode-heading');
             var label = season.Name || L('剧集', 'Episodes');
@@ -2420,6 +2473,23 @@
             ring.setAttribute('aria-hidden', 'true');
             strip.appendChild(ring);
             nextRail.appendChild(strip);
+            ['pointerdown', 'touchstart', 'wheel'].forEach(function (type) {
+                strip.addEventListener(type, takeOverRail, { passive: true });
+            });
+            // A new width (the phone turned, the 42% cards resized) moves every card: the outline follows its
+            // card and the current episode is centered again.
+            if (railResize) railResize.disconnect();
+            railWidth = 0;
+            if (window.ResizeObserver) {
+                railResize = new ResizeObserver(function () {
+                    var width = strip.clientWidth;
+                    if (!width || width === railWidth) return;
+                    var first = !railWidth;
+                    railWidth = width;
+                    if (!first && currentCard && currentCard.parentElement === strip && !ring.hidden) centerEpisode(currentCard, true);
+                });
+                railResize.observe(strip);
+            }
             allEpisodes.onclick = function () {
                 showRailMenu(allEpisodes, episodes, selected.Id, function (item) {
                     selectEpisode(item, episodeCards.get(String(item.Id)));
@@ -2428,6 +2498,13 @@
             if (rail) rail.replaceWith(nextRail);
             else panel.after(nextRail);
             rail = nextRail;
+            // Another season slides in from its side of the season order, like a tab.
+            if (previous && previous !== season && !reduceMotion && strip.animate) {
+                var step = seasons.indexOf(season) > seasons.indexOf(previous) ? 1 : -1;
+                if (getComputedStyle(strip).direction === 'rtl') step = -step;
+                strip.animate([{ opacity: 0, transform: 'translate3d(' + step * 28 + 'px,0,0)' }, { opacity: 1, transform: 'none' }],
+                    { duration: 300, easing: EASE });
+            }
             view.classList.add('mui-phone-rail-ready', 'mui-phone-series-rail');
             view.classList.toggle('mui-phone-rail-specials', seasons.some(function (entry) { return entry.IndexNumber === 0; }));
             view.classList.toggle('mui-phone-rail-synopsis', !!base.Overview || episodes.some(function (item) { return !!item.Overview; }));
