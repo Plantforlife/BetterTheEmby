@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.36
+
+- Phone episode rail: the blue outline and the strip scroll now move on one eased 400 ms curve, so the outline glides straight to the new episode instead of overshooting and being dragged back. Rapid taps continue from the current position, a swipe during the motion keeps the finger in control, and a new width keeps the outline on its card. Switching seasons slides the new episodes in from the side of the season order.
+
 ## 1.0.2.35
 
 - Suppress duplicate phone card navigation and recover artwork after scrolling or returning to a cached page.
