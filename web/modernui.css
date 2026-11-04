@@ -2316,6 +2316,7 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     html.mui-phonelayout .mui-phone-video .mui-hero,
     html.mui-phonelayout .mui-phone-video .itemBackdropContainer,
     html.mui-phonelayout .mui-phone-video .detailMainContainer,
+    html.mui-phonelayout .mui-phone-series-rail .seriesItemsSection:has(.allEpisodesItemsContainer),
     html.mui-phonelayout .mui-phone-rail-ready :is(.trackListSection,.moreFromSeasonSection) {
         display: none !important;
     }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.28
+
+- Use the phone episode strip on single-season series pages while retaining Emby's season navigation for multi-season series.
+
 ## 1.0.2.27
 
 - Keep episode card resizing smooth when another episode is selected mid-animation, and center the latest selection using the rail's layout coordinates.

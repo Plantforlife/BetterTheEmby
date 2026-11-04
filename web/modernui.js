@@ -2174,30 +2174,38 @@
             panel.remove();
             if (rail) rail.remove();
             if (nativeCurrent) nativeCurrent.classList.remove('mui-current-episode');
-            view.classList.remove('mui-phone-video', 'mui-phone-rail-ready', 'mui-phone-series-detail');
+            view.classList.remove('mui-phone-video', 'mui-phone-rail-ready', 'mui-phone-series-detail', 'mui-phone-series-rail');
         }
         observer = new MutationObserver(sync);
         observer.observe(nativeTop, { childList: true, subtree: true, attributes: true,
             attributeFilter: ['class', 'aria-pressed', 'disabled'] });
         sync();
         updateScroll();
-        if (/^(Season|Episode)$/.test(base.Type)) {
-            var season = base.Type === 'Season' ? base.Id : base.SeasonId;
+        var singleSeasonSeries = base.Type === 'Series' && base.ChildCount === 1;
+        if (singleSeasonSeries || /^(Season|Episode)$/.test(base.Type)) {
+            var seasonId = base.Type === 'Season' ? base.Id : base.SeasonId;
+            var seriesId = singleSeasonSeries ? base.Id : base.SeriesId;
             var a = api();
-            if (season && base.SeriesId && a) {
+            if ((seasonId || singleSeasonSeries) && seriesId && a) {
                 state.waitingForRail = true;
-                a.getEpisodes(base.SeriesId, {
-                    SeasonId: season, UserId: a.getCurrentUserId(), Fields: 'Overview', EnableUserData: true
-                }).then(function (result) {
+                var userId = a.getCurrentUserId();
+                var seasonDetails = singleSeasonSeries ? a.getSeasons(seriesId, { UserId: userId }).then(function (seasons) {
+                    return seasons.Items.length === 1 ? seasons.Items[0] : null;
+                }) : Promise.resolve({ Id: seasonId, Name: base.SeasonName || (base.Type === 'Season' ? base.Name : L('剧集', 'Episodes')) });
+                seasonDetails.then(async function (seasonInfo) {
+                    if (!seasonInfo || destroyed || !view.isConnected) return;
+                    var season = seasonInfo.Id;
+                    var result = await a.getEpisodes(seriesId, {
+                        SeasonId: season, UserId: userId, Fields: 'Overview', EnableUserData: true
+                    });
                     if (destroyed || !view.isConnected || !result.Items.length) return;
                     rail = el('section', 'mui-phone-episodes');
                     var heading = el('div', 'mui-phone-episode-heading');
-                    var seasonName = base.SeasonName || (base.Type === 'Season' ? base.Name : L('剧集', 'Episodes'));
-                    var seasonPicker = el('button', 'mui-phone-season-picker', seasonName);
+                    var seasonPicker = el('button', 'mui-phone-season-picker', seasonInfo.Name || L('剧集', 'Episodes'));
                     seasonPicker.type = 'button';
                     seasonPicker.appendChild(icon('unfold_more'));
                     seasonPicker.onclick = function () {
-                        a.getSeasons(base.SeriesId, { UserId: a.getCurrentUserId() }).then(function (seasons) {
+                        a.getSeasons(seriesId, { UserId: a.getCurrentUserId() }).then(function (seasons) {
                             if (!active()) return;
                             showRailMenu(seasonPicker, seasons.Items, season, function (item) {
                                 if (item.Id !== season) showItem(item);
@@ -2234,6 +2242,7 @@
                     };
                     panel.after(rail);
                     view.classList.add('mui-phone-rail-ready');
+                    view.classList.toggle('mui-phone-series-rail', singleSeasonSeries);
                     if (base.Type === 'Season' && selected.Id === base.Id && !pending && active()) {
                         return selectEpisode(result.Items[0], strip.firstElementChild, true);
                     }
