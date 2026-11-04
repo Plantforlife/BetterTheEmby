@@ -280,6 +280,11 @@
     // ---------- page transitions ----------
 
     var phoneRouteMotion = null, nativeRouteMotion = false;
+    function isMediaRoute(url) {
+        var match = /(?:^|[!/])([^/?#!]+)(?:\?[^#]*)?$/i.exec(url || '');
+        var path = match && match[1].toLowerCase().replace(/\.html$/, '');
+        return /^(home|item|search)$/.test(path) || LIBRARY_PATHS.test(path);
+    }
     function patchPhoneRouteMotion() {
         if (!document.startViewTransition || reduceMotion) return;
         Emby.importModule('./modules/viewmanager/viewmanager.js').then(function (module) {
@@ -299,21 +304,12 @@
                     if (!docScroll || document.hidden || nativeRouteMotion || signal && signal.aborted ||
                         !from || !from.view || !options.params || options.params.asDialog === 'true' ||
                         options.isPluginPage || from.params && from.params.asDialog === 'true' || from.url === options.url ||
-                        /(?:^|[!/])(?:videoosd|nowplaying|dashboard)(?:[/?]|$)/i.test(options.url || '')) return run();
+                        !isMediaRoute(from.url) || !isMediaRoute(options.url)) return run();
                     if (method === 'tryRestoreView' && !Array.from(document.querySelectorAll('.page.view')).some(function (view) {
                         return view.__muiRouteUrl === options.url && view.allowRestore !== false;
                     })) return run();
-                    var fromSeries = from.view.classList.contains('mui-phone-series-detail');
-                    var targetItem = /(?:^|[!/])item(?:\?|$)/i.test(options.url || '') && options.params.id;
-                    var card = targetItem && flyFrom && String(flyFrom.id) === String(targetItem) && flyFrom;
-                    function open(type) {
-                        if (signal && signal.aborted || !fromSeries && !/^(Series|Season|Episode)$/.test(type)) return run();
-                        if (phoneRouteMotion) phoneRouteMotion.stop();
-                        return phoneRouteSlide(run, options, signal);
-                    }
-                    if (fromSeries || card && card.type) return open(card && card.type);
-                    // Some native home rows expose an item ID but omit its type.
-                    return card ? getItem(targetItem).then(function (item) { return open(item.Type); }, run) : run();
+                    if (phoneRouteMotion) phoneRouteMotion.stop();
+                    return phoneRouteSlide(run, options, signal);
                 };
             });
         }).catch(function () { /* Emby's own navigation is the fallback. */ });
@@ -340,12 +336,14 @@
                 if (phoneRouteMotion !== current) return;
                 var view = result && result.classList ? result : document.querySelector('.page.view:not(.hide):not(.dialog)');
                 if (!view) return;
-                var r = routeInfo(), until = performance.now() + 320;
-                // Let the custom rail and the first frame of artwork join the incoming snapshot.
+                if (options.isBack || routeInfo().path !== 'item') return;
+                // Capture once the title exists. Artwork and secondary lists can load during the slide.
+                var until = performance.now() + 72;
                 await new Promise(function (resolve) {
                     (function check() {
+                        var title = view.querySelector('.mui-phone-video-title, .detailTextContainer .itemName-primary');
                         if (phoneRouteMotion !== current || !view.isConnected ||
-                            r.path !== 'item' || pageReady(view, r) || performance.now() >= until) resolve();
+                            title && title.textContent.trim() || performance.now() >= until) resolve();
                         // Chromium may suspend animation frames until the update callback completes.
                         else setTimeout(check, 24);
                     })();
@@ -439,7 +437,8 @@
             if (!ready && choreo && choreo.view === view) choreo = null;
             checkChoreo();
         });
-        setTimeout(function () { afterShow(view, r); }, 0);
+        if (phoneRouteMotion) afterShow(view, r);
+        else setTimeout(function () { afterShow(view, r); }, 0);
     }
 
     // A page Emby is still filling in moves under its own fade: its tabs come a frame later, a detail page's facts
@@ -1747,7 +1746,7 @@
     function phoneEpisodeClick(e) {
         if (!isPhone() || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return false;
         if (e.target.closest('button[data-action]:not([data-action="link"]),.cardOverlayButton,.cardOverlayFab-primary,.multiSelectCheckbox')) return false;
-        var card = e.target.closest('.allEpisodesItemsContainer .card,.mui-phone-episode');
+        var card = e.target.closest('.mui-phone-episode');
         var view = card && card.closest('.itemView'), state = view && view.__muiPhoneVideo;
         var item = state && cardItem(card);
         if (!item || !item.Id || (item.Type && item.Type !== 'Episode')) return false;
@@ -1828,7 +1827,7 @@
         var nativeArtScroll = window.CSS && CSS.supports('animation-timeline', 'scroll(root block)') &&
             CSS.supports('animation-range', '0px 50vw');
         var lastArtScroll, episodeCards = new Map(), currentCard = null, pendingId = null;
-        var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, nativeCurrent, sources = [];
+        var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, sources = [];
         var baseLogo = logoOf(base);
         var currentArt = '', wantedArt = '', artFade, titleFade, destroyed = false, pending = false;
         var seriesGenres = base.Genres || [];
@@ -2107,22 +2106,11 @@
         }
         function centerEpisode(card, immediate) {
             if (!card || !card.isConnected) return;
-            var strip = card.closest('.mui-phone-episode-strip, .childrenItemsScroller');
+            var strip = card.closest('.mui-phone-episode-strip');
             if (!strip || !strip.clientWidth) return;
-            var custom = strip.matches('.mui-phone-episode-strip');
-            var first = custom && card === strip.firstElementChild;
             var behavior = immediate || reduceMotion ? 'instant' : 'smooth';
-            if (custom) {
-                var left = card.offsetLeft + (card.offsetWidth - strip.clientWidth) / 2;
-                strip.scrollTo({ left: first ? 0 : left, behavior: behavior });
-            } else if (strip.scrollToPosition && strip.getScrollLeft) {
-                var nativeBounds = strip.getBoundingClientRect(), tile = card.getBoundingClientRect();
-                var delta = (tile.left + tile.right - nativeBounds.left - nativeBounds.right) / 2;
-                if (nativeCurrent) nativeCurrent.classList.remove('mui-current-episode');
-                nativeCurrent = card;
-                nativeCurrent.classList.add('mui-current-episode');
-                strip.scrollToPosition({ position: cardItem(card)?.IndexNumber === 1 ? 0 : strip.getScrollLeft() + delta, behavior: behavior });
-            }
+            var left = card.offsetLeft + (card.offsetWidth - strip.clientWidth) / 2;
+            strip.scrollTo({ left: card === strip.firstElementChild ? 0 : left, behavior: behavior });
         }
         function options(select, values, value) {
             var key = JSON.stringify(values);
@@ -2187,7 +2175,7 @@
             var token = ++selection;
             pendingId = item.Id;
             markEpisode(item.Id);
-            if (card && card.matches('.mui-phone-episode')) centerEpisode(card, initial);
+            centerEpisode(card, initial);
             if (item.Id === base.Id) {
                 pending = false;
                 pendingId = null;
@@ -2195,7 +2183,6 @@
                 status.textContent = '';
                 selected = base;
                 sync();
-                if (card && !card.matches('.mui-phone-episode')) centerEpisode(card, false);
                 return;
             }
             pending = true;
@@ -2224,7 +2211,6 @@
                     }));
                     tracks();
                     render(full, initial);
-                    if (card && !card.matches('.mui-phone-episode') && String(cardItem(card)?.Id) === String(full.Id)) centerEpisode(card, initial);
                 });
             }).then(function () {
                 if (token === selection) { pending = false; pendingId = null; play.removeAttribute('aria-busy'); }
@@ -2295,7 +2281,6 @@
             if (observer) observer.disconnect();
             panel.remove();
             if (rail) rail.remove();
-            if (nativeCurrent) nativeCurrent.classList.remove('mui-current-episode');
             view.classList.remove('mui-phone-video', 'mui-phone-rail-ready', 'mui-phone-series-detail', 'mui-phone-series-rail', 'mui-phone-rail-synopsis');
         }
         observer = new MutationObserver(sync);
@@ -2310,9 +2295,12 @@
             if ((seasonId || singleSeasonSeries) && seriesId && a) {
                 state.waitingForRail = true;
                 var userId = a.getCurrentUserId();
-                var seasonDetails = singleSeasonSeries ? a.getSeasons(seriesId, { UserId: userId }).then(function (seasons) {
-                    return seasons.Items.length === 1 ? seasons.Items[0] : null;
-                }) : Promise.resolve({ Id: seasonId, Name: base.SeasonName || (base.Type === 'Season' ? base.Name : L('剧集', 'Episodes')) });
+                // Only a confirmed single-season show uses in-place episode previews.
+                // Other shows keep Emby's series, season and episode pages as separate levels.
+                var seasonDetails = a.getSeasons(seriesId, { UserId: userId }).then(function (seasons) {
+                    var only = seasons.Items.length === 1 && seasons.Items[0];
+                    return only && (!seasonId || String(only.Id) === String(seasonId)) ? only : null;
+                });
                 seasonDetails.then(async function (seasonInfo) {
                     if (!seasonInfo || destroyed || !view.isConnected) return;
                     var season = seasonInfo.Id;
@@ -2322,20 +2310,10 @@
                     if (destroyed || !view.isConnected || !result.Items.length) return;
                     rail = el('section', 'mui-phone-episodes');
                     var heading = el('div', 'mui-phone-episode-heading');
-                    var seasonPicker = el('button', 'mui-phone-season-picker', seasonInfo.Name || L('剧集', 'Episodes'));
-                    seasonPicker.type = 'button';
-                    seasonPicker.appendChild(icon('unfold_more'));
-                    seasonPicker.onclick = function () {
-                        a.getSeasons(seriesId, { UserId: a.getCurrentUserId() }).then(function (seasons) {
-                            if (!active()) return;
-                            showRailMenu(seasonPicker, seasons.Items, season, function (item) {
-                                if (item.Id !== season) showItem(item);
-                            });
-                        }).catch(function () {});
-                    };
+                    var seasonLabel = el('h2', 'mui-phone-season-label', seasonInfo.Name || L('剧集', 'Episodes'));
                     var allEpisodes = el('button', 'mui-phone-episode-more', L('更多', 'More'));
                     allEpisodes.type = 'button';
-                    heading.append(seasonPicker, allEpisodes);
+                    heading.append(seasonLabel, allEpisodes);
                     rail.appendChild(heading);
                     var strip = el('div', 'mui-phone-episode-strip');
                     strip.setAttribute('aria-label', L('剧集', 'Episodes'));

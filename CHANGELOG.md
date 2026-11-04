@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2.33
+
+- Give detail playback and secondary buttons a soft inset reflection.
+- Use separate season and episode pages for multi-season shows on phones, with in-place previews for single-season shows.
+- Extend phone slides across media browsing and details. Start once the title is ready without waiting for artwork or classifying the clicked item.
+
 ## 1.0.2.32
 
 - Slide the full phone series route in from the right and back out over the previous page.

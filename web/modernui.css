@@ -395,6 +395,19 @@ html.mui.theme-dark .btnResume.detailButton.raised:hover {
     background: rgba(255, 255, 255, .86) !important;
 }
 
+/* A small reflection on the surface keeps detail actions legible over bright artwork. */
+html.mui.theme-dark.mui-videoitem .mainDetailButtons > .detailButton,
+html.mui-phonelayout .mui-phone-video-control:not(:disabled):not(:has(select:disabled)) {
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.12),
+        inset 0 8px 14px -12px rgba(255,255,255,.45), 0 3px 9px rgba(0,0,0,.22);
+}
+
+html.mui.theme-dark.mui-videoitem .mainDetailButtons > :is(.btnMainPlay, .btnResume),
+html.mui-phonelayout .mui-phone-video-play:not(:disabled) {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.56),
+        inset 0 -8px 12px -10px rgba(0,0,0,.25), 0 5px 14px rgba(0,0,0,.28);
+}
+
 html.mui.theme-dark .detailTextContainer .emby-select-withcolor,
 html.mui.theme-dark .detailTextContainer select.emby-select {
     border-radius: 999px !important;
@@ -2540,8 +2553,7 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         font: inherit;
         -webkit-tap-highlight-color: transparent;
     }
-    .mui-phone-episode-heading .mui-phone-season-picker { gap: 3px; font-weight: 650; }
-    .mui-phone-episode-heading .mui-phone-season-picker .md-icon { font-size: 18px; }
+    .mui-phone-episode-heading .mui-phone-season-label { margin: 0 6px; font: inherit; font-weight: 600; }
     .mui-phone-episode-heading .mui-phone-episode-more { font-size: .9rem; }
     .mui-phone-episode-strip {
         position: relative;
@@ -2587,7 +2599,6 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         font-size: .8rem;
         font-weight: 750;
     }
-    .mui-phone-video .mui-current-episode .cardImageContainer { outline: 2px solid #29a2ff; outline-offset: -2px; }
     .mui-phone-episode strong, .mui-phone-episode span { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; margin-top: 6px; }
     .mui-phone-episode strong { -webkit-line-clamp: 2; }
     .mui-phone-episode span { -webkit-line-clamp: 3; font-size: .88rem; }

@@ -55,12 +55,12 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 - Phone episode cards keep their width while scrolling. Tap a later episode to highlight it immediately and glide it to the center.
 - Video details keep Back, Search and More in the floating header. The episode strip stays in place when the synopsis changes length, and a blue border marks the selected episode. Drag the library letter index to choose a letter. Album playback actions sit together in one row.
-- Phone series details slide in from the right and slide out to the right on Back. The artwork shrinks and fades smoothly from the top as you scroll, while the logo and playback controls move with the content at their original size. The phone library index displays the current letter in the center while dragging.
+- Phone media pages slide in from the right and slide out to the right on Back, across libraries and item types. In series details, the artwork shrinks and fades from the top as you scroll, while the logo and playback controls move with the content at their original size.
 - Phone home banners reserve a fixed space for the title and logo. If a logo loads during a swipe, it fades in once the slide settles.
 
 - Compact episode details keep the episode strip near the first screen. Tap a truncated description to read it in full. Safari uses its native track picker, while other browsers show an anchored menu.
 
-- Show and episode pages have centered playback and native version, audio, and subtitle pickers. A single-season show opens with the first episode selected. Shuffle and repeat appear with the music queue.
+- Show and episode pages have centered playback, softly lit buttons and native version, audio, and subtitle pickers. A single-season show opens with the first episode selected. Multi-season shows use separate season and episode pages, just as on desktop. Shuffle and repeat appear with the music queue.
 - Long phone synopses open in a reader. Browser Back closes it and returns to the same place on the episode page.
 
 - Album details show a larger cover on the left and the title, artist and metadata on the right, with full-width playback controls underneath. Long text wraps naturally.
