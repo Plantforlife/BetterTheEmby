@@ -1008,7 +1008,9 @@
             if (panelMotion) panelMotion.cleanup();
             panelMotion = state;
             var timing = { duration: 420, easing: 'cubic-bezier(.22,.8,.24,1)' };
-            var out = phone ? 'translateY(18px)' : 'translateX(36px)';
+            // A short shift read as no motion against the dark player on a wide screen; the panel now comes
+            // from further out, while phones keep the small vertical rise.
+            var out = phone ? 'translateY(18px)' : 'translateX(64px)';
             if (clone) {
                 var bounds = leaving.bounds;
                 Object.assign(clone.style, { position: 'fixed', pointerEvents: 'none', zIndex: '1000',
@@ -1019,7 +1021,7 @@
                 motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, transform: out }], timing));
             }
             if (next) {
-                var enter = { opacity: 0, transform: phone ? 'translateY(18px)' : 'translateX(28px)' };
+                var enter = { opacity: 0, transform: phone ? 'translateY(18px)' : 'translateX(64px)' };
                 if (returning && next === previous.panel) {
                     var destination = next.getBoundingClientRect();
                     enter.opacity = returning.opacity;

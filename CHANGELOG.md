@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.40
+
+- Desktop audio player: the lyrics (and queue) panel now slides in and out 64 px, so the transition is visible on a wide screen.
+
 ## 1.0.2.39
 
 - Phone audio player: opening and closing the lyrics (and play queue) panel fades and rises it over 420 ms, as on the desktop player; closing no longer snaps shut.
