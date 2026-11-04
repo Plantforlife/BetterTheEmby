@@ -2609,7 +2609,7 @@
                 var picker = self.options.element;
                 if (!picker.__muiScrub) {
                     picker.__muiScrub = true;
-                    var pointer, preview, readout;
+                    var pointer, preview, readout, touchCommitUntil = 0;
                     function pointAt(event) {
                         var button = Array.from(picker.querySelectorAll('.alphaPickerButton-vertical')).find(function (node) {
                             var bounds = node.getBoundingClientRect();
@@ -2628,6 +2628,7 @@
                         readout.textContent = preview.textContent;
                     }
                     picker.addEventListener('pointerdown', function (event) {
+                        touchCommitUntil = 0;
                         var button = event.target.closest('.alphaPickerButton-vertical');
                         if (!isPhone() || event.pointerType === 'mouse' || !button || pointer != null) return;
                         pointer = event.pointerId;
@@ -2643,13 +2644,23 @@
                         if (readout) { readout.remove(); readout = null; }
                         if (preview) {
                             preview.classList.remove('mui-alpha-preview');
-                            if (event.type === 'pointerup') preview.click();
+                            if (event.type === 'pointerup') {
+                                touchCommitUntil = Date.now() + 400;
+                                preview.click();
+                            }
                         }
                         preview = null;
                     }
                     picker.addEventListener('pointerup', finish);
                     picker.addEventListener('lostpointercapture', finish);
                     picker.addEventListener('pointercancel', finish);
+                    picker.addEventListener('click', function (event) {
+                        // WebKit can send a trusted click after the touch has already committed a letter.
+                        if (Date.now() >= touchCommitUntil || !event.isTrusted || !event.detail) return;
+                        touchCommitUntil = 0;
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                    }, true);
                 }
                 function apply() {
                     var heads = {}, values = [];

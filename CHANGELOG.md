@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.24
+
+- Commit a phone alphabet index tap once when WebKit also emits a native click after touch.
+
 ## 1.0.2.23
 
 - Phone season details start on the first episode. An episode switch updates the title, technical information, track options and selection together.
