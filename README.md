@@ -25,6 +25,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 - The album page, the full-screen player and the now-playing bar take the album cover's colours.
 - Phones and desktops use the same cover sample; album gradients keep inherited artist artwork out.
 - Apple-Music-style covers and lyrics: the current line glows, the others blur with distance, the list glides; bilingual LRC lines are kept together. Point at a line to see its time and click to jump there.
+- Desktop lyrics and queue panels continue from their current position when switched mid-animation.
 - The cover flies between the now-playing bar or album page and the player.
 
 ### Libraries

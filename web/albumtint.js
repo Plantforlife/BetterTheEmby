@@ -955,23 +955,34 @@
         }
         setPage(null);
     }
-    var cancelPanelMotion;
+    var panelMotion, panelMotionFrame;
+    function cancelPanelMotion() {
+        cancelAnimationFrame(panelMotionFrame);
+        panelMotionFrame = 0;
+        if (panelMotion) panelMotion.cleanup();
+    }
     function setOsd(on) {
         root.classList.toggle('albumtint-osd', on);
-        if (!on && cancelPanelMotion) cancelPanelMotion();
+        if (!on) cancelPanelMotion();
+    }
+    function panelPose(node) {
+        return node && { bounds: node.getBoundingClientRect(), opacity: getComputedStyle(node).opacity };
     }
 
     // Keep a short-lived visual copy while Emby immediately switches its native panel.
     document.addEventListener('click', function (event) {
         var toggle = event.target.closest && event.target.closest('.btnLyrics, .osdContentSectionToggleButton');
         if (!toggle || !root.classList.contains('albumtint-osd') || matchMedia('(max-width: 40em)').matches) return;
-        if (cancelPanelMotion) cancelPanelMotion();
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !Element.prototype.animate) return;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches || !Element.prototype.animate) {
+            cancelPanelMotion();
+            return;
+        }
         var bottom = toggle.closest('.videoOsdBottom');
         var panel = bottom && bottom.querySelector(':is(.lyricsSection,.osdPlayQueue,[data-contentsection="playqueue"].osdContentSection):not(.hide)');
         var controls = bottom && bottom.querySelector('.videoOsdBottom-maincontrols');
         if (!controls) return;
-        var before = controls.getBoundingClientRect(), bounds = panel && panel.getBoundingClientRect();
+        var before = controls.getBoundingClientRect(), leaving = panelPose(panel);
+        var previous = panelMotion, returning = previous && panelPose(previous.clone);
         var clone = panel && panel.cloneNode(true);
         if (clone) {
             clone.setAttribute('aria-hidden', 'true');
@@ -980,29 +991,41 @@
         }
         var scroll = panel && panel.querySelector('.lyricsScroller, .scrollFrameY');
         var scrollTop = scroll && scroll.scrollTop;
-        var motion = [], disposed = false;
+        var motion = [], state = { cleanup: cleanup, clone: clone, panel: panel };
         function cleanup() {
-            disposed = true;
             if (clone) clone.remove();
             motion.forEach(function (animation) { animation.cancel(); });
-            if (cancelPanelMotion === cleanup) cancelPanelMotion = null;
+            if (panelMotion === state) panelMotion = null;
         }
-        cancelPanelMotion = cleanup;
-        requestAnimationFrame(function () {
-            if (disposed || !bottom.isConnected || !root.classList.contains('albumtint-osd')) { cleanup(); return; }
+        cancelAnimationFrame(panelMotionFrame);
+        panelMotionFrame = requestAnimationFrame(function () {
+            panelMotionFrame = 0;
+            if (!bottom.isConnected || !root.classList.contains('albumtint-osd')) return;
             var next = bottom.querySelector(':is(.lyricsSection,.osdPlayQueue,[data-contentsection="playqueue"].osdContentSection):not(.hide)');
-            if (next === panel) { cleanup(); return; }
+            if (next === panel) return;
+            if (panelMotion) panelMotion.cleanup();
+            panelMotion = state;
             var after = controls.getBoundingClientRect();
             var timing = { duration: 420, easing: 'cubic-bezier(.22,.8,.24,1)' };
             if (clone) {
+                var bounds = leaving.bounds;
                 Object.assign(clone.style, { position: 'fixed', pointerEvents: 'none', zIndex: '1000',
                     left: bounds.left + 'px', top: bounds.top + 'px', width: bounds.width + 'px', height: bounds.height + 'px' });
                 bottom.closest('.view').appendChild(clone);
                 var copyScroll = clone.querySelector('.lyricsScroller, .scrollFrameY');
                 if (copyScroll) copyScroll.scrollTop = scrollTop || 0;
-                motion.push(clone.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(36px)' }], timing));
+                motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, transform: 'translateX(36px)' }], timing));
             }
-            if (next) motion.push(next.animate([{ opacity: 0, transform: 'translateX(28px)' }, { opacity: 1, transform: 'none' }], timing));
+            if (next) {
+                var enter = { opacity: 0, transform: 'translateX(28px)' };
+                if (returning && next === previous.panel) {
+                    var destination = next.getBoundingClientRect();
+                    enter.opacity = returning.opacity;
+                    enter.transform = 'translate(' + (returning.bounds.left - destination.left) + 'px,' +
+                        (returning.bounds.top - destination.top) + 'px)';
+                }
+                motion.push(next.animate([enter, { opacity: 1, transform: 'none' }], timing));
+            }
             motion.push(controls.animate([{ transform: 'translate(' + (before.left - after.left) + 'px,' +
                 (before.top - after.top) + 'px)' }, { transform: 'none' }], timing));
             Promise.allSettled(motion.map(function (animation) { return animation.finished; })).then(cleanup);
@@ -1012,7 +1035,7 @@
     function setupPhonePlayer(item) {
         var bottom = document.querySelector('.view-videoosd-videoosd:not(.hide) .videoOsdBottom');
         if (!bottom) return;
-        if (bottom.__albumtintItemId !== item.Id && cancelPanelMotion) cancelPanelMotion();
+        if (bottom.__albumtintItemId !== item.Id) cancelPanelMotion();
         bottom.__albumtintItemId = item.Id;
         if (!bottom.__albumtintPhone) {
             var identity = document.createElement('button');
