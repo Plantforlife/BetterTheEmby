@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.43
+
+- Audio player: the lyrics and queue toggle now moves every part — panel, cover, title lines and controls — on one 360 ms curve, so the whole player switches in step instead of trailing behind.
+
 ## 1.0.2.42
 
 - Desktop audio player: opening or closing the lyrics (and queue) panel now glides the cover, the title and the controls to their new places with the panel, instead of jumping there while only the panel moved.

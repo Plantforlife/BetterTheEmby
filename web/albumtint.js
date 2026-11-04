@@ -985,10 +985,12 @@
         if (!bottom || !panel && !controls) return;
         var view = bottom.closest('.view');
         // The cover and the title move sideways when a side panel opens or closes (centred <-> beside it). Capture
-        // where they are so they can glide to their new place with the panel instead of jumping there.
-        var cover = view && view.querySelector('.osdPosterContainer .card');
-        var title = view && view.querySelector('.videoOsdText');
-        var moved = [cover, title].map(function (node) { return node ? node.getBoundingClientRect() : null; });
+        // where they are so they can glide to their new place with the panel instead of jumping there. The text
+        // block itself stays full width, so its lines are what has to travel.
+        var text = view && view.querySelector('.videoOsdText');
+        var movers = [view && view.querySelector('.osdPosterContainer .card')]
+            .concat(text ? Array.prototype.slice.call(text.children) : []);
+        var moved = movers.map(function (node) { return node ? node.getBoundingClientRect() : null; });
         var before = controls && controls.getBoundingClientRect(), leaving = panelPose(panel);
         var previous = panelMotion, returning = previous && panelPose(previous.clone);
         var clone = panel && panel.cloneNode(true);
@@ -1013,11 +1015,12 @@
             if (next === panel) return;
             if (panelMotion) panelMotion.cleanup();
             panelMotion = state;
-            // A slow, evenly decelerating slide: the panel scrolls into place rather than popping.
-            var timing = { duration: 640, easing: 'cubic-bezier(.22,.61,.36,1)' };
+            // One curve and one duration for every part of the toggle (panel, copy, cover, title, controls): the
+            // whole player moves as a single piece, at the same speed as the rest of the interface.
+            var timing = { duration: 360, easing: 'cubic-bezier(.22,.8,.24,1)' };
             // A short shift read as no motion against the dark player on a wide screen; the panel now comes
             // from further out, while phones keep the small vertical rise.
-            var out = phone ? 'translateY(24px)' : 'translateX(96px)';
+            var out = phone ? 'translateY(16px)' : 'translateX(72px)';
             if (clone) {
                 var bounds = leaving.bounds;
                 Object.assign(clone.style, { position: 'fixed', pointerEvents: 'none', zIndex: '1000',
@@ -1028,7 +1031,7 @@
                 motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, transform: out }], timing));
             }
             if (next) {
-                var enter = { opacity: .4, transform: phone ? 'translateY(24px)' : 'translateX(96px)' };
+                var enter = { opacity: .4, transform: phone ? 'translateY(16px)' : 'translateX(72px)' };
                 if (returning && next === previous.panel) {
                     var destination = next.getBoundingClientRect();
                     enter.opacity = returning.opacity;
@@ -1040,7 +1043,7 @@
             // Make the rest of the desktop player follow: the cover, the title and the controls turn the immediate
             // layout change into one continuous move with the panel. Phones keep their height transition.
             if (!phone) {
-                [cover, title].forEach(function (node, i) {
+                movers.forEach(function (node, i) {
                     var old = moved[i];
                     if (!node || !old || !node.isConnected) return;
                     var now = node.getBoundingClientRect();
