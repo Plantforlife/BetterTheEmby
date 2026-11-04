@@ -53,20 +53,20 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 ### Phones
 
-- The phone episode strip starts with two and a half cards. Select a later episode to center it between its neighbours.
+- Phone episode cards keep their width while scrolling. Tap a later episode to highlight it immediately and glide it to the center.
 - Video details keep Back, Search and More in the floating header. The episode strip stays in place when the synopsis changes length, and a blue border marks the selected episode. Drag the library letter index to choose a letter. Album playback actions sit together in one row.
-- On phone series, season and episode pages, the artwork shrinks and fades from the top as you scroll. The logo and playback controls move with the content at their original size. The phone library index displays the current letter in the center while dragging.
+- Phone series details slide in from the right and slide out to the right on Back. The artwork shrinks and fades smoothly from the top as you scroll, while the logo and playback controls move with the content at their original size. The phone library index displays the current letter in the center while dragging.
 - Phone home banners reserve a fixed space for the title and logo. If a logo loads during a swipe, it fades in once the slide settles.
 
 - Compact episode details keep the episode strip near the first screen. Tap a truncated description to read it in full. Safari uses its native track picker, while other browsers show an anchored menu.
 
-- Show and episode pages have centered playback and native version, audio, and subtitle pickers. A single-season show opens with the same swipeable episode strip as its season page. Rapid selections keep the episode cards resizing smoothly. Shuffle and repeat appear with the music queue.
+- Show and episode pages have centered playback and native version, audio, and subtitle pickers. A single-season show opens with the first episode selected. Shuffle and repeat appear with the music queue.
 - Long phone synopses open in a reader. Browser Back closes it and returns to the same place on the episode page.
 
 - Album details show a larger cover on the left and the title, artist and metadata on the right, with full-width playback controls underneath. Long text wraps naturally.
 - No tab bar along the bottom; search in the top right; albums three to a row; floating header controls use dark glass for readable text over artwork; a library with many tabs scrolls them sideways.
 - Smaller lyrics and translations fit whole phrases on the full-screen player.
-- Calmer motion: one short fade per page.
+- Other phone pages use a short fade.
 - Pages scroll as a whole, like an ordinary site: Safari's toolbar shrinks away as you scroll, the page goes on under the status bar and the toolbar, and a tap on the status bar goes back to the top. Each page and tab keeps its place when you come back to it.
 - **Real full screen on iPhone**: in Safari, Share → *Add to Home Screen*. Opened from the Home Screen, Emby runs without Safari's bars and the page reaches under the status bar.
 

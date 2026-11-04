@@ -2206,6 +2206,29 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
 
 .mui-phone-video-head, .mui-phone-episodes { display: none; }
 .skinHeader .mui-phone-header-more { display: none; }
+
+html:is(.mui-phone-push, .mui-phone-pop)::view-transition-group(root) { animation: none; }
+html:is(.mui-phone-push, .mui-phone-pop)::view-transition-image-pair(root) { isolation: auto; }
+html:is(.mui-phone-push, .mui-phone-pop)::view-transition-old(root),
+html:is(.mui-phone-push, .mui-phone-pop)::view-transition-new(root) {
+    animation: var(--mui-route-keyframes) var(--mui-route-duration) cubic-bezier(.22,.75,.22,1) both;
+    mix-blend-mode: normal;
+}
+html.mui-phone-push { --mui-route-duration: 300ms; }
+html.mui-phone-pop { --mui-route-duration: 280ms; }
+html.mui-phone-push::view-transition-old(root) { --mui-route-keyframes: mui-route-under-push; }
+html.mui-phone-push::view-transition-new(root) { --mui-route-keyframes: mui-route-push; }
+html.mui-phone-pop::view-transition-old(root) { --mui-route-keyframes: mui-route-pop; z-index: 1; }
+html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route-under-pop; }
+@keyframes mui-route-push { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes mui-route-pop { from { transform: translateX(0); } to { transform: translateX(100%); } }
+@keyframes mui-route-under-push { from { transform: translateX(0); } to { transform: translateX(-30%); } }
+@keyframes mui-route-under-pop { from { transform: translateX(-30%); } to { transform: translateX(0); } }
+
+@keyframes mui-phone-art-scroll {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to { transform: translateY(50vw) scale(.52); opacity: 0; }
+}
 .albumtint-phone-identity, .albumtint-phone-modes { display: none; }
 
 @media (max-width: 40em) {
@@ -2455,14 +2478,33 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         transform: translateY(calc(var(--mui-series-scroll, 0) * 100vw))
             scale(calc(1 - var(--mui-series-scroll, 0) * .96));
         opacity: min(1, calc(1 - var(--mui-series-scroll, 0) * 2));
+        pointer-events: none;
+    }
+    @supports (animation-timeline: scroll(root block)) and (animation-range: 0px 50vw) {
+        @media (prefers-reduced-motion: no-preference) {
+            html.mui-docscroll .mui-phone-series-detail .mui-phone-video-art {
+                animation: mui-phone-art-scroll linear both;
+                animation-timeline: scroll(root block);
+                animation-range: 0px 50vw;
+            }
+        }
     }
     .mui-phone-series-detail .mui-phone-video-logo { transform: none; }
     .mui-phone-series-detail .mui-phone-video-art img { filter: brightness(.9); }
-    .mui-phone-series-detail .mui-phone-video-title { font-size: clamp(14px, 3.75vw, 18px); font-weight: 600; }
+    .mui-phone-series-detail .mui-phone-video-title {
+        font-size: clamp(14px, 3.75vw, 18px);
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
     .mui-phone-series-detail :is(.mui-phone-video-facts,.mui-phone-video-genres) {
         font-size: clamp(12px, 3.6vw, 16px);
         margin-block: 10px;
         color: rgba(255,255,255,.64);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     .mui-phone-series-detail .mui-phone-video-genres { font-weight: 500; }
     .mui-phone-series-detail .mui-phone-video-play {
@@ -2477,6 +2519,8 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
     .mui-phone-series-detail .mui-phone-video-actions { gap: 8px; }
     .mui-phone-series-detail .mui-phone-video-overview { font-size: clamp(13px, 3.6vw, 16px); line-height: 1.38; }
     .mui-phone-series-detail .mui-phone-video-overview-text { max-height: 4.14em; }
+    .mui-phone-rail-synopsis .mui-phone-video-overview { min-height: 4.14em; }
+    .mui-phone-rail-synopsis .mui-phone-video-overview[hidden] { display: block; visibility: hidden; }
     .mui-phone-episode-heading {
         display: flex;
         justify-content: space-between;
@@ -2503,14 +2547,13 @@ html.mui.theme-dark .mainDrawer:not(.drawer-docked) {
         position: relative;
         display: flex;
         overflow-x: auto;
-        --mui-episode-width: calc((100cqi - 40px) / 2.5);
+        --mui-episode-width: 42cqi;
         padding: 5px 16px 8px;
         padding-inline-end: max(16px, calc((100cqi - var(--mui-episode-width)) / 2));
         gap: 12px;
         scroll-snap-type: x proximity;
         scrollbar-width: none;
     }
-    .mui-phone-episode-strip.mui-episode-centered { --mui-episode-width: calc((100cqi - 24px) / 2); }
     .mui-phone-episode-strip::-webkit-scrollbar { display: none; }
     .mui-phone-episode {
         display: flex;

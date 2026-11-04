@@ -181,6 +181,7 @@
         patchLibraryTabs();
         if (SETTINGS.phoneLayout !== false && window.Emby && typeof Emby.importModule === 'function') {
             patchScroller().then(function (ok) { docReady = !!ok; syncDocScroll(); }, function (e) { console.warn('[ModernUI] scroller', e); });
+            patchPhoneRouteMotion();
         }
         window.require(['playbackManager', 'events'], function (p, ev) {
             pm = p && p.default ? p.default : p;
@@ -193,6 +194,7 @@
     function playingAudio() { try { return !!(pm && pm.isPlayingAudio()); } catch (e) { return false; } }
 
     function showItem(item) {
+        if (isPhone()) flyFrom = { id: item.Id, type: item.Type };
         if (typeof window.require === 'function') {
             window.require(['appRouter'], function (r) {
                 r = r && r.default ? r.default : r;
@@ -277,6 +279,90 @@
 
     // ---------- page transitions ----------
 
+    var phoneRouteMotion = null, nativeRouteMotion = false;
+    function patchPhoneRouteMotion() {
+        if (!document.startViewTransition || reduceMotion) return;
+        Emby.importModule('./modules/viewmanager/viewmanager.js').then(function (module) {
+            var manager = module.default || module;
+            if (manager.__muiPhoneRoutes) return;
+            manager.__muiPhoneRoutes = true;
+            if (window.navigation) window.navigation.addEventListener('navigate', function (event) {
+                nativeRouteMotion = !!event.hasUAVisualTransition;
+            });
+            // Emby has loaded the template before loadView and looks for a cached view before that.
+            ['loadView', 'tryRestoreView'].forEach(function (method) {
+                var original = manager[method];
+                if (typeof original !== 'function') return;
+                manager[method] = function (options, signal) {
+                    var from = this.currentViewInfo(), args = arguments, self = this;
+                    function run() { return original.apply(self, args); }
+                    if (!docScroll || document.hidden || nativeRouteMotion || signal && signal.aborted ||
+                        !from || !from.view || !options.params || options.params.asDialog === 'true' ||
+                        options.isPluginPage || from.params && from.params.asDialog === 'true' || from.url === options.url ||
+                        /(?:^|[!/])(?:videoosd|nowplaying|dashboard)(?:[/?]|$)/i.test(options.url || '')) return run();
+                    if (method === 'tryRestoreView' && !Array.from(document.querySelectorAll('.page.view')).some(function (view) {
+                        return view.__muiRouteUrl === options.url && view.allowRestore !== false;
+                    })) return run();
+                    var fromSeries = from.view.classList.contains('mui-phone-series-detail');
+                    var targetItem = /(?:^|[!/])item(?:\?|$)/i.test(options.url || '') && options.params.id;
+                    var card = targetItem && flyFrom && String(flyFrom.id) === String(targetItem) && flyFrom;
+                    function open(type) {
+                        if (signal && signal.aborted || !fromSeries && !/^(Series|Season|Episode)$/.test(type)) return run();
+                        if (phoneRouteMotion) phoneRouteMotion.stop();
+                        return phoneRouteSlide(run, options, signal);
+                    }
+                    if (fromSeries || card && card.type) return open(card && card.type);
+                    // Some native home rows expose an item ID but omit its type.
+                    return card ? getItem(targetItem).then(function (item) { return open(item.Type); }, run) : run();
+                };
+            });
+        }).catch(function () { /* Emby's own navigation is the fallback. */ });
+    }
+
+    function phoneRouteSlide(run, options, signal) {
+        var back = !!options.isBack, mode = back ? 'mui-phone-pop' : 'mui-phone-push';
+        var current = { stop: stop }, transition, result, timer;
+        function cleanup() {
+            clearTimeout(timer);
+            if (signal) signal.removeEventListener('abort', stop);
+            if (phoneRouteMotion !== current) return;
+            phoneRouteMotion = null;
+            root.classList.remove(mode);
+        }
+        function stop() {
+            transition.skipTransition();
+            cleanup();
+        }
+        root.classList.add(mode);
+        transition = document.startViewTransition(async function () {
+            try {
+                result = await run();
+                if (phoneRouteMotion !== current) return;
+                var view = result && result.classList ? result : document.querySelector('.page.view:not(.hide):not(.dialog)');
+                if (!view) return;
+                var r = routeInfo(), until = performance.now() + 320;
+                // Let the custom rail and the first frame of artwork join the incoming snapshot.
+                await new Promise(function (resolve) {
+                    (function check() {
+                        if (phoneRouteMotion !== current || !view.isConnected ||
+                            r.path !== 'item' || pageReady(view, r) || performance.now() >= until) resolve();
+                        // Chromium may suspend animation frames until the update callback completes.
+                        else setTimeout(check, 24);
+                    })();
+                });
+            } catch (error) {
+                stop();
+                throw error;
+            }
+        });
+        phoneRouteMotion = current;
+        timer = setTimeout(stop, 850);
+        if (signal) signal.addEventListener('abort', stop, { once: true });
+        transition.ready.then(function () { clearTimeout(timer); }, cleanup);
+        transition.finished.then(cleanup, cleanup);
+        return transition.updateCallbackDone.then(function () { return result; });
+    }
+
     var prevOsd = false, firstView = true, choreo = null;
     function onViewShow(e) {
         var view = e.target;
@@ -296,6 +382,7 @@
         }
         var r = routeInfo(), isOsd = /^(videoosd|nowplaying)/.test(r.path), wasOsd = prevOsd;
         var detail = e.detail || {}, restored = !!detail.isRestored, back = restored || !!detail.isBack;
+        view.__muiRouteUrl = detail.url;
         prevOsd = isOsd;
         hookEmby();
         var detail = r.path === 'item';
@@ -313,10 +400,10 @@
         // Album Tint animates the way into and out of the music player
         var albumTint = window.AlbumTint && (isOsd || wasOsd) && playingAudio(), entrance = [];
         if (!albumTint && !isOsd && isPhone()) {
-            if (!restored && !(r.path === 'item' && view.__muiPhoneVideo)) {
+            if (!phoneRouteMotion && !nativeRouteMotion && !restored && !(r.path === 'item' && view.__muiPhoneVideo)) {
                 var surface = r.path === 'item' && view.querySelector('.itemMainScrollSlider') || view;
                 var slideIn = detail && (!entryType || /^(Season|Episode)$/.test(entryType));
-                var entry = slideIn ? slide(surface, -36, 480) : rise(surface, 0, 0, firstView ? 260 : 200);
+                var entry = slideIn ? slide(surface, 36, 300) : rise(surface, 0, 0, firstView ? 260 : 200);
                 view.__muiPhoneEntry = entry;
                 entrance.push(entry);
             }
@@ -806,10 +893,16 @@
         if (t.closest('.mui-gs-play')) return;
         var act = t.closest('[data-action]');
         if (act && card.contains(act) && act.getAttribute('data-action') !== 'link') return; // play, menu...
+        var it = cardItem(card);
+        if (!it) return;
+        if (isPhone()) {
+            flyFrom = { id: it.Id, type: it.Type || card.getAttribute('data-type') || card.getAttribute('data-itemtype') };
+            return;
+        }
         var media = mediaOf(card), src = pictureOf(media);
         if (!src) return;
-        var it = cardItem(card), r = media.getBoundingClientRect();
-        if (!it || !r.width || !r.height) return;
+        var r = media.getBoundingClientRect();
+        if (!r.width || !r.height) return;
         flyFrom = { id: it.Id, type: it.Type, card: card, rect: r, src: src, radius: radiusOf(media), at: Date.now() };
     }
 
@@ -1730,6 +1823,11 @@
         view.classList.add('mui-phone-video');
         var seriesDetail = /^(Series|Season|Episode)$/.test(base.Type);
         view.classList.toggle('mui-phone-series-detail', seriesDetail);
+        var singleSeasonSeries = base.Type === 'Series' && base.ChildCount === 1;
+        var seriesBackdrop = seriesDetail && backdropOf(base);
+        var nativeArtScroll = window.CSS && CSS.supports('animation-timeline', 'scroll(root block)') &&
+            CSS.supports('animation-range', '0px 50vw');
+        var lastArtScroll, episodeCards = new Map(), currentCard = null, pendingId = null;
         var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, nativeCurrent, sources = [];
         var baseLogo = logoOf(base);
         var currentArt = '', wantedArt = '', artFade, titleFade, destroyed = false, pending = false;
@@ -1758,9 +1856,14 @@
         function updateScroll() {
             if (reduceMotion) return;
             if (seriesDetail) {
+                if (nativeArtScroll) return;
                 // The reference anchors the art to the viewport while its scale follows scroll distance.
                 var distance = docY(true) / window.innerWidth;
-                panel.style.setProperty('--mui-series-scroll', Math.max(-.06, Math.min(.5, distance)));
+                var progress = Math.max(-.06, Math.min(.5, distance));
+                if (progress !== lastArtScroll) {
+                    panel.style.setProperty('--mui-series-scroll', progress);
+                    lastArtScroll = progress;
+                }
             } else {
                 panel.style.setProperty('--mui-video-scroll', Math.min(1, docY() / 240));
             }
@@ -1895,7 +1998,8 @@
             img.src = url;
         }
         function artUrlFor(item) {
-            var bd = backdropOf(item) || backdropOf(base);
+            var bd = seriesBackdrop || backdropOf(item) || backdropOf(base);
+            if (seriesDetail && bd) return imgUrl(bd.id, 'Backdrop', bd.tag, 960, 85, 0);
             if (item.Type === 'Episode' && item.ImageTags && item.ImageTags.Primary) {
                 return imgUrl(item.Id, 'Primary', item.ImageTags.Primary, 960, 85);
             }
@@ -1904,7 +2008,7 @@
         }
         function rotateArt() {
             clearTimeout(timer);
-            if (destroyed || selected.Type === 'Episode' || reduceMotion) return;
+            if (destroyed || seriesDetail || reduceMotion) return;
             var tags = selected.BackdropImageTags;
             var id = selected.Id;
             if (!tags || !tags.length) {
@@ -1935,9 +2039,18 @@
             favorite.firstChild.textContent = liked ? 'favorite' : 'favorite_border';
             watched.firstChild.classList.toggle('md-icon-fill', played);
             favorite.firstChild.classList.toggle('md-icon-fill', liked);
-            if (rail) rail.querySelectorAll('.mui-phone-episode').forEach(function (card) {
-                if (card.__muiItem.Id === selected.Id) card.dataset.played = played;
-            });
+            var card = episodeCards.get(String(selected.Id));
+            if (card) card.dataset.played = played;
+        }
+        function markEpisode(id) {
+            var card = episodeCards.get(String(id));
+            if (currentCard === card) return;
+            if (currentCard) currentCard.removeAttribute('aria-current');
+            if (card) card.setAttribute('aria-current', 'true');
+            currentCard = card;
+        }
+        function setText(node, value) {
+            if (node.textContent !== value) node.textContent = value;
         }
         var pendingButtons = new Map();
         function render(item, initial) {
@@ -1970,24 +2083,22 @@
                 title.textContent = name;
                 if (titleFade) titleFade.cancel();
                 if (animateTitle) titleFade = title.animate([
-                    { filter: 'blur(5px)', opacity: .45 }, { filter: 'blur(0)', opacity: 1 }
-                ], { duration: 420, easing: EASE });
+                    { filter: 'blur(3px)', opacity: .55 }, { filter: 'blur(0)', opacity: 1 }
+                ], { duration: 260, easing: EASE });
             }
             var minutes = item.RunTimeTicks && Math.round(item.RunTimeTicks / 600000000);
             var date = item.PremiereDate && new Date(item.PremiereDate);
             var source = sources.find(function (s) { return s.Id === selects[0].value; });
             var stream = source && (source.MediaStreams || []).find(function (s) { return s.Type === 'Video'; });
-            facts.textContent = [minutes && L(minutes + ' 分钟', minutes + ' min'),
+            setText(facts, [minutes && L(minutes + ' 分钟', minutes + ' min'),
                 date && !isNaN(date) ? date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : item.ProductionYear,
-                stream && stream.DisplayTitle].filter(Boolean).join('  ·  ');
-            genres.textContent = (item.Genres && item.Genres.length ? item.Genres : seriesGenres).slice(0, 4).join('  ·  ');
-            overviewText.textContent = stripTags(item.Overview);
+                stream && stream.DisplayTitle].filter(Boolean).join('  ·  '));
+            setText(genres, (item.Genres && item.Genres.length ? item.Genres : seriesGenres).slice(0, 4).join('  ·  '));
+            setText(overviewText, stripTags(singleSeasonSeries && base.Overview || item.Overview));
             overview.hidden = !overviewText.textContent;
             setArt(artUrlFor(item));
             markButtons();
-            if (rail) Array.prototype.forEach.call(rail.querySelectorAll('.mui-phone-episode'), function (card) {
-                card.setAttribute('aria-current', String(card.__muiItem.Id) === String(item.Id) ? 'true' : 'false');
-            });
+            markEpisode(pendingId || item.Id);
             if (railTop !== null) {
                 var shift = rail.getBoundingClientRect().top - railTop;
                 if (Math.abs(shift) >= 1) docScrollTo(docY() + shift);
@@ -2000,31 +2111,10 @@
             if (!strip || !strip.clientWidth) return;
             var custom = strip.matches('.mui-phone-episode-strip');
             var first = custom && card === strip.firstElementChild;
-            var resize = custom && strip.classList.contains('mui-episode-centered') === first;
-            var before;
-            if (resize && !immediate && !reduceMotion && card.animate) {
-                before = Array.from(strip.children, function (tile) { return [tile, tile.getBoundingClientRect()]; });
-            }
-            if (resize || (custom && immediate)) {
-                strip.querySelectorAll('.mui-phone-episode').forEach(function (tile) {
-                    if (tile.__muiRecenter) tile.__muiRecenter.cancel();
-                });
-                strip.classList.toggle('mui-episode-centered', !first);
-            }
             var behavior = immediate || reduceMotion ? 'instant' : 'smooth';
             if (custom) {
-                // Offset geometry excludes any in-flight card transform.
                 var left = card.offsetLeft + (card.offsetWidth - strip.clientWidth) / 2;
-                strip.scrollTo({ left: first ? 0 : left, behavior: before ? 'instant' : behavior });
-                var bounds = before && strip.getBoundingClientRect();
-                if (before) before.forEach(function (entry) {
-                    var tile = entry[0], start = entry[1], end = tile.getBoundingClientRect();
-                    if (!end.width || Math.max(start.right, end.right) < bounds.left || Math.min(start.left, end.left) > bounds.right) return;
-                    tile.__muiRecenter = tile.animate([
-                        { transform: 'translateX(' + (start.left - end.left) + 'px) scale(' + start.width / end.width + ')' },
-                        { transform: 'none' }
-                    ], { duration: 420, easing: EASE });
-                });
+                strip.scrollTo({ left: first ? 0 : left, behavior: behavior });
             } else if (strip.scrollToPosition && strip.getScrollLeft) {
                 var nativeBounds = strip.getBoundingClientRect(), tile = card.getBoundingClientRect();
                 var delta = (tile.left + tile.right - nativeBounds.left - nativeBounds.right) / 2;
@@ -2087,18 +2177,25 @@
         });
         function selectEpisode(item, card, initial) {
             if (item.Id === selected.Id && !pending) { centerEpisode(card, false); return; }
+            if (item.Id === pendingId) return;
             closeOverlays();
-            ++imageRequest;
-            wantedArt = currentArt;
-            state.waitingForArt = false;
+            if (!seriesBackdrop) {
+                ++imageRequest;
+                wantedArt = currentArt;
+                state.waitingForArt = false;
+            }
             var token = ++selection;
+            pendingId = item.Id;
+            markEpisode(item.Id);
+            if (card && card.matches('.mui-phone-episode')) centerEpisode(card, initial);
             if (item.Id === base.Id) {
                 pending = false;
+                pendingId = null;
                 play.removeAttribute('aria-busy');
                 status.textContent = '';
                 selected = base;
                 sync();
-                centerEpisode(card, false);
+                if (card && !card.matches('.mui-phone-episode')) centerEpisode(card, false);
                 return;
             }
             pending = true;
@@ -2127,14 +2224,17 @@
                     }));
                     tracks();
                     render(full, initial);
-                    if (card && String(cardItem(card)?.Id) === String(full.Id)) centerEpisode(card, initial);
+                    if (card && !card.matches('.mui-phone-episode') && String(cardItem(card)?.Id) === String(full.Id)) centerEpisode(card, initial);
                 });
             }).then(function () {
-                if (token === selection) { pending = false; play.removeAttribute('aria-busy'); }
+                if (token === selection) { pending = false; pendingId = null; play.removeAttribute('aria-busy'); }
             }).catch(function () {
                 if (token !== selection) return;
                 pending = false;
+                pendingId = null;
                 play.removeAttribute('aria-busy');
+                markEpisode(selected.Id);
+                centerEpisode(currentCard, initial);
                 if (initial) return;
                 status.textContent = L('部分剧集信息未能加载，可重试或打开原详情。', 'Some episode details could not load. Retry or open the original details.');
                 var link = button(L('打开原详情', 'Open original details'), 'open_in_new', 'mui-phone-video-fallback');
@@ -2143,6 +2243,7 @@
             });
         }
         function toggle(field) {
+            if (pending) return;
             var item = selected, a = api();
             if (!a) return;
             var key = item.Id + ':' + field;
@@ -2195,14 +2296,13 @@
             panel.remove();
             if (rail) rail.remove();
             if (nativeCurrent) nativeCurrent.classList.remove('mui-current-episode');
-            view.classList.remove('mui-phone-video', 'mui-phone-rail-ready', 'mui-phone-series-detail', 'mui-phone-series-rail');
+            view.classList.remove('mui-phone-video', 'mui-phone-rail-ready', 'mui-phone-series-detail', 'mui-phone-series-rail', 'mui-phone-rail-synopsis');
         }
         observer = new MutationObserver(sync);
         observer.observe(nativeTop, { childList: true, subtree: true, attributes: true,
             attributeFilter: ['class', 'aria-pressed', 'disabled'] });
         sync();
         updateScroll();
-        var singleSeasonSeries = base.Type === 'Series' && base.ChildCount === 1;
         if (singleSeasonSeries || /^(Season|Episode)$/.test(base.Type)) {
             var seasonId = base.Type === 'Season' ? base.Id : base.SeasonId;
             var seriesId = singleSeasonSeries ? base.Id : base.SeriesId;
@@ -2243,6 +2343,7 @@
                         var card = el('button', 'mui-phone-episode');
                         card.type = 'button';
                         card.__muiItem = item;
+                        episodeCards.set(String(item.Id), card);
                         card.dataset.played = !!(item.UserData && item.UserData.Played);
                         var img = el('img');
                         img.alt = '';
@@ -2264,7 +2365,8 @@
                     panel.after(rail);
                     view.classList.add('mui-phone-rail-ready');
                     view.classList.toggle('mui-phone-series-rail', singleSeasonSeries);
-                    if (base.Type === 'Season' && selected.Id === base.Id && !pending && active()) {
+                    view.classList.toggle('mui-phone-rail-synopsis', !!base.Overview || result.Items.some(function (item) { return !!item.Overview; }));
+                    if ((base.Type === 'Season' || singleSeasonSeries) && selected.Id === base.Id && !pending && active()) {
                         return selectEpisode(result.Items[0], strip.firstElementChild, true);
                     }
                     render(selected);
@@ -2495,7 +2597,9 @@
             state.hero.style.transform = reduceMotion ? '' : 'translate3d(0,' + (st * 0.38).toFixed(1) + 'px,0)';
             state.hero.style.opacity = Math.max(0, 1 - st / (h * 0.9)).toFixed(3);
         }
-        view.addEventListener('scroll', function () { if (!state.frame) state.frame = requestAnimationFrame(apply); }, { passive: true });
+        view.addEventListener('scroll', function () {
+            if ((!isPhone() || !view.__muiPhoneVideo) && !state.frame) state.frame = requestAnimationFrame(apply);
+        }, { passive: true });
         apply();
     }
 

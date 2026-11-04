@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2.32
+
+- Slide the full phone series route in from the right and back out over the previous page.
+- Drive artwork directly from scroll position on supported browsers. Keep episode cards and the series artwork steady while tapping through episodes.
+
 ## 1.0.2.31
 
 - Match the reference phone series scroll: the backdrop stays anchored as it zooms out and fades, and the logo and episode controls scroll at full size.
