@@ -983,6 +983,12 @@
         var panel = bottom && bottom.querySelector(':is(.lyricsSection,.osdPlayQueue,[data-contentsection="playqueue"].osdContentSection):not(.hide)');
         var controls = bottom && bottom.querySelector('.videoOsdBottom-maincontrols');
         if (!bottom || !panel && !controls) return;
+        var view = bottom.closest('.view');
+        // The cover and the title move sideways when a side panel opens or closes (centred <-> beside it). Capture
+        // where they are so they can glide to their new place with the panel instead of jumping there.
+        var cover = view && view.querySelector('.osdPosterContainer .card');
+        var title = view && view.querySelector('.videoOsdText');
+        var moved = [cover, title].map(function (node) { return node ? node.getBoundingClientRect() : null; });
         var before = controls && controls.getBoundingClientRect(), leaving = panelPose(panel);
         var previous = panelMotion, returning = previous && panelPose(previous.clone);
         var clone = panel && panel.cloneNode(true);
@@ -1030,6 +1036,18 @@
                         (returning.bounds.top - destination.top) + 'px)';
                 }
                 motion.push(next.animate([enter, { opacity: 1, transform: 'none' }], timing));
+            }
+            // Make the rest of the desktop player follow: the cover, the title and the controls turn the immediate
+            // layout change into one continuous move with the panel. Phones keep their height transition.
+            if (!phone) {
+                [cover, title].forEach(function (node, i) {
+                    var old = moved[i];
+                    if (!node || !old || !node.isConnected) return;
+                    var now = node.getBoundingClientRect();
+                    var dx = old.left - now.left, dy = old.top - now.top;
+                    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+                    motion.push(node.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], timing));
+                });
             }
             // The desktop controls slide by the panel's width; on phones their height transition already covers it.
             if (controls && !phone) {

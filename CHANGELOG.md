@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.42
+
+- Desktop audio player: opening or closing the lyrics (and queue) panel now glides the cover, the title and the controls to their new places with the panel, instead of jumping there while only the panel moved.
+
 ## 1.0.2.41
 
 - Audio player: the lyrics and queue panels now slide in and out over 640 ms on an evenly decelerating curve — a smooth scroll into place rather than a fade, on the desktop (96 px) and the phone (24 px).
