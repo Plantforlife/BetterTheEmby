@@ -1843,6 +1843,8 @@
                 content.append(close, el('p', '', overviewText.textContent));
                 reader = dialogHelper.createDialog({ dialog: content, autoLowResLayout: false,
                     blurBackground: true, removeOnClose: true, swipeClose: false });
+                // Emby only enables dialog history on TV by default.
+                if (window.navigation) reader.setAttribute('data-history', 'true');
                 close.onclick = function () { dialogHelper.close(content); };
                 content.addEventListener('close', function () {
                     reader = null;

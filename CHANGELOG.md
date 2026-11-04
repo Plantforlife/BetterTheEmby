@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.29
+
+- Close the phone synopsis reader with browser Back while keeping the episode page, selection and scroll position.
+
 ## 1.0.2.28
 
 - Use the phone episode strip on single-season series pages while retaining Emby's season navigation for multi-season series.
