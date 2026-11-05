@@ -1962,6 +1962,8 @@
             menu.style.maxHeight = Math.max(0, bottom - top - 16) + 'px';
             menu.style.left = Math.max(left + 8, Math.min(rect.left, right - menu.offsetWidth - 8)) + 'px';
             menu.style.top = Math.max(top + 8, Math.min(rect.bottom + 4, bottom - menu.offsetHeight - 8)) + 'px';
+            popAnchor = rect;
+            morphPopover(menu);
             document.addEventListener('pointerdown', dismissMenu, true);
             document.addEventListener('keydown', dismissMenu, true);
             window.addEventListener('scroll', dismissMenu, true);
@@ -3905,11 +3907,144 @@
         if (options.positionTo) {
             options.autoLowResLayout = false;
             options.dialogClass = ((options.dialogClass || '') + ' mui-popover').trim();
-            var r = options.positionTo.getBoundingClientRect && options.positionTo.getBoundingClientRect();
-            if (r) document.documentElement.style.setProperty('--mui-popover-origin',
-                (r.left + r.width / 2 > innerWidth / 2 ? 'right' : 'left') + ' ' + (r.top < innerHeight / 2 ? 'top' : 'bottom'));
+            popAnchor = options.positionTo.getBoundingClientRect ? options.positionTo.getBoundingClientRect() : null;
         }
         return options;
+    }
+
+    // ---------- phone liquid glass: refraction where the engine allows it ----------
+    // iOS glass bends what lies under it toward its rim and splits the colours a little there. Chromium can do that to
+    // the page behind an element (an SVG displacement filter in backdrop-filter); WebKit can't yet, so Safari keeps the
+    // light, rim and tint the stylesheet draws. The displacement map depends on the element's size and corner radius:
+    // one filter per shape, made on demand and reused; the element points at it through --mui-refract.
+    var GLASS = '.skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerMenuButton), .skinHeader:not(.videoOsdHeader) .headerRight,' +
+        ' .tabs-viewmenubar-backgroundcontainer .emby-tabs-slider, .mui-phone-video-actions .mui-phone-video-control,' +
+        ' .mainDetailButtons > :is(.btnShuffle,.detailButton-autotext), .nowPlayingBar.mui-bar';
+    var canRefract = !!(window.CSS && CSS.supports('backdrop-filter', 'url(#x)')) &&
+        /Chrome\/|Chromium\//.test(navigator.userAgent) && !/CriOS|EdgiOS|FxiOS/.test(navigator.userAgent);
+    var glassDefs = null, glassShapes = {}, glassSizer = null;
+    function glassify() {
+        if (!canRefract || !isPhone() || !window.ResizeObserver) return;
+        if (!glassSizer) glassSizer = new ResizeObserver(function (entries) { entries.forEach(function (e) { refract(e.target); }); });
+        document.querySelectorAll(GLASS).forEach(function (node) {
+            if (node.__muiGlass) return;
+            node.__muiGlass = true;
+            glassSizer.observe(node);
+        });
+    }
+    function refract(node) {
+        var w = Math.round(node.offsetWidth), h = Math.round(node.offsetHeight);
+        if (!w || !h || !isPhone()) {
+            ['--mui-refract', '--mui-lg-filter', '--mui-lg-panel-filter'].forEach(function (v) { node.style.removeProperty(v); });
+            return;
+        }
+        var r = Math.min(h / 2, w / 2, parseFloat(getComputedStyle(node).borderTopLeftRadius) || 0);
+        var key = w + 'x' + h + 'r' + Math.round(r);
+        if (!glassShapes[key]) glassShapes[key] = glassFilter(key, w, h, r);
+        node.style.setProperty('--mui-refract', 'url(#mui-lg-' + key + ')');
+        // the bending carries the look, so the glass needs less blur than the plain fallback
+        node.style.setProperty('--mui-lg-filter', 'blur(1.5px) saturate(160%) brightness(1.06)');
+        node.style.setProperty('--mui-lg-panel-filter', 'blur(14px) saturate(180%)');
+    }
+    var glassQueued = false;
+    function queueGlass() {
+        if (glassQueued || !canRefract) return;
+        glassQueued = true;
+        requestAnimationFrame(function () { glassQueued = false; glassify(); });
+    }
+    // A convex rim: inside a band along the edge the backdrop is sampled from further in, most strongly at the edge,
+    // so content near the rim looks drawn toward it; red, green and blue bend by slightly different amounts.
+    function glassFilter(key, w, h, r) {
+        var band = Math.max(8, Math.min(18, Math.min(w, h) * .4)), depth = Math.min(16, band * .9);
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d'), img = ctx.createImageData(w, h), px = img.data;
+        var hx = w / 2 - r, hy = h / 2 - r;
+        for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+            // signed distance to the rounded rectangle (negative inside) and its outward normal
+            var px0 = x + .5 - w / 2, py0 = y + .5 - h / 2;
+            var qx = Math.abs(px0) - hx, qy = Math.abs(py0) - hy;
+            var ox = Math.max(qx, 0), oy = Math.max(qy, 0), outside = Math.sqrt(ox * ox + oy * oy);
+            var dist = outside + Math.min(Math.max(qx, qy), 0) - r;
+            var nx, ny;
+            if (outside > 0) { nx = ox / outside; ny = oy / outside; } else if (qx > qy) { nx = 1; ny = 0; } else { nx = 0; ny = 1; }
+            nx *= px0 < 0 ? -1 : 1;
+            ny *= py0 < 0 ? -1 : 1;
+            var t = Math.min(1, Math.max(0, -dist / band)), m = (1 - t) * (1 - t);
+            var i = (y * w + x) * 4;
+            px[i] = 128 - nx * m * 127;
+            px[i + 1] = 128 - ny * m * 127;
+            px[i + 2] = 128;
+            px[i + 3] = 255;
+        }
+        ctx.putImageData(img, 0, 0);
+        if (!glassDefs) {
+            var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('aria-hidden', 'true');
+            svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+            glassDefs = document.createElementNS(svg.namespaceURI, 'defs');
+            svg.appendChild(glassDefs);
+            document.body.appendChild(svg);
+        }
+        var ns = 'http://www.w3.org/2000/svg', f = document.createElementNS(ns, 'filter');
+        f.id = 'mui-lg-' + key;
+        [['x', 0], ['y', 0], ['width', w], ['height', h], ['filterUnits', 'userSpaceOnUse'], ['primitiveUnits', 'userSpaceOnUse'],
+            ['color-interpolation-filters', 'sRGB']].forEach(function (a) { f.setAttribute(a[0], a[1]); });
+        var map = document.createElementNS(ns, 'feImage');
+        [['x', 0], ['y', 0], ['width', w], ['height', h], ['preserveAspectRatio', 'none'], ['result', 'map']].forEach(function (a) { map.setAttribute(a[0], a[1]); });
+        map.setAttribute('href', canvas.toDataURL());
+        f.appendChild(map);
+        // one displaced copy per colour channel, then added back together
+        [['r', 1, '1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'], ['g', 1.07, '0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0'],
+            ['b', 1.14, '0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0']].forEach(function (c) {
+            var d = document.createElementNS(ns, 'feDisplacementMap');
+            [['in', 'SourceGraphic'], ['in2', 'map'], ['scale', (depth * 2 * c[1]).toFixed(1)], ['xChannelSelector', 'R'], ['yChannelSelector', 'G'], ['result', 'd' + c[0]]]
+                .forEach(function (a) { d.setAttribute(a[0], a[1]); });
+            var m = document.createElementNS(ns, 'feColorMatrix');
+            [['in', 'd' + c[0]], ['type', 'matrix'], ['values', c[2]], ['result', c[0]]].forEach(function (a) { m.setAttribute(a[0], a[1]); });
+            f.append(d, m);
+        });
+        [['r', 'g', 'rg'], ['rg', 'b', 'rgb']].forEach(function (c) {
+            var sum = document.createElementNS(ns, 'feComposite');
+            [['in', c[0]], ['in2', c[1]], ['operator', 'arithmetic'], ['k1', 0], ['k2', 1], ['k3', 1], ['k4', 0], ['result', c[2]]]
+                .forEach(function (a) { sum.setAttribute(a[0], a[1]); });
+            f.appendChild(sum);
+        });
+        glassDefs.appendChild(f);
+        return true;
+    }
+
+    // ---------- phone menus: grow out of their button on a spring ----------
+    // iOS 26 menus emerge from the control that opened them: they start at the button's size and place and spring to
+    // full size, overshooting a little. Emby positions the menu after it is added, so the animation starts once it has
+    // a place; the stylesheet keeps it invisible until then.
+    var SPRING = 'linear(0, 0.0314, 0.1116, 0.2222, 0.3481, 0.4775, 0.6018, 0.715, 0.8134, 0.8954, 0.9606, 1.0099, 1.0448, ' +
+        '1.0673, 1.0795, 1.0835, 1.0814, 1.0751, 1.0661, 1.0557, 1.0448, 1.0344, 1.0248, 1.0164, 1.0094, 1.0038, 0.9996, 0.9965, 1)';
+    var popAnchor = null;
+    function morphPopover(dlg) {
+        if (dlg.__muiMorph) return;
+        dlg.__muiMorph = true;
+        var from = popAnchor;
+        popAnchor = null;
+        var tries = 0;
+        (function wait() {
+            var box = dlg.getBoundingClientRect();
+            if ((!box.width || !box.height) && ++tries < 20) { requestAnimationFrame(wait); return; }
+            dlg.classList.add('mui-pop-run');
+            if (!dlg.animate || reduceMotion || !from || !box.width) { dlg.classList.add('mui-pop-done'); return; }
+            var ox = Math.max(0, Math.min(box.width, from.left + from.width / 2 - box.left));
+            var oy = Math.max(0, Math.min(box.height, from.top + from.height / 2 - box.top));
+            dlg.style.transformOrigin = ox + 'px ' + oy + 'px';
+            var sx = Math.min(1, from.width / box.width), sy = Math.min(1, from.height / box.height);
+            var grow = dlg.animate([
+                { transform: 'scale(' + sx + ',' + sy + ')', opacity: .5 },
+                { transform: 'none', opacity: 1 }
+            ], { duration: 560, easing: SPRING });
+            var content = Array.prototype.filter.call(dlg.children, function (c) { return c.offsetHeight; });
+            content.forEach(function (c) { c.animate([{ opacity: 0 }, { opacity: 0, offset: .15 }, { opacity: 1 }], { duration: 300, easing: 'ease-out' }); });
+            grow.finished.then(function () { dlg.classList.add('mui-pop-done'); }, function () { });
+        })();
     }
 
     // ---------- video player: play / pause feedback ----------
@@ -4029,6 +4164,9 @@
                         if (isCardImage(n)) { checkImg(n); return; }
                         var cl = n.classList;
                         if (cl.contains('nowPlayingBar') || cl.contains('nowPlayingBarTop')) arrangeBar(n.closest('.nowPlayingBar'));
+                        var pop = cl.contains('mui-popover') ? n : n.firstElementChild && n.querySelector('.actionSheet.mui-popover');
+                        if (pop) morphPopover(pop);
+                        queueGlass();
                         if (rec.target.classList && rec.target.classList.contains('creditsSubSections')) emptyCredits(n);
                         // a new set of header tabs (another page) fades in, before it is first painted
                         if (!tabsFaded && (cl.contains('emby-tab-button') || (n.firstElementChild && n.querySelector('.emby-tab-button')))) {
@@ -4058,6 +4196,7 @@
     }
     function refresh() {
         arrangeBar(document.querySelector('.nowPlayingBar'));
+        queueGlass();
         var view = document.querySelector('.view:not(.hide)');
         if (view) afterShow(view, routeInfo());
     }

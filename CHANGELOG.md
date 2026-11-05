@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2.47
+
+- Phone liquid glass now refracts: in Chrome and Edge the page under the header buttons, tabs, detail buttons and mini player bends toward their rims with a slight colour split, the way iOS glass does. Safari (which can't bend what lies behind an element yet) gets the same light, rim and colour fringe without the bending.
+- The header glass really blurs the page now. Emby names the header for page transitions, which kept its buttons from seeing the page behind them: they were merely see-through.
+- Menus spring out of the button that opened them (from its size and place, overshooting a little), and close back toward it. Glass buttons swell and brighten under the finger and spring back.
+- Corners follow iOS: concentric radii (the tab lens inside its track, the mini player capsule), and continuous corners on menus and panels where the browser supports them (Chrome and Edge).
+- The header capsule now holds all three buttons in narrow desktop windows; the cast button used to spill out of it.
+
 ## 1.0.2.46
 
 - Desktop now-playing bar: a docked player with rounded frosted glass. The track sits on the left, the transport in the middle with a slim progress bar under it between the elapsed time and the duration, and shuffle, repeat, volume and the queue on the right. The progress takes the playing album's colour, and the slider thumbs only show on hover.

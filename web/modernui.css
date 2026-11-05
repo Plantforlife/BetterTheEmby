@@ -2996,15 +2996,22 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         color: #fff;
         background: var(--mui-lg-fill) !important;
         -webkit-backdrop-filter: var(--mui-lg-filter);
-        backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
         box-shadow: var(--mui-lg-edge);
     }
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerLeft {
+        /* it gives way to the capsule, which keeps its full width on the same row */
+        flex: 1 1 0;
+        min-width: 0;
         gap: 8px;
         padding-inline-start: 16px;
     }
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight {
+        /* Emby caps the section's width; with three buttons the first spilled out of the capsule to the left */
         flex: 0 0 auto;
+        width: max-content !important;
+        min-width: max-content !important;
+        max-width: none !important;
         align-self: center;
         align-items: center;
         gap: 0;
@@ -3015,7 +3022,7 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         border-radius: 22px;
         background: var(--mui-lg-fill);
         -webkit-backdrop-filter: var(--mui-lg-filter);
-        backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
         box-shadow: var(--mui-lg-edge);
     }
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight:not(:has(> :not(.hide))) {
@@ -3036,10 +3043,6 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) :is(.headerButton,.mui-phone-header-more) .md-icon {
         font-size: 22px;
         filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .3));
-    }
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) :is(.headerButton,.mui-phone-header-more):active {
-        transform: scale(.92);
-        transition: transform .12s var(--mui-ease);
     }
 
     html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerCastButton,.headerUserButton,.headerSettingsButton) {
@@ -3132,14 +3135,15 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         pointer-events: none;
     }
 
-    /* Keep cards and bright art from washing through the floating controls. Only their small surfaces paint;
-       the hidden header box stays empty so Safari can continue showing the page behind its bars. */
+    /* The tab track is liquid glass like the other header controls, over a faint dark veil so the labels stay
+       readable on bright art. Only these small surfaces paint; the hidden header box stays empty so Safari can
+       continue showing the page behind its bars. */
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .tabs-viewmenubar:not(.mui-tabs-overflow) .emby-tabs-slider,
     html.mui.mui-phonelayout.theme-dark .headerMiddle:has(> .tabs-viewmenubar.mui-tabs-overflow)::before {
-        background: rgba(24, 24, 28, .82);
-        -webkit-backdrop-filter: blur(10px) saturate(120%);
-        backdrop-filter: blur(10px) saturate(120%);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 6px 20px rgba(0, 0, 0, .22);
+        background: var(--mui-lg-fill), rgba(16, 16, 20, .22);
+        -webkit-backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
+        box-shadow: var(--mui-lg-edge);
     }
 
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .emby-tab-button:not(.emby-tab-button-active) {
@@ -3618,24 +3622,74 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
    edge, with a fine rim. Small controls (header buttons, tabs, detail buttons) use the clear variant; surfaces that
    carry text (menus, the mini player) a darker one so the text stays readable. Desktops keep frosted glass. */
 @media (max-width: 40em) {
+    /* The light comes from above: a bright arc along the top-left rim and a fainter one bottom-right, a hairline,
+       a soft inner glow, and a faint red / blue fringe on the left / right edges where glass splits colours.
+       Chromium also bends the page under the rim (modernui.js sets --mui-refract to a displacement filter per shape,
+       and a lighter blur, since the bending already carries the look). */
     html.mui.mui-phonelayout {
-        --mui-lg-fill: linear-gradient(180deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .07));
-        --mui-lg-filter: blur(8px) saturate(150%) brightness(1.04);
-        --mui-lg-edge: inset 0 1px 0 rgba(255, 255, 255, .42), inset 0 -1px 0 rgba(255, 255, 255, .1),
-            inset 0 0 0 .5px rgba(255, 255, 255, .22), 0 4px 14px rgba(0, 0, 0, .18);
-        --mui-lg-panel: rgba(32, 32, 36, .5);
-        --mui-lg-panel-filter: blur(28px) saturate(170%);
-        --mui-lg-panel-edge: inset 0 1px 0 rgba(255, 255, 255, .24), inset 0 0 0 .5px rgba(255, 255, 255, .16),
-            0 18px 44px rgba(0, 0, 0, .36);
+        --mui-spring: linear(0, 0.0314, 0.1116, 0.2222, 0.3481, 0.4775, 0.6018, 0.715, 0.8134, 0.8954, 0.9606, 1.0099, 1.0448,
+            1.0673, 1.0795, 1.0835, 1.0814, 1.0751, 1.0661, 1.0557, 1.0448, 1.0344, 1.0248, 1.0164, 1.0094, 1.0038, 0.9996, 0.9965, 1);
+        --mui-lg-fill: radial-gradient(130% 110% at 50% -10%, rgba(255, 255, 255, .24), rgba(255, 255, 255, .06) 55%, rgba(255, 255, 255, .03));
+        --mui-lg-filter: blur(6px) saturate(160%) brightness(1.06);
+        --mui-lg-edge: inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, .75), inset -1.5px -1.5px 1px -1px rgba(255, 255, 255, .38),
+            inset 1px 0 1px -.5px rgba(255, 110, 140, .2), inset -1px 0 1px -.5px rgba(110, 180, 255, .2),
+            inset 0 0 0 .5px rgba(255, 255, 255, .2), inset 0 0 12px rgba(255, 255, 255, .07), 0 6px 18px rgba(0, 0, 0, .2);
+        --mui-lg-panel: rgba(30, 30, 34, .46);
+        --mui-lg-panel-filter: blur(26px) saturate(180%);
+        --mui-lg-panel-edge: inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, .5), inset -1.5px -1.5px 1px -1px rgba(255, 255, 255, .22),
+            inset 0 0 0 .5px rgba(255, 255, 255, .16), inset 0 0 20px rgba(255, 255, 255, .05), 0 18px 44px rgba(0, 0, 0, .36);
     }
 
+    /* press: the control swells and brightens under the finger, and springs back when let go */
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) :is(.headerBackButton, .headerMenuButton, .headerRight > .headerButton),
+    html.mui.mui-phonelayout .mui-phone-video-actions .mui-phone-video-control,
+    html.mui.mui-phonelayout .mainDetailButtons > .detailButton,
+    html.mui.mui-phonelayout .mui-bar :is(.playPauseButton-right, .nextTrackButton) {
+        transition: transform .5s var(--mui-spring), background-color .2s ease, filter .2s ease !important;
+    }
+
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) :is(.headerBackButton, .headerMenuButton):active,
+    html.mui.mui-phonelayout .mui-phone-video-actions .mui-phone-video-control:active:not(:disabled),
+    html.mui.mui-phonelayout .mainDetailButtons > .detailButton:active {
+        transform: scale(1.12) !important;
+        filter: brightness(1.25);
+        transition-duration: .16s !important;
+    }
+
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerRight > .headerButton:active,
+    html.mui.mui-phonelayout .mui-bar :is(.playPauseButton-right, .nextTrackButton):active {
+        transform: scale(1.14) !important;
+        background: rgba(255, 255, 255, .18) !important;
+        transition-duration: .16s !important;
+    }
+
+    /* Emby names the header for view transitions (it stays put while pages change). A named element is a backdrop
+       root, so the glass inside the header saw only the empty header: it was merely translucent, with nothing behind
+       it to blur or bend. The name moves to the header's parts, each of them glass or text, which stay put just the
+       same while their own backdrop filters see the page. */
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) { view-transition-name: none !important; }
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerBackButton { view-transition-name: mui-header-back; }
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerMenuButton { view-transition-name: mui-header-menu; }
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .pageTitle { view-transition-name: mui-header-title; }
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerRight { view-transition-name: mui-header-right; }
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .emby-tabs-slider { view-transition-name: mui-header-tabs; }
+
     /* tabs (Home / Favorites, a library's views): one glass track, the selected tab a brighter lens in it */
+    /* the bar around the track paints nothing (Emby gives it a dark band) */
+    html.mui.mui-phonelayout.theme-dark .skinHeader .tabs-viewmenubar-backgroundcontainer {
+        background: transparent !important;
+        box-shadow: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+    }
+
+    /* concentric: the track is 40 tall with 4 of padding, so its 20 radius and the lens's 16 share one centre */
     html.mui.mui-phonelayout.theme-dark .tabs-viewmenubar-backgroundcontainer .emby-tabs-slider {
         padding: 4px;
-        border-radius: 22px;
+        border-radius: 20px;
         background: var(--mui-lg-fill);
         -webkit-backdrop-filter: var(--mui-lg-filter);
-        backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
         box-shadow: var(--mui-lg-edge);
     }
 
@@ -3649,7 +3703,9 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
     html.mui.mui-phonelayout.theme-dark .mui-tab-pill {
         border-radius: 16px;
         background: rgba(255, 255, 255, .24);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .36), inset 0 0 0 .5px rgba(255, 255, 255, .18);
+        box-shadow: inset 1px 1px 1px -.5px rgba(255, 255, 255, .55), inset -1px -1px 1px -.5px rgba(255, 255, 255, .25),
+            inset 0 0 0 .5px rgba(255, 255, 255, .18);
+        transition: transform .55s var(--mui-spring), width .55s var(--mui-spring), height .42s var(--mui-ease), opacity .2s;
     }
 
     /* a film whose logo is shown doesn't repeat its name underneath (episodes keep their line: it names the episode) */
@@ -3669,7 +3725,7 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         border: 0;
         background: var(--mui-lg-fill);
         -webkit-backdrop-filter: var(--mui-lg-filter);
-        backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
         box-shadow: var(--mui-lg-edge) !important;
     }
 
@@ -3732,7 +3788,7 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         color: #fff !important;
         background: var(--mui-lg-fill) !important;
         -webkit-backdrop-filter: var(--mui-lg-filter);
-        backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
         box-shadow: var(--mui-lg-edge) !important;
     }
 
@@ -3757,17 +3813,22 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
     html.mui.mui-phonelayout.theme-dark .actionSheet.mui-popover {
         min-width: 220px;
         max-width: calc(100vw - 32px);
-        border-radius: 22px !important;
+        border-radius: 26px !important;
         background: var(--mui-lg-panel) !important;
         -webkit-backdrop-filter: var(--mui-lg-panel-filter);
         backdrop-filter: var(--mui-lg-panel-filter);
         box-shadow: var(--mui-lg-panel-edge) !important;
-        transform-origin: var(--mui-popover-origin, right top) !important;
-        animation: mui-pop-in .24s cubic-bezier(.22, .75, .22, 1) both !important;
+        animation: none !important;
+    }
+
+    /* invisible until modernui.js has it positioned and starts the spring from the button (morphPopover); shown
+       anyway after half a second should that never happen */
+    html.mui.mui-phonelayout :is(.actionSheet.mui-popover, .mui-phone-track-menu):not(.mui-pop-run) {
+        animation: mui-pop-reveal 0s .5s both !important;
     }
 
     html.mui.mui-phonelayout .actionSheet.mui-popover.dialog-close {
-        animation: mui-pop-out .15s ease-in both !important;
+        animation: mui-pop-close .2s cubic-bezier(.4, 0, 1, 1) both !important;
     }
 
     html.mui.mui-phonelayout .actionSheet.mui-popover .actionSheetMenuItem .listItem-content {
@@ -3791,8 +3852,6 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         -webkit-backdrop-filter: var(--mui-lg-panel-filter);
         backdrop-filter: var(--mui-lg-panel-filter);
         box-shadow: var(--mui-lg-panel-edge);
-        transform-origin: left top;
-        animation: mui-pop-in .24s cubic-bezier(.22, .75, .22, 1) both;
     }
 
     .mui-phone-track-menu button[aria-selected="true"] {
@@ -3810,10 +3869,10 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         visibility: visible;
         margin: 0 8px max(8px, env(safe-area-inset-bottom));
         overflow: hidden;
-        border-radius: 22px;
+        border-radius: 32px;
         background: var(--mui-lg-panel) !important;
         -webkit-backdrop-filter: var(--mui-lg-panel-filter) !important;
-        backdrop-filter: var(--mui-lg-panel-filter) !important;
+        backdrop-filter: var(--mui-refract, ) var(--mui-lg-panel-filter) !important;
         box-shadow: var(--mui-lg-panel-edge) !important;
     }
 
@@ -3823,7 +3882,7 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         gap: 4px;
         height: 64px;
         box-sizing: border-box;
-        padding: 0 8px;
+        padding: 0 10px;
     }
 
     html.mui.mui-phonelayout .mui-bar .nowPlayingBarInfoContainer {
@@ -3840,8 +3899,8 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         flex: 0 0 44px;
         width: 44px;
         height: 44px;
-        margin: 0;
-        border-radius: 10px;
+        margin: 0 0 0 2px;
+        border-radius: 12px;
         background-size: cover;
     }
 
@@ -3902,5 +3961,38 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
     html.mui.mui-phonelayout .mui-bar .nowPlayingBarPositionContainer .emby-slider-background-inner {
         height: 100%;
         background: rgba(255, 255, 255, .14) !important;
+    }
+}
+
+@keyframes mui-pop-reveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes mui-pop-close {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: scale(.4); }
+}
+
+/* iOS draws rounded rectangles with continuous corners (the curve eases into the straight edge). Where the engine
+   can draw them (corner-shape), the phone glass panels use them, with a larger radius since a superellipse of the
+   same radius looks tighter. Circles and capsules stay as they are, as on iOS. */
+@supports (corner-shape: squircle) {
+    @media (max-width: 40em) {
+        html.mui.mui-phonelayout.theme-dark .actionSheet.mui-popover {
+            corner-shape: squircle;
+            border-radius: 40px !important;
+        }
+
+        html.mui.mui-phonelayout .mui-phone-track-menu,
+        html.mui.mui-phonelayout .mui-phone-overview-reader {
+            corner-shape: squircle;
+            border-radius: 30px;
+        }
+
+        html.mui.mui-phonelayout .mui-bar .nowPlayingBarImage {
+            corner-shape: squircle;
+            border-radius: 18px;
+        }
     }
 }
