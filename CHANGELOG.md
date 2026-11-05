@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.51
+
+- Phone show and film pages: the artwork shrinks again as the page scrolls, toward its top edge (about 78% after a quarter of a screen width, 66% after a third), then fades out, as in the reference; it stays smooth, since the scroll position still drives it on the compositor.
+
 ## 1.0.2.50
 
 - Phone show and film pages scroll smoothly: the artwork holds still at the top while the page slides over it, and dims as the content covers it, as in the iOS app. It used to be moved by script from scroll events, a frame behind Safari's scrolling, and it switched from following to scrolling away part-way down, so it twitched.

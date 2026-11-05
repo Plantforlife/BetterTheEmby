@@ -2481,7 +2481,8 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         pointer-events: none;
     }
 
-    /* The artwork holds still while the page scrolls over it, as in the iOS app, and dims as the content covers it.
+    /* The artwork holds its top edge still while the page scrolls over it, shrinking toward that edge and then fading,
+       as in the iOS app (about 78% after a quarter of a screen width, 66% after a third).
        The scroll position drives it on the compositor (a scroll timeline), in step with the finger: the script that
        used to move it from scroll events lagged a frame behind Safari's scrolling and made it twitch. It stays an
        element of the page, not position: fixed, which Safari 26 clips below the status bar. Browsers without
@@ -2493,9 +2494,10 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
                 overflow-y: visible;
             }
             html.mui-docscroll .mui-phone-video-art {
-                animation: mui-art-pin linear both, mui-art-dim linear both;
-                animation-timeline: scroll(root), scroll(root);
-                animation-range: 0px 6000px, 0px 60vh;
+                transform-origin: center top;
+                animation: mui-art-pin linear both, mui-art-shrink linear both, mui-art-dim linear both;
+                animation-timeline: scroll(root), scroll(root), scroll(root);
+                animation-range: 0px 6000px, 0px 35vw, 0px 55vw;
             }
         }
     }
@@ -4020,11 +4022,18 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
     }
 }
 
-/* moves the phone detail artwork down exactly as far as the page scrolls (6000px over 6000px of scroll): it holds still */
+/* The phone detail artwork: moved down exactly as far as the page scrolls (6000px over 6000px), so it holds still;
+   shrunk and faded on their own properties, so the three compose. */
 @keyframes mui-art-pin {
-    to { transform: translate3d(0, 6000px, 0); }
+    to { translate: 0 6000px; }
+}
+
+@keyframes mui-art-shrink {
+    66% { scale: .78; }
+    to { scale: .66; }
 }
 
 @keyframes mui-art-dim {
-    to { opacity: .3; }
+    64% { opacity: .45; }
+    to { opacity: 0; }
 }
