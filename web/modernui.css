@@ -2469,10 +2469,6 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     html.mui-phonelayout .mui-phone-video .seriesItemsSection { margin-block-start: 0; padding-block-start: 0; }
     html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer { --card-width: calc(40vw - 16px); }
     html.mui-phonelayout .mui-phone-video .allEpisodesItemsContainer > .card { width: var(--card-width) !important; }
-    @media (max-height: 700px) {
-        .mui-phone-video-body { padding-top: clamp(82px, 23svh, 155px); }
-        .mui-phone-video-logo { height: 52px; }
-    }
     .mui-phone-video-status:not(:empty) { margin-top: 10px; }
     html.mui-phonelayout .mui-phone-episodes { display: block; container-type: inline-size; padding: 0 0 16px; }
     .mui-phone-series-detail { --mui-episode-blue: #37a6ff; }
@@ -2481,8 +2477,10 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         pointer-events: none;
     }
 
-    /* The artwork holds its top edge still while the page scrolls over it, shrinking toward that edge and then fading,
-       as in the iOS app (about 78% after a quarter of a screen width, 66% after a third).
+    /* The artwork first scrolls up with the page far enough to sit under Safari's status bar (64px covers the tallest
+       one), so the page is edge to edge as in the iOS app; from there it holds its top edge still while the page
+       scrolls over it, shrinking toward that edge and then fading (78% a quarter of a screen width further, 66% after
+       a third).
        The scroll position drives it on the compositor (a scroll timeline), in step with the finger: the script that
        used to move it from scroll events lagged a frame behind Safari's scrolling and made it twitch. It stays an
        element of the page, not position: fixed, which Safari 26 clips below the status bar. Browsers without
@@ -2497,7 +2495,7 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
                 transform-origin: center top;
                 animation: mui-art-pin linear both, mui-art-shrink linear both, mui-art-dim linear both;
                 animation-timeline: scroll(root), scroll(root), scroll(root);
-                animation-range: 0px 6000px, 0px 35vw, 0px 55vw;
+                animation-range: 64px 6064px, 64px calc(64px + 35vw), 64px calc(64px + 55vw);
             }
         }
     }
@@ -2686,7 +2684,7 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     }
     html.mui-phonelayout .alphaPickerButton-vertical {
         min-width: 24px;
-        min-height: min(22px, 2.65dvh);
+        min-height: min(22px, 2.65svh);
         padding: 0;
         font-size: 11px;
         font-weight: 600;
@@ -3068,6 +3066,11 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
     html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerCastButton,.headerUserButton,.headerSettingsButton) {
         display: none !important;
     }
+    /* Emby fades the title logo into the header once a page with a logo scrolls; on phone video details it sat next
+       to the back button, repeating the big logo below it */
+    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .pageTitle {
+        visibility: hidden !important;
+    }
     html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .mui-phone-header-more {
         display: inline-grid;
         place-items: center;
@@ -3222,14 +3225,17 @@ html.mui.mui-docscroll .skinHeader.skinHeader.headroom-hidden:not(.videoOsdHeade
     box-shadow: none !important;
 }
 
+/* Emby hides the header with an inline translate when the page scrolls and drops its class again on the next page
+   without clearing that translate, so a page could open with its header off the screen. On phones the header always
+   stays (as an iOS navigation bar does): the translate is cancelled whatever the class says. */
 @supports (translate: none) {
-    html.mui.mui-docscroll .skinHeader.headroom-hidden {
+    html.mui.mui-docscroll .skinHeader:not(.videoOsdHeader) {
         translate: none !important;
     }
 }
 
 @supports not (translate: none) {
-    html.mui.mui-docscroll .skinHeader.headroom-hidden {
+    html.mui.mui-docscroll .skinHeader:not(.videoOsdHeader) {
         transform: none !important;
     }
 }
@@ -3650,11 +3656,11 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         --mui-spring: linear(0, 0.0314, 0.1116, 0.2222, 0.3481, 0.4775, 0.6018, 0.715, 0.8134, 0.8954, 0.9606, 1.0099, 1.0448,
             1.0673, 1.0795, 1.0835, 1.0814, 1.0751, 1.0661, 1.0557, 1.0448, 1.0344, 1.0248, 1.0164, 1.0094, 1.0038, 0.9996, 0.9965, 1);
         --mui-lg-fill: radial-gradient(130% 110% at 50% -10%, rgba(255, 255, 255, .24), rgba(255, 255, 255, .06) 55%, rgba(255, 255, 255, .03));
-        --mui-lg-filter: blur(6px) saturate(160%) brightness(1.06);
+        --mui-lg-filter: blur(6px) saturate(125%) brightness(1.06);
         --mui-lg-edge: inset 0 1px 1px -.5px rgba(255, 255, 255, .55), inset 0 -1px 1px -.5px rgba(255, 255, 255, .16),
             inset 0 0 0 .5px rgba(255, 255, 255, .22), inset 0 0 12px rgba(255, 255, 255, .06), 0 4px 14px rgba(0, 0, 0, .18);
         --mui-lg-panel: rgba(30, 30, 34, .46);
-        --mui-lg-panel-filter: blur(26px) saturate(180%);
+        --mui-lg-panel-filter: blur(26px) saturate(150%);
         --mui-lg-panel-edge: inset 0 1px 1px -.5px rgba(255, 255, 255, .4), inset 0 -1px 1px -.5px rgba(255, 255, 255, .1),
             inset 0 0 0 .5px rgba(255, 255, 255, .16), inset 0 0 20px rgba(255, 255, 255, .05), 0 18px 44px rgba(0, 0, 0, .36);
     }

@@ -3,6 +3,14 @@
 ## 1.0.2.51
 
 - Phone show and film pages: the artwork shrinks again as the page scrolls, toward its top edge (about 78% after a quarter of a screen width, 66% after a third), then fades out, as in the reference; it stays smooth, since the scroll position still drives it on the compositor.
+- Phone show and film pages are edge to edge: the artwork first scrolls up under Safari's status bar and holds still from there, and at the top of the page the status bar takes the colour of the top of the artwork instead of a dark band.
+- Opening a show or film no longer makes the page jump up a moment later: its spacing depended on the screen height, which changes when Safari's toolbar shows or hides.
+- Opening a page from a scrolled list no longer flashes the list's top (with blank rows) before the new page slides in.
+- The header no longer goes missing on a page opened after scrolling far down another one.
+- Phone show and film pages: no small title logo next to the back button once the page scrolls (it repeated the big one).
+- Phone: the cast and user menus open under the header capsule, flush with its right edge, instead of near the left edge of the screen.
+- Phone glass is calmer over strongly coloured art: a red poster no longer turns the buttons solid red.
+- The letter index of phone libraries keeps its size while Safari's toolbar shows or hides.
 
 ## 1.0.2.50
 

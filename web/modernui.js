@@ -330,11 +330,43 @@
         }).catch(function () { /* Emby's own navigation is the fallback. */ });
     }
 
+    // WebKit shows the captured old page from the top of the document while it waits for the new one, and a page
+    // scrolled down showed its top (with blank rows it had never drawn) for a moment before sliding away. So while the
+    // transition captures it, the old page is held where it is seen by an offset (top, which unlike a transform leaves
+    // its fixed parts such as the letter index where they are), with the document at its top;
+    // it gets its scroll position back once it is hidden, or right away if it stays. Meanwhile scrolling is not
+    // passed on to Emby (its grids would redraw for the top of the page), and scroll-driven animations (the phone
+    // detail artwork) keep the state they had.
+    var frozenPage = null;
+    function freezePage() {
+        var frame = pageFrame(), y = docY();
+        if (!frame || y < 1) return null;
+        var view = frame.closest('.page') || frame;
+        var anims = view.getAnimations ? view.getAnimations({ subtree: true }).filter(function (a) {
+            return window.ScrollTimeline && a.timeline instanceof window.ScrollTimeline;
+        }) : [];
+        anims.forEach(function (a) { try { a.pause(); } catch (e) { } });
+        frozenPage = { frame: frame, view: view, y: y, anims: anims };
+        frame.__muiDocY = y;
+        frame.style.setProperty('top', (-y) + 'px', 'important');
+        docScrollTo(0);
+        return frozenPage;
+    }
+    function thawPage(f) {
+        if (!f || frozenPage !== f) return;
+        frozenPage = null;
+        f.frame.style.removeProperty('top');
+        var shown = f.view.isConnected && !f.view.classList.contains('hide') &&
+            f.view === document.querySelector('.page.view:not(.hide):not(.dialog)');
+        if (shown) docScrollTo(f.y);
+        f.anims.forEach(function (a) { try { a.play(); } catch (e) { } });
+    }
     function phoneRouteSlide(run, options, signal) {
         var back = !!options.isBack, mode = back ? 'mui-phone-pop' : 'mui-phone-push';
-        var current = { stop: stop, url: options.url, signal: signal }, transition, result, timer;
+        var current = { stop: stop, url: options.url, signal: signal }, transition, result, timer, frozen;
         function cleanup() {
             clearTimeout(timer);
+            thawPage(frozen);
             if (signal) signal.removeEventListener('abort', stop);
             if (phoneRouteMotion !== current) return;
             phoneRouteMotion = null;
@@ -345,11 +377,14 @@
             cleanup();
         }
         root.classList.add(mode);
+        frozen = freezePage();
         transition = document.startViewTransition(async function () {
             try {
                 // A skipped snapshot still invokes its callback. An aborted route must not mount a view.
                 if (signal) signal.throwIfAborted();
                 result = await run();
+                // the old page is hidden now (or stayed): it can have its scroll position back
+                thawPage(frozen);
                 if (phoneRouteMotion !== current) return;
                 var view = result && result.classList ? result : document.querySelector('.page.view:not(.hide):not(.dialog)');
                 if (!view) return;
@@ -1550,8 +1585,11 @@
         probe.src = url;
     }
     // the colour of the top edge of the page's art, as dim as the page shows it, for the browser's bars
-    var themeMeta = null, themeDefault = null;
+    var themeMeta = null, themeDefault = null, barArt = null;
     function barColour(img, dim) {
+        // phone video details show their artwork sharp at the top, far brighter than the blurred page art: while it
+        // shows, the bars take its colour, so the status bar runs on into it instead of ending in a dark band
+        if (barArt && barArt.active()) { img = barArt.img; dim = barArt.dim; }
         if (!themeMeta) {
             themeMeta = document.querySelector('meta[name="theme-color"]');
             if (!themeMeta) { themeMeta = document.createElement('meta'); themeMeta.name = 'theme-color'; document.head.appendChild(themeMeta); }
@@ -2006,6 +2044,8 @@
                 if (destroyed || token !== imageRequest) return;
                 state.waitingForArt = false;
                 currentArt = url;
+                barArt = { img: img, dim: seriesDetail ? .9 : .78, active: active };
+                barColour(img);
                 var old = art.lastElementChild;
                 art.appendChild(img);
                 panel.classList.add('mui-phone-video-hasart');
@@ -2316,6 +2356,7 @@
         function destroy() {
             closeOverlays();
             destroyed = true;
+            if (barArt && barArt.active === active) barArt = null;
             ++selection;
             ++seasonRequest;
             if (railResize) railResize.disconnect();
@@ -3728,7 +3769,7 @@
         y = Math.max(0, Math.round(y || 0));
         try { docEl.scrollTo({ top: y, behavior: behavior || 'instant' }); } catch (e) { docEl.scrollTop = y; }
     }
-    function docSave(frame) { if (frame) frame.__muiDocY = docY(); }
+    function docSave(frame) { if (frame) frame.__muiDocY = frozenPage && frozenPage.frame === frame ? frozenPage.y : docY(); }
     function docRestore(frame) { docScrollTo(frame && frame.__muiDocY || 0); }
     // what scrolls a page: the page itself, or its active tab (one of Emby's or one of ours)
     function pageFrame(page) {
@@ -3771,7 +3812,7 @@
         });
     }
     function onDocScroll() {
-        if (!docScroll) return;
+        if (!docScroll || frozenPage) return;
         var f = pageFrame();
         if (f) {
             f.dispatchEvent(new Event('scroll'));
@@ -3878,6 +3919,15 @@
             options.autoLowResLayout = false;
             options.dialogClass = ((options.dialogClass || '') + ' mui-popover').trim();
             popAnchor = options.positionTo.getBoundingClientRect ? options.positionTo.getBoundingClientRect() : null;
+            // A menu from the header's capsule (cast, user, more) hangs below it, flush with its right edge: Emby
+            // right-aligned it to the button itself, and a menu wider than the space left of it was pushed to the
+            // screen's left edge.
+            var capsule = options.positionTo.closest && options.positionTo.closest('.skinHeader .headerRight');
+            if (capsule) {
+                options.positionTo = capsule;
+                options.positionX = 'right';
+                options.positionY = 'bottom';
+            }
         }
         return options;
     }
@@ -3913,8 +3963,8 @@
         if (!glassShapes[key]) glassShapes[key] = glassFilter(key, w, h, r);
         node.style.setProperty('--mui-refract', 'url(#mui-lg-' + key + ')');
         // the bending carries the look, so the glass needs less blur than the plain fallback
-        node.style.setProperty('--mui-lg-filter', 'blur(1.5px) saturate(160%) brightness(1.06)');
-        node.style.setProperty('--mui-lg-panel-filter', 'blur(14px) saturate(180%)');
+        node.style.setProperty('--mui-lg-filter', 'blur(1.5px) saturate(125%) brightness(1.06)');
+        node.style.setProperty('--mui-lg-panel-filter', 'blur(14px) saturate(150%)');
     }
     var glassQueued = false;
     function queueGlass() {
