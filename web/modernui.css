@@ -2668,9 +2668,21 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         transition: none;
     }
     html.mui-phonelayout .alphaPickerRow-vertical { touch-action: none; }
+    /* The letter index sits in a gutter of its own along the right edge, as on iOS, instead of over the right-hand
+       column of posters: the grid stops 28px short of the edge and the index, 24px wide, lives in that space. */
+    html.mui-phonelayout .alphaPicker-fixed-right {
+        right: max(2px, env(safe-area-inset-right)) !important;
+        width: 24px;
+    }
+    html.mui-phonelayout .scrollFrameY:has(> .alphaPicker-fixed-right:not(.hide)) > .scrollSlider {
+        padding-right: 28px !important;
+    }
     html.mui-phonelayout .alphaPickerButton-vertical {
-        min-width: 32px;
+        min-width: 24px;
         min-height: min(22px, 2.65dvh);
+        padding: 0;
+        font-size: 11px;
+        font-weight: 600;
         transform-origin: right center;
     }
     html.mui-phonelayout .alphaPickerButton-vertical.mui-alpha-preview {
@@ -2688,10 +2700,11 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         place-items: center;
         width: 76px;
         height: 76px;
-        border-radius: 21px;
-        background: rgba(24,24,28,.82);
-        -webkit-backdrop-filter: blur(18px) saturate(130%);
-        backdrop-filter: blur(18px) saturate(130%);
+        border-radius: 22px;
+        background: var(--mui-lg-panel, rgba(24,24,28,.82));
+        -webkit-backdrop-filter: var(--mui-lg-panel-filter, blur(18px) saturate(130%));
+        backdrop-filter: var(--mui-lg-panel-filter, blur(18px) saturate(130%));
+        box-shadow: var(--mui-lg-panel-edge, none);
         color: #fff;
         font-size: 2.1rem;
         font-weight: 700;

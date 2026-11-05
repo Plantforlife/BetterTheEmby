@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.49
+
+- Phone libraries: the A–Z index sits in a gutter of its own along the right edge instead of over the right-hand column of posters. The grid stops 28 px short of the edge; the index is 24 px wide with smaller letters, and its letter readout is glass like the other phone panels.
+
 ## 1.0.2.48
 
 - Phone tabs: the glass track is no longer cut off at its top and bottom edges (Emby's tab row clipped it), and the glass rim is a soft, continuous top light instead of an offset arc that read as a second outline at the rounded ends.
