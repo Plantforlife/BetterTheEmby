@@ -5,7 +5,7 @@
     <AssemblyName>BetterTheEmby</AssemblyName>
     <RootNamespace>BetterTheEmby</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Version>1.0.2.44</Version>
+    <Version>1.0.2.45</Version>
     <Nullable>disable</Nullable>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <!-- Emby reference assemblies copied from the server's /system folder -->

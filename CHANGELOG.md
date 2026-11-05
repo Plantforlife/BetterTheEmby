@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.45
+
+- Audio player: when the lyrics or queue panel opens or closes on the desktop, the timeline, buttons and volume now glide with the cover instead of jumping to their new place, and the cover is no longer cut off at the column edge while it moves. The old panel fades out by mid-way and the new one fades in over the first stretch, so they no longer overlap. On phones the big cover morphs into the small cover beside the title (and back) instead of vanishing.
+
 ## 1.0.2.44
 
 - Audio player: the lyrics and queue toggle now uses the curve and duration of the interface's page slides (300 ms, ease-out) for every part, and the desktop panel slides in solid instead of half transparent.

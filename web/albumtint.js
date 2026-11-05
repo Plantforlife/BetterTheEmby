@@ -57,6 +57,8 @@
             'html.albumtint-page .detailImageContainerCard,html.albumtint-page .detailImageContainerCard-cardBox' +
             '{contain:none!important;overflow:visible!important;background:transparent!important;box-shadow:none!important;border:0!important;outline:0!important}',
         'html.albumtint-osd .osdPosterContainer{padding-top:64px!important;padding-bottom:64px!important;margin-top:-64px!important;margin-bottom:-64px!important}',
+        // the cover crosses the container's side edge while the desktop player re-centres around a panel
+        'html.albumtint-osd .albumtint-panel-moving .osdPosterContainer{overflow:visible!important}',
         'html.albumtint-page .topDetailsMain{padding-top:64px!important;margin-top:-64px!important}',
         'html.albumtint-page .albumtint-cover{border-radius:var(--albumtint-radius)!important;overflow:hidden!important;background:transparent!important;' +
             'box-shadow:0 0 0 1px rgba(255,255,255,.08),0 0 22px 0 var(--albumtint-glow,rgba(255,255,255,.17)),' +
@@ -984,14 +986,25 @@
         var controls = bottom && bottom.querySelector('.videoOsdBottom-maincontrols');
         if (!bottom || !panel && !controls) return;
         var view = bottom.closest('.view');
-        // The cover and the title move sideways when a side panel opens or closes (centred <-> beside it). Capture
-        // where they are so they can glide to their new place with the panel instead of jumping there. The text
-        // block itself stays full width, so its lines are what has to travel.
-        var text = view && view.querySelector('.videoOsdText');
-        var movers = [view && view.querySelector('.osdPosterContainer .card')]
-            .concat(text ? Array.prototype.slice.call(text.children) : []);
-        var moved = movers.map(function (node) { return node ? node.getBoundingClientRect() : null; });
-        var before = controls && controls.getBoundingClientRect(), leaving = panelPose(panel);
+        // On the desktop the whole column (cover, title, timeline, buttons) re-centres when a side panel opens or
+        // closes, but the column box itself keeps its left edge and only changes width, so moving it moves nothing.
+        // Record every box inside it instead; the ones that end up somewhere else glide there with the panel.
+        var boxes = new Map();
+        if (!phone && controls) (function collect(node, depth) {
+            Array.prototype.forEach.call(node.children, function (child) {
+                if (!child.offsetWidth) return;
+                boxes.set(child, child.getBoundingClientRect());
+                // a slider's track, fill and thumb are drawn by separate boxes: it moves and stretches as one
+                if (depth < 4 && !child.classList.contains('sliderContainer')) collect(child, depth + 1);
+            });
+        })(controls, 0);
+        // On phones a panel replaces the big cover with the small one in the header row (and back): the art
+        // morphs between the two.
+        var cover = view && view.querySelector('.osdPosterContainer .card');
+        var thumb = bottom.querySelector('.albumtint-phone-identity img');
+        var coverBox = phone && cover && cover.offsetWidth ? cover.getBoundingClientRect() : null;
+        var thumbBox = phone && thumb && thumb.offsetWidth ? thumb.getBoundingClientRect() : null;
+        var leaving = panelPose(panel);
         var previous = panelMotion, returning = previous && panelPose(previous.clone);
         var clone = panel && panel.cloneNode(true);
         if (clone) {
@@ -1001,9 +1014,12 @@
         }
         var scroll = panel && panel.querySelector('.lyricsScroller, .scrollFrameY');
         var scrollTop = scroll && scroll.scrollTop;
-        var motion = [], state = { cleanup: cleanup, clone: clone, panel: panel };
+        var motion = [], hidden = [], ghost = null, state = { cleanup: cleanup, clone: clone, panel: panel };
         function cleanup() {
             if (clone) clone.remove();
+            if (ghost) ghost.remove();
+            hidden.forEach(function (node) { node.style.visibility = ''; });
+            bottom.classList.remove('albumtint-panel-moving');
             motion.forEach(function (animation) { animation.cancel(); });
             if (panelMotion === state) panelMotion = null;
         }
@@ -1028,36 +1044,75 @@
                 bottom.closest('.view').appendChild(clone);
                 var copyScroll = clone.querySelector('.lyricsScroller, .scrollFrameY');
                 if (copyScroll) copyScroll.scrollTop = scrollTop || 0;
-                motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, transform: out }], timing));
+                // The copy is gone by mid-way, so it never lies across the cover gliding over it or the new panel.
+                motion.push(clone.animate([{ opacity: leaving.opacity, transform: 'none' }, { opacity: 0, offset: .5 },
+                    { opacity: 0, transform: out }], timing));
             }
             if (next) {
-                // The desktop panel slides in solid, like a page; the phone one rises with a soft fade.
-                var enter = phone ? { opacity: .4, transform: 'translateY(16px)' } : { transform: 'translateX(72px)' };
+                // The desktop panel slides in like a page: it is solid after the first stretch instead of appearing
+                // at full strength 72 px off its place. The phone one rises with a soft fade.
+                var enter = phone ? { opacity: .4, transform: 'translateY(16px)' } : { opacity: 0, transform: 'translateX(72px)' };
                 if (returning && next === previous.panel) {
                     var destination = next.getBoundingClientRect();
                     enter.opacity = returning.opacity;
                     enter.transform = 'translate(' + (returning.bounds.left - destination.left) + 'px,' +
                         (returning.bounds.top - destination.top) + 'px)';
                 }
-                motion.push(next.animate([enter, { opacity: 1, transform: 'none' }], timing));
+                motion.push(next.animate(phone ? [enter, { opacity: 1, transform: 'none' }]
+                    : [enter, { opacity: 1, offset: .4 }, { opacity: 1, transform: 'none' }], timing));
             }
-            // Make the rest of the desktop player follow: the cover, the title and the controls turn the immediate
-            // layout change into one continuous move with the panel. Phones keep their height transition.
-            if (!phone) {
-                movers.forEach(function (node, i) {
-                    var old = moved[i];
-                    if (!node || !old || !node.isConnected) return;
+            // Desktop: every part of the column that ended up elsewhere glides from its old place on the same curve.
+            // A box that only moved is shifted back; one that changed size hands the move to its children, and a
+            // resized leaf (the timeline and volume tracks) is also stretched back. The cover container clips
+            // sideways, so it is unclipped while the cover travels through its edge.
+            if (boxes.size) {
+                bottom.classList.add('albumtint-panel-moving');
+                Array.prototype.forEach.call(controls.children, function flip(node) {
+                    var old = boxes.get(node);
+                    if (!old || !node.isConnected || !node.offsetWidth) return;
                     var now = node.getBoundingClientRect();
+                    var resized = Math.abs(old.width - now.width) >= 1 || Math.abs(old.height - now.height) >= 1;
+                    var tracked = Array.prototype.some.call(node.children, function (child) { return boxes.has(child); });
+                    // a box with a transform of its own would jump back to it at the end; let its children move
+                    if (tracked && (resized || getComputedStyle(node).transform !== 'none')) {
+                        Array.prototype.forEach.call(node.children, flip);
+                        return;
+                    }
                     var dx = old.left - now.left, dy = old.top - now.top;
-                    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-                    motion.push(node.animate([{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }], timing));
+                    if (!resized && Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+                    if (getComputedStyle(node).transform !== 'none') return;
+                    var from = 'translate(' + dx + 'px,' + dy + 'px)' +
+                        (resized && now.width && now.height ? ' scale(' + old.width / now.width + ',' + old.height / now.height + ')' : '');
+                    motion.push(node.animate([{ transform: from, transformOrigin: '0 0' }, { transform: 'none', transformOrigin: '0 0' }], timing));
                 });
             }
-            // The desktop controls slide by the panel's width; on phones their height transition already covers it.
-            if (controls && !phone) {
-                var after = controls.getBoundingClientRect();
-                motion.push(controls.animate([{ transform: 'translate(' + (before.left - after.left) + 'px,' +
-                    (before.top - after.top) + 'px)' }, { transform: 'none' }], timing));
+            // Phone: the art morphs between the big cover and the header thumbnail. The copy is drawn at the big
+            // size and scaled down, so it stays sharp; the real images are hidden while it travels.
+            if (phone && playingUrl) {
+                var nowCover = cover && cover.offsetWidth ? cover.getBoundingClientRect() : null;
+                var nowThumb = thumb && thumb.offsetWidth ? thumb.getBoundingClientRect() : null;
+                var opening = coverBox && nowThumb && !thumbBox, closing = thumbBox && nowCover && !coverBox;
+                if (opening || closing) {
+                    var big = opening ? coverBox : nowCover, small = opening ? nowThumb : thumbBox, s = small.width / big.width;
+                    var bigRadius = coverRadius(big.width), smallRadius = parseFloat(getComputedStyle(thumb).borderTopLeftRadius) || 8;
+                    var full = { transform: 'none', borderRadius: bigRadius + 'px' };
+                    var shrunk = { transform: 'translate(' + (small.left - big.left) + 'px,' + (small.top - big.top) + 'px) scale(' + s + ')',
+                        borderRadius: smallRadius / s + 'px' };
+                    ghost = document.createElement('div');
+                    ghost.className = 'albumtint-fly';
+                    place(ghost, big, bigRadius);
+                    setImages(ghost, [playingUrl]);
+                    ghost.style.transformOrigin = '0 0';
+                    document.body.appendChild(ghost);
+                    hidden = [opening ? thumb : cover];
+                    hidden[0].style.visibility = 'hidden';
+                    motion.push(ghost.animate(opening ? [full, shrunk] : [shrunk, full], timing));
+                    // the titles trade places too: the header line shows up once the art has passed over it, the
+                    // big title below the cover rises in as the art grows
+                    var title = opening ? thumb.nextElementSibling : view.querySelector('.videoOsdText');
+                    if (title) motion.push(title.animate([{ opacity: 0, transform: 'translateY(' + (opening ? 6 : 12) + 'px)' },
+                        { opacity: 0, offset: opening ? .4 : 0 }, { opacity: 1, transform: 'none' }], timing));
+                }
             }
             Promise.allSettled(motion.map(function (animation) { return animation.finished; })).then(cleanup);
         });
