@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.50
+
+- Phone show and film pages scroll smoothly: the artwork holds still at the top while the page slides over it, and dims as the content covers it, as in the iOS app. It used to be moved by script from scroll events, a frame behind Safari's scrolling, and it switched from following to scrolling away part-way down, so it twitched.
+
 ## 1.0.2.49
 
 - Phone libraries: the A–Z index sits in a gutter of its own along the right edge instead of over the right-hand column of posters. The grid stops 28 px short of the edge; the index is 24 px wide with smaller letters, and its letter readout is glass like the other phone panels.

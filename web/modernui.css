@@ -2386,13 +2386,8 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         height: clamp(52px, 10svh, 88px);
         object-fit: contain;
         margin: 0 auto 8px;
-        transform: scale(calc(1 - var(--mui-video-scroll, 0) * .18));
     }
     .mui-phone-video-logo.mui-logo-loading { visibility: hidden; }
-    .mui-phone-video-art {
-        transform-origin: center top;
-        transform: scale(calc(1.07 - var(--mui-video-scroll, 0) * .07));
-    }
     .mui-phone-video-title { margin: 0; font-size: clamp(16px, 4.5vw, 22px); overflow-wrap: anywhere; }
     .mui-phone-video-facts, .mui-phone-video-genres { font-size: .9rem; margin: 6px 0; }
     .mui-phone-video-facts:empty, .mui-phone-video-genres:empty, .mui-phone-video-status:empty { display: none; }
@@ -2482,18 +2477,28 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     html.mui-phonelayout .mui-phone-episodes { display: block; container-type: inline-size; padding: 0 0 16px; }
     .mui-phone-series-detail { --mui-episode-blue: #37a6ff; }
     .mui-phone-series-detail .mui-phone-video-art {
-        /* The panel clips this overscan so the shrinking image always covers both edges. */
-        inset-inline: -20%;
         mask-image: linear-gradient(#000 40%, rgba(0,0,0,.78) 67%, transparent);
-        transform: none;
         pointer-events: none;
     }
-    @media (prefers-reduced-motion: no-preference) {
-        html.mui-docscroll .mui-phone-series-detail .mui-phone-video-art {
-            will-change: transform, opacity;
+
+    /* The artwork holds still while the page scrolls over it, as in the iOS app, and dims as the content covers it.
+       The scroll position drives it on the compositor (a scroll timeline), in step with the finger: the script that
+       used to move it from scroll events lagged a frame behind Safari's scrolling and made it twitch. It stays an
+       element of the page, not position: fixed, which Safari 26 clips below the status bar. Browsers without
+       scroll timelines simply scroll it with the page. */
+    @supports (animation-timeline: scroll()) {
+        @media (prefers-reduced-motion: no-preference) {
+            html.mui-docscroll .mui-phone-video-head {
+                overflow-x: clip;
+                overflow-y: visible;
+            }
+            html.mui-docscroll .mui-phone-video-art {
+                animation: mui-art-pin linear both, mui-art-dim linear both;
+                animation-timeline: scroll(root), scroll(root);
+                animation-range: 0px 6000px, 0px 60vh;
+            }
         }
     }
-    .mui-phone-series-detail .mui-phone-video-logo { transform: none; }
     .mui-phone-series-detail .mui-phone-video-art img { filter: brightness(.9); }
     .mui-phone-series-detail .mui-phone-video-title {
         font-size: clamp(14px, 3.75vw, 18px);
@@ -4013,4 +4018,13 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
             border-radius: 18px;
         }
     }
+}
+
+/* moves the phone detail artwork down exactly as far as the page scrolls (6000px over 6000px of scroll): it holds still */
+@keyframes mui-art-pin {
+    to { transform: translate3d(0, 6000px, 0); }
+}
+
+@keyframes mui-art-dim {
+    to { opacity: .3; }
 }

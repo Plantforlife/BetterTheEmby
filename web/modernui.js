@@ -400,7 +400,6 @@
         var detail = e.detail || {}, restored = !!detail.isRestored, back = restored || !!detail.isBack;
         view.__muiRouteUrl = detail.url;
         lastPhoneCard = null;
-        if (view.__muiPhoneVideo) view.__muiPhoneVideo.updateScroll(true);
         prevOsd = isOsd;
         hookEmby();
         var detail = r.path === 'item';
@@ -1850,9 +1849,9 @@
         var seriesDetail = /^(Series|Season|Episode)$/.test(base.Type);
         view.classList.toggle('mui-phone-series-detail', seriesDetail);
         var seriesBackdrop = seriesDetail && backdropOf(base);
-        var artFrame = 0, activeSeason = null, seasonRequest = 0, seasonMenuOpen = false, ring, ringX = 0;
+        var activeSeason = null, seasonRequest = 0, seasonMenuOpen = false, ring, ringX = 0;
         var railResize = null, railWidth = 0;
-        var lastArtScroll, episodeCards = new Map(), currentCard = null, pendingId = null;
+        var episodeCards = new Map(), currentCard = null, pendingId = null;
         var selected = base, selection = 0, imageRequest = 0, timer, observer, rail, sources = [];
         var baseLogo = logoOf(base);
         var currentArt = '', wantedArt = '', artFade, titleFade, destroyed = false, pending = false;
@@ -1865,7 +1864,7 @@
             if (active()) render(selected);
         }).catch(function () {});
         var state = view.__muiPhoneVideo = { baseId: base.Id, select: selectEpisode, sync: sync, destroy: destroy,
-            closeOverlays: closeOverlays, updateScroll: updateScroll, openCommands: openCommands };
+            closeOverlays: closeOverlays, openCommands: openCommands };
         syncPhoneVideoHeader();
 
         function openCommands(anchor) {
@@ -1878,31 +1877,6 @@
                     playFromBeginning: true, showSeason: true, showSeries: true, share: true, edit: true, editImages: true
                 });
             }).catch(function () {});
-        }
-
-        function updateScroll(immediate) {
-            if (reduceMotion) return;
-            if (seriesDetail) {
-                if (immediate && artFrame) {
-                    cancelAnimationFrame(artFrame);
-                    artFrame = 0;
-                }
-                if (artFrame) return;
-                function paint() {
-                    artFrame = 0;
-                    if (!active()) return;
-                    var distance = Math.max(0, Math.min(.58, docY() / window.innerWidth));
-                    if (distance === lastArtScroll) return;
-                    lastArtScroll = distance;
-                    art.style.transform = 'translate3d(0,' + (distance * window.innerWidth) + 'px,0) scale(' +
-                        Math.max(.72, 1 - distance * .96) + ')';
-                    art.style.opacity = String(1 - .78 * distance / .58);
-                }
-                if (immediate) paint();
-                else artFrame = requestAnimationFrame(paint);
-            } else {
-                panel.style.setProperty('--mui-video-scroll', Math.min(1, docY() / 240));
-            }
         }
 
         function button(label, glyph, cls) {
@@ -2344,7 +2318,6 @@
             destroyed = true;
             ++selection;
             ++seasonRequest;
-            if (artFrame) cancelAnimationFrame(artFrame);
             if (railResize) railResize.disconnect();
             if (artFade) artFade.cancel();
             if (titleFade) titleFade.cancel();
@@ -2359,7 +2332,6 @@
         observer.observe(nativeTop, { childList: true, subtree: true, attributes: true,
             attributeFilter: ['class', 'aria-pressed', 'disabled'] });
         sync();
-        updateScroll();
         var seasonId = base.Type === 'Season' ? base.Id : base.SeasonId;
         var seriesId = base.Type === 'Series' ? base.Id : base.SeriesId;
         var a = seriesDetail && seriesId && api();
@@ -3803,8 +3775,6 @@
         var f = pageFrame();
         if (f) {
             f.dispatchEvent(new Event('scroll'));
-            var view = f.closest('.itemView');
-            if (view && view.__muiPhoneVideo) view.__muiPhoneVideo.updateScroll();
         }
     }
     // the page's scrolling moves between the document and its container (at start, and when a phone turns
