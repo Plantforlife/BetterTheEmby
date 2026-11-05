@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2.48
+
+- Phone tabs: the glass track is no longer cut off at its top and bottom edges (Emby's tab row clipped it), and the glass rim is a soft, continuous top light instead of an offset arc that read as a second outline at the rounded ends.
+
 ## 1.0.2.47
 
 - Phone liquid glass now refracts: in Chrome and Edge the page under the header buttons, tabs, detail buttons and mini player bends toward their rims with a slight colour split, the way iOS glass does. Safari (which can't bend what lies behind an element yet) gets the same light, rim and colour fringe without the bending.

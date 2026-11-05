@@ -3622,8 +3622,8 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
    edge, with a fine rim. Small controls (header buttons, tabs, detail buttons) use the clear variant; surfaces that
    carry text (menus, the mini player) a darker one so the text stays readable. Desktops keep frosted glass. */
 @media (max-width: 40em) {
-    /* The light comes from above: a bright arc along the top-left rim and a fainter one bottom-right, a hairline,
-       a soft inner glow, and a faint red / blue fringe on the left / right edges where glass splits colours.
+    /* The light comes from above: a bright top edge that fades toward the sides, a faint lower edge, a hairline and
+       a soft inner glow.
        Chromium also bends the page under the rim (modernui.js sets --mui-refract to a displacement filter per shape,
        and a lighter blur, since the bending already carries the look). */
     html.mui.mui-phonelayout {
@@ -3631,12 +3631,11 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
             1.0673, 1.0795, 1.0835, 1.0814, 1.0751, 1.0661, 1.0557, 1.0448, 1.0344, 1.0248, 1.0164, 1.0094, 1.0038, 0.9996, 0.9965, 1);
         --mui-lg-fill: radial-gradient(130% 110% at 50% -10%, rgba(255, 255, 255, .24), rgba(255, 255, 255, .06) 55%, rgba(255, 255, 255, .03));
         --mui-lg-filter: blur(6px) saturate(160%) brightness(1.06);
-        --mui-lg-edge: inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, .75), inset -1.5px -1.5px 1px -1px rgba(255, 255, 255, .38),
-            inset 1px 0 1px -.5px rgba(255, 110, 140, .2), inset -1px 0 1px -.5px rgba(110, 180, 255, .2),
-            inset 0 0 0 .5px rgba(255, 255, 255, .2), inset 0 0 12px rgba(255, 255, 255, .07), 0 6px 18px rgba(0, 0, 0, .2);
+        --mui-lg-edge: inset 0 1px 1px -.5px rgba(255, 255, 255, .55), inset 0 -1px 1px -.5px rgba(255, 255, 255, .16),
+            inset 0 0 0 .5px rgba(255, 255, 255, .22), inset 0 0 12px rgba(255, 255, 255, .06), 0 4px 14px rgba(0, 0, 0, .18);
         --mui-lg-panel: rgba(30, 30, 34, .46);
         --mui-lg-panel-filter: blur(26px) saturate(180%);
-        --mui-lg-panel-edge: inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, .5), inset -1.5px -1.5px 1px -1px rgba(255, 255, 255, .22),
+        --mui-lg-panel-edge: inset 0 1px 1px -.5px rgba(255, 255, 255, .4), inset 0 -1px 1px -.5px rgba(255, 255, 255, .1),
             inset 0 0 0 .5px rgba(255, 255, 255, .16), inset 0 0 20px rgba(255, 255, 255, .05), 0 18px 44px rgba(0, 0, 0, .36);
     }
 
@@ -3675,6 +3674,13 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
     html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .emby-tabs-slider { view-transition-name: mui-header-tabs; }
 
     /* tabs (Home / Favorites, a library's views): one glass track, the selected tab a brighter lens in it */
+    /* The track (40 tall with its rim and shadow) is taller than Emby's tab row, which clipped its top and bottom
+       edges: the row and a tab bar that fits the screen show what overflows them. */
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerMiddle,
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .tabs-viewmenubar:not(.mui-tabs-overflow) {
+        overflow: visible !important;
+    }
+
     /* the bar around the track paints nothing (Emby gives it a dark band) */
     html.mui.mui-phonelayout.theme-dark .skinHeader .tabs-viewmenubar-backgroundcontainer {
         background: transparent !important;
@@ -3703,8 +3709,7 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
     html.mui.mui-phonelayout.theme-dark .mui-tab-pill {
         border-radius: 16px;
         background: rgba(255, 255, 255, .24);
-        box-shadow: inset 1px 1px 1px -.5px rgba(255, 255, 255, .55), inset -1px -1px 1px -.5px rgba(255, 255, 255, .25),
-            inset 0 0 0 .5px rgba(255, 255, 255, .18);
+        box-shadow: inset 0 1px 1px -.5px rgba(255, 255, 255, .5), inset 0 0 0 .5px rgba(255, 255, 255, .18);
         transition: transform .55s var(--mui-spring), width .55s var(--mui-spring), height .42s var(--mui-ease), opacity .2s;
     }
 
