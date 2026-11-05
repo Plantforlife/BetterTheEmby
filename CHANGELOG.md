@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2.46
+
+- Desktop now-playing bar: a docked player with rounded frosted glass. The track sits on the left, the transport in the middle with a slim progress bar under it between the elapsed time and the duration, and shuffle, repeat, volume and the queue on the right. The progress takes the playing album's colour, and the slider thumbs only show on hover.
+- Phone now-playing bar: a floating mini player (cover, title, play/pause, next) with a hairline of progress.
+- Phone controls use iOS-style liquid glass: one clear-glass style for the back/menu button, the capsule of header buttons on the right (the same on every page), the Home/Favorites tabs and the detail buttons. Menus open from the button that asked for them as glass popovers, including the user menu.
+- Phone menus only keep what a phone needs: playing, favourites, played state and going to the item. Editing, identifying, converting, downloading, deleting and similar desktop tools are gone from them, and the library view settings are hidden. Desktops keep everything.
+- Phone album pages: Play and Shuffle are two pills with their labels instead of icons with overlapping text. A film that shows its logo no longer repeats its name under it.
+
 ## 1.0.2.45
 
 - Audio player: when the lyrics or queue panel opens or closes on the desktop, the timeline, buttons and volume now glide with the cover instead of jumping to their new place, and the cover is no longer cut off at the column edge while it moves. The old panel fades out by mid-way and the new one fades in over the first stretch, so they no longer overlap. On phones the big cover morphs into the small cover beside the title (and back) instead of vanishing.

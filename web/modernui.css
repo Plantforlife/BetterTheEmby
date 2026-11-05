@@ -2783,26 +2783,8 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
     html.mui.mui-phonelayout .mui-albumpage .detailTextContainer > .mainDetailButtons {
         display: flex !important;
         flex-wrap: nowrap !important;
-        justify-content: center;
-        gap: clamp(8px, 3vw, 16px);
         margin-top: 16px;
     }
-    html.mui.mui-phonelayout .mui-albumpage .mainDetailButtons > :is(.btnMainPlay, .btnResume, .btnShuffle, .btnUserRating, .btnMoreCommands):not(.hide) {
-        display: inline-grid !important;
-        place-items: center;
-        flex: 0 0 auto !important;
-        width: 48px !important;
-        height: 48px !important;
-        min-width: 48px !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border-radius: 50% !important;
-    }
-    html.mui.mui-phonelayout .mui-albumpage .mainDetailButtons > button :is(.button-text, .detailButton-autotext-text) {
-        position: absolute;
-        clip-path: inset(50%);
-    }
-    html.mui.mui-phonelayout .mui-albumpage .mainDetailButtons > button .md-icon { margin: 0 !important; }
 
     /* no tab bar along the bottom (the drawer and the header do its job); the footer stays for the player bar */
     html.mui.mui-phonelayout .appfooter .dockedtabs {
@@ -2999,64 +2981,81 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         display: none;
     }
 
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerButton {
+    /* Header controls are liquid glass (see the phone glass section at the end): the back or menu button is a
+       circle on its own, the buttons on the right share one capsule, on every page. A page that has a back button
+       drops the menu button; the drawer is one step back. */
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader):has(.headerBackButton:not(.hide)) .headerMenuButton {
+        display: none !important;
+    }
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerMenuButton) {
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        padding: 0;
         border-radius: 50%;
-        background-color: rgba(20, 20, 22, .82) !important;
         color: #fff;
-        -webkit-backdrop-filter: blur(10px) saturate(120%);
-        backdrop-filter: blur(10px) saturate(120%);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 4px 16px rgba(0, 0, 0, .22);
+        background: var(--mui-lg-fill) !important;
+        -webkit-backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-lg-filter);
+        box-shadow: var(--mui-lg-edge);
+    }
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerLeft {
+        gap: 8px;
+        padding-inline-start: 16px;
+    }
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight {
+        flex: 0 0 auto;
+        align-self: center;
+        align-items: center;
+        gap: 0;
+        height: 44px;
+        box-sizing: border-box;
+        padding: 0 2px;
+        margin-inline-end: 16px;
+        border-radius: 22px;
+        background: var(--mui-lg-fill);
+        -webkit-backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-lg-filter);
+        box-shadow: var(--mui-lg-edge);
+    }
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight:not(:has(> :not(.hide))) {
+        display: none;
+    }
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight > .headerButton {
+        width: 40px;
+        height: 40px;
+        margin: 0;
+        padding: 0;
+        border-radius: 50%;
+        color: #fff;
+        background: none !important;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        box-shadow: none;
+    }
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) :is(.headerButton,.mui-phone-header-more) .md-icon {
+        font-size: 22px;
+        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .3));
+    }
+    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) :is(.headerButton,.mui-phone-header-more):active {
+        transform: scale(.92);
+        transition: transform .12s var(--mui-ease);
     }
 
-    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerCastButton,.headerUserButton,.headerSettingsButton),
-    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader):has(.headerBackButton:not(.hide)) .headerMenuButton {
+    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerCastButton,.headerUserButton,.headerSettingsButton) {
         display: none !important;
     }
     html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .mui-phone-header-more {
         display: inline-grid;
         place-items: center;
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         margin-inline-start: 0;
         padding: 0;
         border: 0;
-    }
-    /* Video details: the back button and the search/more capsule are one pane of light glass (iOS look),
-       aligned on the same line as in the reference. */
-    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerSearchButton,.mui-phone-header-more) {
-        background: rgba(255,255,255,.14) !important;
-        -webkit-backdrop-filter: blur(18px) saturate(180%);
-        backdrop-filter: blur(18px) saturate(180%);
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), inset 0 1px 0 rgba(255,255,255,.24), 0 6px 20px rgba(0,0,0,.18);
-    }
-    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerSearchButton,.mui-phone-header-more) .md-icon {
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,.35));
-    }
-    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .headerRight {
-        gap: 4px;
-        flex: 0 0 auto;
-        align-self: center;
-        align-items: center;
-        height: 54px;
-        /* Its box is anchored a few pixels lower than the back button's centre; lift it onto that line. */
-        translate: 0 -4.3px;
-        box-sizing: border-box;
-        padding: 0 8px;
-        margin-inline-end: 12px;
-        border-radius: 999px;
-        background: rgba(255,255,255,.14);
-        -webkit-backdrop-filter: blur(18px) saturate(180%);
-        backdrop-filter: blur(18px) saturate(180%);
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), inset 0 1px 0 rgba(255,255,255,.24), 0 6px 20px rgba(0,0,0,.18);
-    }
-    html.mui.mui-phonelayout.theme-dark:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .headerRight :is(.headerSearchButton,.mui-phone-header-more) {
-        margin-inline: 0;
-        width: 40px;
-        height: 40px;
-        background: none !important;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-        box-shadow: none;
+        border-radius: 50%;
+        color: #fff;
+        background: none;
     }
 
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .pageTitle {
@@ -3363,3 +3362,545 @@ html.mui .actionSheet.mui-select-menu .listItem-content:has(.actionSheetItemImag
 .mui-phone-overview-reader p { margin: 4px 0 0; line-height: 1.6; white-space: pre-wrap; }
 .mui-phone-reader-close { display: grid; place-items: center; margin-inline-start: auto; width: 44px; height: 44px; border: 0; border-radius: 50%; color: inherit; background: #2a2a2a; }
 html:has(.mui-phone-overview-reader[open]) { overflow: hidden !important; }
+
+/* ---------- now-playing bar: a docked player on the desktop, a floating mini player on phones ----------
+   On the desktop the bar (.mui-bar, set by modernui.js) is a grid: the track on the left, the transport in the
+   middle with the position slider under it between the elapsed time and the duration, and shuffle, repeat, volume
+   and the queue on the right. The footer itself paints nothing; the bar is the surface. */
+html.mui .appfooter:has(.nowPlayingBar.mui-bar:not(.hide):not(.nowPlayingBar-hidden)) {
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Emby names the footer for view transitions (it stays put while pages slide). A named element is a backdrop root:
+   the bar's blur inside it saw only the empty footer, not the page. The bar carries the name instead; an element's
+   own backdrop filter still sees past it. */
+html.mui .appfooter:has(.nowPlayingBar.mui-bar) {
+    view-transition-name: none !important;
+}
+
+html.mui .appfooter .nowPlayingBar.mui-bar {
+    view-transition-name: footer-transition;
+}
+
+html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-background-lower {
+    background: var(--albumtint-playing, rgba(255, 255, 255, .88)) !important;
+}
+
+@media (min-width: 40.01em) {
+    html.mui .appfooter:has(.nowPlayingBar.mui-bar) {
+        box-sizing: border-box;
+        padding: 0 16px 16px;
+        pointer-events: none;
+    }
+
+    html.mui .nowPlayingBar.mui-bar {
+        pointer-events: auto;
+        border-radius: 16px;
+        background: rgba(28, 28, 31, .76) !important;
+        -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
+        backdrop-filter: blur(24px) saturate(120%) !important;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 16px 40px rgba(0, 0, 0, .36) !important;
+    }
+
+    html.mui .mui-bar .nowPlayingBarTop {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) 40px clamp(240px, 30vw, 440px) 40px minmax(0, 1fr);
+        grid-template-rows: 40px 20px;
+        column-gap: 8px;
+        align-items: center;
+        height: auto;
+        box-sizing: border-box;
+        padding: 8px 16px;
+    }
+
+    html.mui .mui-bar .nowPlayingBarInfoContainer {
+        grid-column: 1;
+        grid-row: 1 / 3;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        width: auto !important;
+        max-width: none !important;
+        height: auto;
+        margin: 0;
+        padding: 0 16px 0 0;
+    }
+
+    html.mui .mui-bar .nowPlayingBarImage {
+        flex: 0 0 48px;
+        width: 48px;
+        height: 48px;
+        margin: 0;
+        border-radius: 8px;
+        background-size: cover;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
+    }
+
+    html.mui .mui-bar .nowPlayingBarText {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+        max-width: none;
+        margin: 0;
+    }
+
+    html.mui .mui-bar .nowplayingbar-textitems {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 20px;
+    }
+
+    html.mui .mui-bar .nowplayingbar-textitems.secondaryText {
+        font-size: 13px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, .58);
+    }
+
+    html.mui .mui-bar .nowPlayingBarCenter {
+        position: static !important;
+        grid-column: 2 / 5;
+        grid-row: 1;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: auto !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+
+    /* the right group's own play and stop buttons are Emby's stand-ins for a hidden transport */
+    html.mui .mui-bar .nowPlayingBarRight :is(.playPauseButton-right, .stopButton-right) { display: none !important; }
+
+    html.mui .mui-bar :is(.nowPlayingBarCenter, .nowPlayingBarRight) :is(.mediaButton, .muteButton):not(.hide) {
+        display: inline-grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        margin: 0;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 22px;
+        color: rgba(255, 255, 255, .72);
+        transition: color .15s ease, background-color .15s ease, transform .12s var(--mui-ease);
+    }
+
+    html.mui .mui-bar :is(.nowPlayingBarCenter, .nowPlayingBarRight) :is(.mediaButton, .muteButton):hover {
+        color: #fff;
+        background: rgba(255, 255, 255, .08);
+    }
+
+    html.mui .mui-bar :is(.nowPlayingBarCenter, .nowPlayingBarRight) :is(.mediaButton, .muteButton):active {
+        transform: scale(.92);
+    }
+
+    html.mui .mui-bar .toggleButtonIcon {
+        width: auto;
+        height: auto;
+        font-size: 20px;
+    }
+
+    html.mui .mui-bar .toggleButton-active,
+    html.mui .mui-bar .toggleButton-active:hover {
+        color: var(--albumtint-playing, #fff);
+    }
+
+    html.mui .mui-bar .nowPlayingBarCenter .playPauseButton.mediaButton:not(.hide) {
+        width: 40px;
+        height: 40px;
+        margin: 0 8px;
+        color: #111;
+        background: rgba(255, 255, 255, .92);
+        font-size: 24px;
+    }
+
+    html.mui .mui-bar .nowPlayingBarCenter .playPauseButton.mediaButton:not(.hide):hover {
+        color: #111;
+        background: #fff;
+    }
+
+    /* stop sits at the end of the transport, after next */
+    html.mui .mui-bar .nowPlayingBarCenter .stopButton { order: 1; }
+
+    html.mui .mui-bar :is(.nowPlayingBarCurrentTime, .mui-bar-duration) {
+        display: block !important;
+        position: static !important;
+        grid-row: 2;
+        margin: 0;
+        padding: 0;
+        font-size: 11px;
+        line-height: 20px;
+        font-variant-numeric: tabular-nums;
+        color: rgba(255, 255, 255, .5);
+    }
+
+    html.mui .mui-bar .nowPlayingBarCurrentTime { grid-column: 2; text-align: end; }
+    html.mui .mui-bar .mui-bar-duration { grid-column: 4; text-align: start; }
+
+    html.mui .mui-bar .nowPlayingBarPositionContainer {
+        position: relative !important;
+        inset: auto !important;
+        grid-column: 3;
+        grid-row: 2;
+        align-self: center;
+        width: auto !important;
+        height: 4px !important;
+        margin: 0 !important;
+    }
+
+    html.mui .mui-bar :is(.nowPlayingBarPositionContainer, .nowPlayingBarVolumeSliderContainer) .emby-slider-background {
+        top: 0;
+        height: 4px;
+        border-radius: 2px;
+        background: transparent;
+        overflow: hidden;
+    }
+
+    html.mui .mui-bar :is(.nowPlayingBarPositionContainer, .nowPlayingBarVolumeSliderContainer) .emby-slider-background-inner {
+        height: 100%;
+        background: rgba(255, 255, 255, .16) !important;
+    }
+
+    html.mui .mui-bar .nowPlayingBarVolumeSliderContainer .emby-slider-background { top: calc(50% - 2px); }
+
+    html.mui .mui-bar :is(.nowPlayingBarPositionContainer, .nowPlayingBarVolumeSliderContainer) .emby-slider-background-upper {
+        background: rgba(255, 255, 255, .12);
+    }
+
+    html.mui .mui-bar .nowPlayingBarVolumeSliderContainer .emby-slider-background-lower {
+        background: rgba(255, 255, 255, .72);
+    }
+
+    /* the thumbs only show while the pointer is on their track */
+    html.mui .mui-bar .emby-slider-thumb {
+        opacity: 0;
+        transform: scale(.6);
+        transition: opacity .15s ease, transform .15s var(--mui-ease);
+    }
+
+    html.mui .mui-bar :is(.nowPlayingBarPositionContainer, .nowPlayingBarVolumeSliderContainer):hover .emby-slider-thumb {
+        opacity: 1;
+        transform: scale(.7);
+    }
+
+    html.mui .mui-bar .nowPlayingBarRight {
+        position: static;
+        grid-column: 5;
+        grid-row: 1 / 3;
+        justify-self: end;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+    }
+
+    html.mui .mui-bar .nowPlayingBarVolumeSliderContainer {
+        width: 96px;
+        height: 20px;
+        margin: 0 8px 0 0;
+    }
+
+    html.mui .mui-bar .nowPlayingBarCenter .stopButton { font-size: 20px; }
+}
+
+@media (min-width: 40.01em) and (max-width: 62em) {
+    html.mui .mui-bar .nowPlayingBarVolumeSliderContainer { display: none !important; }
+    html.mui .mui-bar .nowPlayingBarTop { grid-template-columns: minmax(0, 1fr) 40px clamp(180px, 26vw, 320px) 40px minmax(0, 1fr); }
+}
+
+/* ---------- phones: liquid glass and a simpler, touch-first set of controls ----------
+   The phone's controls are glass in the iOS manner: clear enough to show the picture under them, lit along the top
+   edge, with a fine rim. Small controls (header buttons, tabs, detail buttons) use the clear variant; surfaces that
+   carry text (menus, the mini player) a darker one so the text stays readable. Desktops keep frosted glass. */
+@media (max-width: 40em) {
+    html.mui.mui-phonelayout {
+        --mui-lg-fill: linear-gradient(180deg, rgba(255, 255, 255, .17), rgba(255, 255, 255, .07));
+        --mui-lg-filter: blur(8px) saturate(150%) brightness(1.04);
+        --mui-lg-edge: inset 0 1px 0 rgba(255, 255, 255, .42), inset 0 -1px 0 rgba(255, 255, 255, .1),
+            inset 0 0 0 .5px rgba(255, 255, 255, .22), 0 4px 14px rgba(0, 0, 0, .18);
+        --mui-lg-panel: rgba(32, 32, 36, .5);
+        --mui-lg-panel-filter: blur(28px) saturate(170%);
+        --mui-lg-panel-edge: inset 0 1px 0 rgba(255, 255, 255, .24), inset 0 0 0 .5px rgba(255, 255, 255, .16),
+            0 18px 44px rgba(0, 0, 0, .36);
+    }
+
+    /* tabs (Home / Favorites, a library's views): one glass track, the selected tab a brighter lens in it */
+    html.mui.mui-phonelayout.theme-dark .tabs-viewmenubar-backgroundcontainer .emby-tabs-slider {
+        padding: 4px;
+        border-radius: 22px;
+        background: var(--mui-lg-fill);
+        -webkit-backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-lg-filter);
+        box-shadow: var(--mui-lg-edge);
+    }
+
+    html.mui.mui-phonelayout .tabs-viewmenubar-backgroundcontainer .emby-tab-button {
+        height: 32px;
+        padding: 0 14px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    html.mui.mui-phonelayout.theme-dark .mui-tab-pill {
+        border-radius: 16px;
+        background: rgba(255, 255, 255, .24);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .36), inset 0 0 0 .5px rgba(255, 255, 255, .18);
+    }
+
+    /* a film whose logo is shown doesn't repeat its name underneath (episodes keep their line: it names the episode) */
+    html.mui.mui-phonelayout .mui-phone-video:not(.mui-phone-series-detail) .mui-phone-video-body:has(> .mui-phone-video-logo:not([hidden])) > .mui-phone-video-title {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    /* video details: watched, favorite, version, audio, subtitles */
+    html.mui.mui-phonelayout .mui-phone-video-actions { gap: 12px; }
+
+    html.mui.mui-phonelayout .mui-phone-video-actions :is(.mui-phone-video-control, .mui-phone-video-fallback):not(:disabled):not(:has(select:disabled)) {
+        border: 0;
+        background: var(--mui-lg-fill);
+        -webkit-backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-lg-filter);
+        box-shadow: var(--mui-lg-edge) !important;
+    }
+
+    html.mui.mui-phonelayout .mui-phone-video-actions .mui-phone-video-control:is([aria-pressed="true"], [aria-expanded="true"]) {
+        background: linear-gradient(180deg, rgba(255, 255, 255, .4), rgba(255, 255, 255, .22));
+    }
+
+    html.mui.mui-phonelayout .mui-phone-video-actions .mui-phone-video-control:is(:disabled, :has(select:disabled)) {
+        border: 0;
+        box-shadow: none !important;
+    }
+
+    /* music and other details keep Emby's buttons: Play and Shuffle become two pills, the rest glass circles */
+    html.mui.mui-phonelayout .mainDetailButtons {
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-sizing: border-box;
+        width: 100%;
+    }
+
+    html.mui.mui-phonelayout .mainDetailButtons > .detailButton { margin: 0 !important; }
+
+    html.mui.mui-phonelayout .mainDetailButtons > :is(.btnPlay, .btnResume, .btnShuffle):not(.hide) {
+        display: inline-flex !important;
+        flex: 1 1 0;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        min-width: 0;
+        width: auto;
+        height: 44px;
+        margin: 0;
+        padding: 0 12px;
+        border-radius: 22px !important;
+        font-size: 15px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    html.mui.mui-phonelayout .mainDetailButtons > :is(.btnPlay, .btnResume, .btnShuffle) .md-icon {
+        position: static;
+        margin: 0;
+        font-size: 20px;
+    }
+
+    html.mui.mui-phonelayout .mainDetailButtons > :is(.btnPlay, .btnResume, .btnShuffle) > span {
+        position: static;
+        display: block;
+        width: auto;
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    html.mui.mui-phonelayout.theme-dark .mainDetailButtons > .btnShuffle,
+    html.mui.mui-phonelayout.theme-dark .mainDetailButtons > .detailButton-autotext {
+        color: #fff !important;
+        background: var(--mui-lg-fill) !important;
+        -webkit-backdrop-filter: var(--mui-lg-filter);
+        backdrop-filter: var(--mui-lg-filter);
+        box-shadow: var(--mui-lg-edge) !important;
+    }
+
+    html.mui.mui-phonelayout .mainDetailButtons > .detailButton-autotext:not(.hide) {
+        display: inline-grid !important;
+        place-items: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        padding: 0;
+        border-radius: 50% !important;
+    }
+
+    html.mui.mui-phonelayout .mainDetailButtons > .detailButton-autotext .detailButton-autotext-text { display: none !important; }
+    html.mui.mui-phonelayout .mainDetailButtons > .detailButton-autotext .md-icon { font-size: 22px; margin: 0; }
+
+    /* the library view settings (view, image size and a long list of fields) are a desktop tool */
+    html.mui.mui-phonelayout .btnViewSettings { display: none !important; }
+
+    /* menus open from their button as glass popovers (modernui.js anchors them and marks them .mui-popover) */
+    html.mui.mui-phonelayout.theme-dark .actionSheet.mui-popover {
+        min-width: 220px;
+        max-width: calc(100vw - 32px);
+        border-radius: 22px !important;
+        background: var(--mui-lg-panel) !important;
+        -webkit-backdrop-filter: var(--mui-lg-panel-filter);
+        backdrop-filter: var(--mui-lg-panel-filter);
+        box-shadow: var(--mui-lg-panel-edge) !important;
+        transform-origin: var(--mui-popover-origin, right top) !important;
+        animation: mui-pop-in .24s cubic-bezier(.22, .75, .22, 1) both !important;
+    }
+
+    html.mui.mui-phonelayout .actionSheet.mui-popover.dialog-close {
+        animation: mui-pop-out .15s ease-in both !important;
+    }
+
+    html.mui.mui-phonelayout .actionSheet.mui-popover .actionSheetMenuItem .listItem-content {
+        min-height: 44px;
+        padding-block: 0;
+    }
+
+    html.mui.mui-phonelayout .actionSheet.mui-popover .actionsheetMenuItemIcon {
+        font-size: 20px;
+        color: rgba(255, 255, 255, .72);
+    }
+
+    html.mui.mui-phonelayout .actionSheet.mui-popover .actionSheetItemText {
+        font-size: 16px;
+    }
+
+    /* the version, audio, subtitle and season pickers of video details */
+    .mui-phone-track-menu {
+        border-radius: 18px;
+        background: var(--mui-lg-panel);
+        -webkit-backdrop-filter: var(--mui-lg-panel-filter);
+        backdrop-filter: var(--mui-lg-panel-filter);
+        box-shadow: var(--mui-lg-panel-edge);
+        transform-origin: left top;
+        animation: mui-pop-in .24s cubic-bezier(.22, .75, .22, 1) both;
+    }
+
+    .mui-phone-track-menu button[aria-selected="true"] {
+        background: rgba(255, 255, 255, .14);
+        color: #fff;
+    }
+
+    /* the mini player floats above the page; the footer around it stays invisible, so Safari's toolbar keeps
+       showing the page (WebKit skips hidden full-width boxes, see Phone layout in TECHNICAL.md) */
+    html.mui.mui-phonelayout .appfooter:has(.nowPlayingBar.mui-bar) {
+        visibility: hidden;
+    }
+
+    html.mui.mui-phonelayout .appfooter .nowPlayingBar.mui-bar {
+        visibility: visible;
+        margin: 0 8px max(8px, env(safe-area-inset-bottom));
+        overflow: hidden;
+        border-radius: 22px;
+        background: var(--mui-lg-panel) !important;
+        -webkit-backdrop-filter: var(--mui-lg-panel-filter) !important;
+        backdrop-filter: var(--mui-lg-panel-filter) !important;
+        box-shadow: var(--mui-lg-panel-edge) !important;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarTop {
+        display: flex !important;
+        align-items: center;
+        gap: 4px;
+        height: 64px;
+        box-sizing: border-box;
+        padding: 0 8px;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarInfoContainer {
+        order: 1;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none !important;
+        gap: 12px;
+        height: auto;
+        padding: 0;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarImage {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        border-radius: 10px;
+        background-size: cover;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarText { margin: 0; min-width: 0; }
+    html.mui.mui-phonelayout .mui-bar .nowplayingbar-textitems { font-size: 15px; font-weight: 500; line-height: 20px; }
+    html.mui.mui-phonelayout .mui-bar .nowplayingbar-textitems.secondaryText { font-size: 13px; font-weight: 400; color: rgba(255, 255, 255, .6); }
+
+    /* play / pause, then next: the queue and stop live in the full player */
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarRight {
+        order: 2;
+        display: flex;
+        margin: 0;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarRight > :not(.playPauseButton-right) { display: none !important; }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarCenter {
+        order: 3;
+        position: static !important;
+        display: flex !important;
+        width: auto !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarCenter > :not(.nextTrackButton) { display: none !important; }
+
+    html.mui.mui-phonelayout .mui-bar :is(.playPauseButton-right, .nextTrackButton) {
+        display: inline-grid !important;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        padding: 0;
+        font-size: 28px;
+        color: #fff;
+    }
+
+    /* progress: a hairline along the bottom of the capsule, not a control (the full player seeks) */
+    html.mui.mui-phonelayout .mui-bar :is(.nowPlayingBarCurrentTime, .mui-bar-duration, .emby-slider-thumb) { display: none !important; }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarPositionContainer {
+        position: absolute !important;
+        inset: auto 20px 0 !important;
+        width: auto !important;
+        height: 2px !important;
+        pointer-events: none;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarPositionContainer .emby-slider-background {
+        top: 0;
+        height: 2px;
+        border-radius: 1px;
+        background: transparent;
+        overflow: hidden;
+    }
+
+    html.mui.mui-phonelayout .mui-bar .nowPlayingBarPositionContainer .emby-slider-background-inner {
+        height: 100%;
+        background: rgba(255, 255, 255, .14) !important;
+    }
+}

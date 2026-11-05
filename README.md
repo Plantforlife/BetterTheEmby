@@ -26,6 +26,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 - Phones and desktops use the same cover sample; album gradients keep inherited artist artwork out.
 - Apple-Music-style covers and lyrics: the current line glows, the others blur with distance, the list glides; bilingual LRC lines are kept together. Point at a line to see its time and click to jump there.
 - Desktop lyrics and queue panels continue from their current position when switched mid-animation. Opening or closing one glides the cover, timeline and buttons to their new place with it; on phones the big cover morphs into the small one beside the title and back.
+- The desktop now-playing bar is a docked frosted-glass player (track, transport with a slim progress bar between elapsed time and duration in the album's colour, shuffle, repeat, volume and queue); on phones it is a floating mini player.
 - The cover flies between the now-playing bar or album page and the player.
 
 ### Libraries

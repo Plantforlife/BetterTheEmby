@@ -182,6 +182,7 @@
         if (SETTINGS.phoneLayout !== false && window.Emby && typeof Emby.importModule === 'function') {
             patchScroller().then(function (ok) { docReady = !!ok; syncDocScroll(); }, function (e) { console.warn('[ModernUI] scroller', e); });
             patchPhoneRouteMotion();
+            patchPhoneMenus();
         }
         window.require(['playbackManager', 'events'], function (p, ev) {
             pm = p && p.default ? p.default : p;
@@ -3830,6 +3831,87 @@
         if (f) f.dispatchEvent(new Event('scroll'));
     }
 
+    // ---------- now-playing bar: a docked player on the desktop, a floating mini player on phones ----------
+    // Emby lays the bar out as one row, with the position slider pinned along its top edge and only the elapsed time
+    // shown. The stylesheet turns it into a grid with the slider under the transport; here the elapsed time moves out
+    // of the transport group to sit before the slider, and a duration of our own follows it. Nothing else moves: the
+    // sliders are custom elements that drop their parts when they are taken out of the page and never get them back.
+    function arrangeBar(bar) {
+        if (!bar || bar.__muiBar) return;
+        var top = bar.querySelector('.nowPlayingBarTop'), slider = bar.querySelector('.nowPlayingBarPositionContainer');
+        var time = bar.querySelector('.nowPlayingBarCurrentTime');
+        if (!top || !slider || !time || slider.parentNode !== top) return;
+        bar.__muiBar = true;
+        var duration = el('div', 'mui-bar-duration');
+        top.append(time, duration);
+        bar.classList.add('mui-bar');
+        // Emby rewrites the elapsed time on every tick; the duration follows it from the same player.
+        function showDuration() {
+            var ticks = 0;
+            try { ticks = pm && pm.duration ? pm.duration() : 0; } catch (e) { }
+            var text = ticks > 0 ? clock(ticks / 1e7) : '';
+            if (duration.textContent !== text) duration.textContent = text;
+        }
+        new MutationObserver(showDuration).observe(time, { childList: true, characterData: true, subtree: true });
+        showDuration();
+    }
+    function clock(seconds) {
+        seconds = Math.round(seconds);
+        var h = Math.floor(seconds / 3600), m = Math.floor(seconds % 3600 / 60), s = seconds % 60;
+        return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    // ---------- phone menus: only what a phone needs, opening from the button that asked ----------
+    // Emby's item menus carry the whole desktop toolbox (edit, identify, convert, download, delete...), which filled
+    // the screen on a phone. Phones keep playing, favourites and the played state, plus going to the item, its
+    // season, series, album or artist. Every menu that comes from a button opens from that button as a popover, not
+    // as a sheet from the bottom edge.
+    var PHONE_DROPPED = ['edit', 'editimages', 'editsubtitles', 'identify', 'resetmetadata', 'refresh', 'delete', 'deleteseries',
+        'download', 'synclocal', 'sync', 'convert', 'addtocollection', 'addtoplaylist', 'removefromcollection', 'removefromplaylist',
+        'multiselect', 'copytoclipboard', 'share', 'manageaccess', 'mergeversions', 'record', 'copydatatousers', 'searchimageproviders',
+        'addimage', 'addimagefromurl', 'scan', 'renamelibrary', 'changelibrarycontenttype', 'moveupinorder', 'movedowninorder',
+        'leaveshareditems', 'deletelastplayed', 'showmissingepisodes', 'preview', 'link'];
+    var lastTap = null;
+    function notePhoneTap(e) {
+        var b = e.target && e.target.closest && e.target.closest('button, [role="button"]');
+        lastTap = b ? { el: b, at: Date.now() } : null;
+    }
+    function patchPhoneMenus() {
+        Emby.importModule('./modules/actionsheet/actionsheet.js').then(function (mod) {
+            var sheet = mod.default || mod;
+            if (sheet.__muiPhoneMenus) return;
+            sheet.__muiPhoneMenus = true;
+            var show = sheet.show;
+            sheet.show = function (options) {
+                return show.call(this, isPhone() && options ? phoneMenu(options) : options);
+            };
+        }).catch(function (e) { console.warn('[ModernUI] phone menus', e); });
+    }
+    function phoneMenu(options) {
+        options = Object.assign({}, options);
+        var items = options.items;
+        if (Array.isArray(items) && items.some(function (i) { return i && PHONE_DROPPED.indexOf(i.id) >= 0; })) {
+            items = items.filter(function (i) { return !i || PHONE_DROPPED.indexOf(i.id) < 0; }).map(function (i) { return Object.assign({}, i); });
+            if (items.length) items[items.length - 1].dividerAfter = false;
+            options.items = items;
+        }
+        // A header button (the user menu) opens its menu without an anchor, as a sheet: anchor it to the button.
+        var tap = lastTap && Date.now() - lastTap.at < 1500 && lastTap.el.isConnected ? lastTap.el : null;
+        if (!options.positionTo && tap && !options.title && tap.closest('.skinHeader, .mui-phone-video-head, .nowPlayingBar')) {
+            options.positionTo = tap;
+            options.positionY = 'below';
+            options.positionX = tap.getBoundingClientRect().left > innerWidth / 2 ? 'right' : 'left';
+        }
+        if (options.positionTo) {
+            options.autoLowResLayout = false;
+            options.dialogClass = ((options.dialogClass || '') + ' mui-popover').trim();
+            var r = options.positionTo.getBoundingClientRect && options.positionTo.getBoundingClientRect();
+            if (r) document.documentElement.style.setProperty('--mui-popover-origin',
+                (r.left + r.width / 2 > innerWidth / 2 ? 'right' : 'left') + ' ' + (r.top < innerHeight / 2 ? 'top' : 'bottom'));
+        }
+        return options;
+    }
+
     // ---------- video player: play / pause feedback ----------
 
     var lastInput = 0;
@@ -3904,6 +3986,7 @@
         document.addEventListener('pointerover', onPersonIntent, { passive: true });
         document.addEventListener('focusin', onPersonIntent, true);
         document.addEventListener('pointerdown', onPersonIntent, { passive: true, capture: true });
+        document.addEventListener('pointerdown', notePhoneTap, { passive: true, capture: true });
         document.addEventListener('keydown', onInput, true);
         document.addEventListener('click', function (e) {
             if (!e.target || !e.target.closest) return;
@@ -3945,6 +4028,7 @@
                         if (n.classList.contains('verticalSection') || n.querySelector('.verticalSection')) homeAlbumTitles(n);
                         if (isCardImage(n)) { checkImg(n); return; }
                         var cl = n.classList;
+                        if (cl.contains('nowPlayingBar') || cl.contains('nowPlayingBarTop')) arrangeBar(n.closest('.nowPlayingBar'));
                         if (rec.target.classList && rec.target.classList.contains('creditsSubSections')) emptyCredits(n);
                         // a new set of header tabs (another page) fades in, before it is first painted
                         if (!tabsFaded && (cl.contains('emby-tab-button') || (n.firstElementChild && n.querySelector('.emby-tab-button')))) {
@@ -3973,6 +4057,7 @@
         }
     }
     function refresh() {
+        arrangeBar(document.querySelector('.nowPlayingBar'));
         var view = document.querySelector('.view:not(.hide)');
         if (view) afterShow(view, routeInfo());
     }

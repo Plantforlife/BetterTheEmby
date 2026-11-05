@@ -36,12 +36,6 @@
         // Emby paints the bar's backdrop on .appfooter, which would stay behind as a strip while the bar fades.
         // From 50em up the footer holds nothing but the bar, so the backdrop moves onto the bar itself and fades
         // with it (below 50em the footer also carries Emby's bottom tabs and keeps its own backdrop).
-        'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){' +
-            'border-radius:14px 14px 0 0;background:rgba(24,24,28,.92)!important}',
-        '@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){' +
-            'html.albumtint-audio .appfooter:has(.nowPlayingBar-footer:not(.hide):not(.nowPlayingBar-hidden)){' +
-                'background:rgba(24,24,28,.61)!important;backdrop-filter:blur(28px) saturate(125%)!important;-webkit-backdrop-filter:blur(28px) saturate(125%)!important}}',
-        'html.albumtint-audio .appfooter .nowPlayingBar-footer{background:transparent!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}',
         'html.albumtint-osd .dialog.albumtint-settings.dialog-animated:not(.dialog-close){' +
             'animation:albumtint-settings-in 420ms cubic-bezier(.22,.8,.24,1) both!important}',
         'html.albumtint-osd .dialog.albumtint-settings.dialog-close{' +
@@ -940,8 +934,9 @@
     function doUpdate() {
         var playing = playingAudioItem();
         root.classList.toggle('albumtint-audio', !!playing);
-        if (isDisabled()) { setPage(null); setOsd(false); return; }
+        if (isDisabled()) { setPage(null); setOsd(false); setPlayingTint(null); return; }
         playingUrl = playing ? artUrl(playing) : null;
+        setPlayingTint(playingUrl);
 
         var r = routeInfo(), token = ++routeToken;
         var osd = /^(nowplaying|videoosd|queue)/.test(r.path) && !!playing;
@@ -956,6 +951,17 @@
             return;
         }
         setPage(null);
+    }
+    // The now-playing bar's progress takes the playing album's accent, on every page (modernui.css reads it).
+    var tintToken = 0, tintUrl = null;
+    function setPlayingTint(url) {
+        if (url === tintUrl) return;
+        tintUrl = url;
+        var token = ++tintToken;
+        if (!url) { root.style.removeProperty('--albumtint-playing'); return; }
+        schemeFor(url).then(function (s) {
+            if (token === tintToken) root.style.setProperty('--albumtint-playing', s.accent);
+        }, function () { });
     }
     var panelMotion, panelMotionFrame;
     function cancelPanelMotion() {
