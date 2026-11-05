@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.2.52
+
+- Phone settings (and Emby's other dashboard pages, which use the light theme) are readable again: white, as Emby has them, with the header in light glass with dark glyphs and a frosted white band under it once the page scrolls. They had black text on a near-black page.
+- Phone header over a bright picture (an artist's backdrop, light artwork on show and film pages): the back button and the capsule each turn to light glass with dark glyphs while the part of the picture under them is bright, until it has scrolled away, as iOS glass does. White glyphs on white glass used to vanish.
+- Phone artist pages: no small logo next to the back button repeating the big one.
+- Phone: the search button no longer disappears from the header after the drawer has been opened and closed.
+- Phone: the cast and user menus spring out of their own button (they grew from a point to the left of it).
+- Phone: Escape on a keyboard closes a menu instead of throwing an error.
+- Chromium phones (Android): no square blocks behind the header's round buttons, and no blurred block where the tabs were, while pages slide.
+- Phone search field is a glass capsule, without Emby's thick green outline.
+- Phone album pages: the disc headings line up with the cover. Card titles that don't fit end in an ellipsis instead of being cut off.
+- Phone show pages: a logo drawn in black is shown white, so it reads over the art.
+- Phone player: the ⋯ next to the title has a full-size touch area.
+- Phones held sideways and other short windows: the banner's logo and text no longer run up over the header and its tabs.
+- Desktop: the page fades out under the docked player bar instead of showing a cut-off strip in the gap below it.
+
 ## 1.0.2.51
 
 - Phone show and film pages: the artwork shrinks again as the page scrolls, toward its top edge (about 78% after a quarter of a screen width, 66% after a third), then fades out, as in the reference; it stays smooth, since the scroll position still drives it on the compositor.

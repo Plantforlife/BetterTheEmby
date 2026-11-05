@@ -420,6 +420,10 @@
         if (!view || !view.classList) return;
         // phones: the page comes back where it was left, a new one starts at the top (see "the document scrolls")
         if (docScroll && view.classList.contains('page')) docRestore((e.detail || {}).isRestored ? pageFrame(view) : null);
+        if (view.classList.contains('page')) {
+            markScrolled();
+            inkForPage(view);
+        }
         // dashboard pages (settings, plugins) aren't views: they get no art, and the last page's goes
         if (!view.classList.contains('view')) {
             if (view.classList.contains('page')) {
@@ -1626,6 +1630,105 @@
         } catch (e) { return .35; }
     }
 
+    // average brightness (0..1) of the drawn part of a logo (its transparent background left out)
+    function logoLuma(img) {
+        try {
+            var c = document.createElement('canvas'), w = 48, h = 24;
+            c.width = w; c.height = h;
+            var g = c.getContext('2d', { willReadFrequently: true });
+            g.drawImage(img, 0, 0, w, h);
+            var d = g.getImageData(0, 0, w, h).data, sum = 0, n = 0;
+            for (var i = 0; i < d.length; i += 4) {
+                if (d[i + 3] < 128) continue;
+                sum += .2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2];
+                n++;
+            }
+            return n ? sum / n / 255 : 1;
+        } catch (e) { return 1; }
+    }
+
+    // ---------- phones: the header's ink over a bright picture ----------
+    // iOS glass turns light with dark glyphs over light content. The phone header does the same, one side at a time,
+    // while a bright picture lies under it: the artwork at the top of a video's details or the backdrop Emby shows at
+    // the top of other details (an artist's). Each side (the back button; the capsule) is judged from the part of the
+    // picture under it, and stays dark until the page has scrolled the picture away from under it.
+    var inkNow = null, inkToken = 0;
+    function inkSides() {
+        var h = document.querySelector('.skinHeader:not(.videoOsdHeader)');
+        if (!h) return [];
+        var left = h.querySelector('.headerLeft');
+        return [
+            { el: left, probe: left && left.querySelector('.headerBackButton:not(.hide), .headerMenuButton:not(.hide)') },
+            { el: h.querySelector('.headerRight'), probe: h.querySelector('.headerRight') }
+        ];
+    }
+    // the picture img shown like background-size: cover in box (a screen rect), with its focus fy (0 top .. 1 bottom)
+    // and at brightness dim; clearAt(luma) is the document scroll position past which a side no longer covers it
+    function measureInk(view, img, box, fy, dim, clearAt) {
+        var nw = img.naturalWidth, nh = img.naturalHeight;
+        if (!nw || !nh || !box.width || !box.height) return null;
+        var k = .125, w = Math.max(1, Math.round(box.width * k)), h = Math.max(1, Math.round(box.height * k));
+        var s = Math.max(box.width / nw, box.height / nh) * k, g;
+        try {
+            var c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            g = c.getContext('2d', { willReadFrequently: true });
+            g.drawImage(img, (w - nw * s) / 2, (h - nh * s) * fy, nw * s, nh * s);
+        } catch (e) { return null; }
+        // where the picture's top is with the page at its top (the header doesn't scroll, the picture does)
+        var top = box.top + docY();
+        var until = inkSides().map(function (side) {
+            var r = side.probe && side.probe.getBoundingClientRect();
+            if (!r || !r.width) return -1;
+            var x0 = Math.max(0, Math.floor((r.left - box.left) * k)), x1 = Math.min(w, Math.ceil((r.right - box.left) * k));
+            var y0 = Math.max(0, Math.floor((r.top - top) * k)), y1 = Math.min(h, Math.ceil((r.bottom - top) * k));
+            if (x1 <= x0 || y1 <= y0) return -1;
+            try {
+                var d = g.getImageData(x0, y0, x1 - x0, y1 - y0).data, sum = 0;
+                for (var i = 0; i < d.length; i += 4) sum += .2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2];
+                var luma = sum / (d.length / 4) / 255 * dim;
+                return luma > .55 ? clearAt(luma) : -1;
+            } catch (e) { return -1; }
+        });
+        return { view: view, until: until };
+    }
+    function updateInk() {
+        var y = docY(), on = inkNow && isPhone() && inkNow.view.isConnected && !inkNow.view.classList.contains('hide');
+        inkSides().forEach(function (side, i) {
+            var dark = !!on && y < inkNow.until[i];
+            if (side.el && side.el.classList.contains('mui-ink-dark') !== dark) side.el.classList.toggle('mui-ink-dark', dark);
+        });
+    }
+    function setInk(v) {
+        inkNow = v;
+        updateInk();
+    }
+    // a page that shows: the ink it had, or (on details other than a video's) its backdrop's once that has loaded
+    function inkForPage(view) {
+        var token = ++inkToken;
+        setInk(view.__muiInk || null);
+        if (view.__muiInk || !isPhone() || !view.classList.contains('view') || routeInfo().path !== 'item') return;
+        var tries = 0;
+        (function look() {
+            if (token !== inkToken || view.__muiPhoneVideo) return;
+            var bd = view.querySelector('.itemBackdrop'), cs = bd && getComputedStyle(bd);
+            var m = cs && bd.offsetHeight && /url\(["']?([^"')]+)/.exec(cs.backgroundImage);
+            if (!m) { if (++tries < 6) setTimeout(look, 300 * tries); return; }
+            var img = new Image();
+            img.onload = function () {
+                if (token !== inkToken) return;
+                var box = bd.getBoundingClientRect(), top = box.top + docY();
+                var fy = /(^|\s)(top|0%)$/.test(cs.backgroundPositionY) ? 0 : /bottom|100%/.test(cs.backgroundPositionY) ? 1 : .5;
+                // the backdrop scrolls with the page and fades into it over its lower part
+                var v = measureInk(view, img, box, fy, 1, function () { return top + box.height * .6 - 40; });
+                if (!v) return;
+                view.__muiInk = v;
+                setInk(v);
+            };
+            img.src = m[1];
+        })();
+    }
+
     function backdropOf(item) {
         if (item.BackdropImageTags && item.BackdropImageTags.length) return { id: item.Id, tag: item.BackdropImageTags[0] };
         if (item.ParentBackdropItemId && item.ParentBackdropImageTags && item.ParentBackdropImageTags.length) return { id: item.ParentBackdropItemId, tag: item.ParentBackdropImageTags[0] };
@@ -2046,6 +2149,17 @@
                 currentArt = url;
                 barArt = { img: img, dim: seriesDetail ? .9 : .78, active: active };
                 barColour(img);
+                // The header's ink over the artwork. The art holds still under the header after 64px and dims away
+                // (mui-art-dim in modernui.css: to .45 at 64% of 64px + 55vw); a side is clear once the part under it
+                // shows darker than .5. Without the scroll timeline the art scrolls away with the page instead.
+                var box = art.getBoundingClientRect(), artTop = box.top + docY();
+                var ink = measureInk(view, img, box, .24, barArt.dim, function (l) {
+                    return Math.min(64 + Math.max(0, 1 - .5 / l) * .64 * innerWidth, artTop + box.height * .7);
+                });
+                if (ink) {
+                    view.__muiInk = ink;
+                    if (active()) setInk(ink);
+                }
                 var old = art.lastElementChild;
                 art.appendChild(img);
                 panel.classList.add('mui-phone-video-hasart');
@@ -2142,7 +2256,12 @@
                 if (badge.getAttribute('src') !== url) {
                     badge.hidden = false;
                     badge.classList.add('mui-logo-loading');
-                    badge.onload = function () { badge.classList.remove('mui-logo-loading'); };
+                    badge.onload = function () {
+                        badge.classList.remove('mui-logo-loading');
+                        // a logo drawn in black (some are) all but vanished on the dark page and dark art: it is
+                        // shown white instead
+                        badge.classList.toggle('mui-logo-dark', logoLuma(badge) < .2);
+                    };
                     badge.onerror = function () { badge.hidden = true; };
                     badge.src = url;
                 }
@@ -3811,8 +3930,15 @@
             return true;
         });
     }
+    // html.mui-scrolled while the document is scrolled away from its top (the light pages' header band)
+    function markScrolled() {
+        var s = docScroll && docY() > 2;
+        if (root.classList.contains('mui-scrolled') !== s) root.classList.toggle('mui-scrolled', s);
+    }
     function onDocScroll() {
         if (!docScroll || frozenPage) return;
+        markScrolled();
+        if (inkNow) updateInk();
         var f = pageFrame();
         if (f) {
             f.dispatchEvent(new Event('scroll'));
@@ -3942,6 +4068,7 @@
         ' .mainDetailButtons > :is(.btnShuffle,.detailButton-autotext), .nowPlayingBar.mui-bar';
     var canRefract = !!(window.CSS && CSS.supports('backdrop-filter', 'url(#x)')) &&
         /Chrome\/|Chromium\//.test(navigator.userAgent) && !/CriOS|EdgiOS|FxiOS/.test(navigator.userAgent);
+    if (canRefract) root.classList.add('mui-refracts');
     var glassDefs = null, glassShapes = {}, glassSizer = null;
     function glassify() {
         if (!canRefract || !isPhone() || !window.ResizeObserver) return;
@@ -4047,10 +4174,24 @@
         dlg.__muiMorph = true;
         var from = popAnchor;
         popAnchor = null;
-        var tries = 0;
+        // A keyboard's Escape: Emby took it for the app's back command, and with the page at its first entry that
+        // only threw (the menu has no history entry of its own)
+        function onKey(e) {
+            if (e.key !== 'Escape' || !dlg.isConnected || dlg.classList.contains('hide')) return;
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            Emby.importModule('./modules/dialoghelper/dialoghelper.js').then(function (mod) {
+                (mod.default || mod).close(dlg);
+            }).catch(function () { });
+        }
+        document.addEventListener('keydown', onKey, true);
+        dlg.addEventListener('close', function () { document.removeEventListener('keydown', onKey, true); }, { once: true });
+        // Emby places the menu after adding it, and places it again once it has sized it to its items (a wide one
+        // moved left): start once the box has held still for a frame, or the spring grew from the wrong spot
+        var tries = 0, last = '';
         (function wait() {
-            var box = dlg.getBoundingClientRect();
-            if ((!box.width || !box.height) && ++tries < 20) { requestAnimationFrame(wait); return; }
+            var box = dlg.getBoundingClientRect(), now = [box.left, box.top, box.width, box.height].map(Math.round).join();
+            if ((!box.width || !box.height || now !== last) && ++tries < 20) { last = now; requestAnimationFrame(wait); return; }
             dlg.classList.add('mui-pop-run');
             if (!dlg.animate || reduceMotion || !from || !box.width) { dlg.classList.add('mui-pop-done'); return; }
             var ox = Math.max(0, Math.min(box.width, from.left + from.width / 2 - box.left));

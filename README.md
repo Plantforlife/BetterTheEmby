@@ -65,7 +65,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 - Long phone synopses open in a reader. Browser Back closes it and returns to the same place on the episode page.
 
 - Album details show a larger cover on the left and the title, artist and metadata on the right, with full-width playback controls underneath. Long text wraps naturally.
-- No tab bar along the bottom; search in the top right; albums three to a row; floating header controls use dark glass for readable text over artwork; a library with many tabs scrolls them sideways.
+- No tab bar along the bottom; search in the top right; albums three to a row; floating header controls are glass that turns light with dark glyphs over a bright picture, as on iOS, and settings pages keep Emby's light look; a library with many tabs scrolls them sideways.
 - Smaller lyrics and translations fit whole phrases on the full-screen player.
 - Other phone pages use a short fade.
 - Pages scroll as a whole, like an ordinary site: Safari's toolbar shrinks away as you scroll, the page goes on under the status bar and the toolbar, and a tap on the status bar goes back to the top. Each page and tab keeps its place when you come back to it.

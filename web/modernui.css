@@ -2238,6 +2238,14 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
 @keyframes mui-route-under-push { from { transform: translateX(0); } to { transform: translateX(-30%); } }
 @keyframes mui-route-under-pop { from { transform: translateX(-30%); } to { transform: translateX(0); } }
 
+/* Chromium (html.mui-refracts) takes a picture of each named header control for the slide, and drew its backdrop
+   filter in it as a square block, its radius ignored; the tab track's stayed as a coarse blurred block while the pages
+   slid. While pages slide those controls are plain tinted glass, without a backdrop filter. */
+html.mui-refracts.mui-phonelayout:is(.mui-phone-push, .mui-phone-pop) .skinHeader:not(.videoOsdHeader) :is(.headerBackButton, .headerMenuButton, .headerRight, .emby-tabs-slider) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
 .albumtint-phone-identity, .albumtint-phone-modes { display: none; }
 
 @media (max-width: 40em) {
@@ -2809,8 +2817,9 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
         display: none !important;
     }
 
-    /* search in the header's top right */
-    html.mui.mui-phonelayout .skinHeader .headerSearchButton.hide {
+    /* search in the header's top right (Emby also hides it while html lacks .withFullDrawer, which it drops when the
+       drawer opens and doesn't put back) */
+    html.mui.mui-phonelayout .skinHeader .headerSearchButton {
         display: inline-flex !important;
     }
 
@@ -2852,6 +2861,12 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
        the page is pulled past its ends. */
     html.mui.mui-phonelayout {
         background-color: var(--mui-bar, #141414) !important;
+    }
+
+    /* Emby's dashboard pages (settings) use the light theme: they stay white, as Emby has them, with the header in
+       light glass (below); the dark colour of the media pages left their dark text on a near-black page */
+    html.mui.mui-phonelayout.theme-light {
+        background-color: #fff !important;
     }
 
     /* an album page: Album Tint sets Emby's background colour to the album's main colour, its gradient's base */
@@ -2999,32 +3014,43 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         display: none;
     }
 
+    /* Light (dashboard) pages: white all the way up, so the frosted white band of an iOS navigation bar can run on
+       from the status bar once the page scrolls under the header (.mui-scrolled, set by modernui.js) */
+    html.mui.mui-phonelayout.theme-light.mui-scrolled .skinHeader:not(.videoOsdHeader)::after {
+        opacity: 1;
+        background: rgba(255, 255, 255, .8);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        box-shadow: 0 .5px 0 rgba(0, 0, 0, .14);
+    }
+
     /* Header controls are liquid glass (see the phone glass section at the end): the back or menu button is a
        circle on its own, the buttons on the right share one capsule, on every page. A page that has a back button
-       drops the menu button; the drawer is one step back. */
+       drops the menu button; the drawer is one step back. The glyphs take the header's ink (--mui-ink): white, or
+       dark over light content. */
     html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader):has(.headerBackButton:not(.hide)) .headerMenuButton {
         display: none !important;
     }
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerMenuButton) {
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerMenuButton) {
         width: 44px;
         height: 44px;
         margin: 0;
         padding: 0;
         border-radius: 50%;
-        color: #fff;
+        color: var(--mui-ink);
         background: var(--mui-lg-fill) !important;
         -webkit-backdrop-filter: var(--mui-lg-filter);
         backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
         box-shadow: var(--mui-lg-edge);
     }
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerLeft {
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerLeft {
         /* it gives way to the capsule, which keeps its full width on the same row */
         flex: 1 1 0;
         min-width: 0;
         gap: 8px;
         padding-inline-start: 16px;
     }
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight {
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerRight {
         /* Emby caps the section's width; with three buttons the first spilled out of the capsule to the left */
         flex: 0 0 auto;
         width: max-content !important;
@@ -3043,32 +3069,33 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         backdrop-filter: var(--mui-refract, ) var(--mui-lg-filter);
         box-shadow: var(--mui-lg-edge);
     }
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight:not(:has(> :not(.hide))) {
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerRight:not(:has(> :not(.hide))) {
         display: none;
     }
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .headerRight > .headerButton {
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerRight > .headerButton {
         width: 40px;
         height: 40px;
         margin: 0;
         padding: 0;
         border-radius: 50%;
-        color: #fff;
+        color: var(--mui-ink);
         background: none !important;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
         box-shadow: none;
     }
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) :is(.headerButton,.mui-phone-header-more) .md-icon {
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) :is(.headerButton,.mui-phone-header-more) .md-icon {
         font-size: 22px;
-        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .3));
+        filter: var(--mui-ink-shadow);
     }
 
     html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) :is(.headerCastButton,.headerUserButton,.headerSettingsButton) {
         display: none !important;
     }
-    /* Emby fades the title logo into the header once a page with a logo scrolls; on phone video details it sat next
-       to the back button, repeating the big logo below it */
-    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .pageTitle {
+    /* Emby puts an item's logo into the header on its details (at once on an artist's, once the page scrolls on a
+       video's); there it sat next to the back button, repeating the big logo or picture below it */
+    html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .pageTitle,
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .pageTitleWithLogo {
         visibility: hidden !important;
     }
     html.mui.mui-phonelayout:has(.mui-phone-video:not(.hide)) .skinHeader:not(.videoOsdHeader) .mui-phone-header-more {
@@ -3080,13 +3107,13 @@ html.mui.mui-docscroll .page:not(.hide):not(.dialog):is(.withTabs, .scrollFrameY
         padding: 0;
         border: 0;
         border-radius: 50%;
-        color: #fff;
+        color: var(--mui-ink);
         background: none;
     }
 
-    html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .pageTitle {
-        color: #fff;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, .95), 0 2px 10px rgba(0, 0, 0, .8);
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .pageTitle {
+        color: var(--mui-ink);
+        text-shadow: var(--mui-ink-text-shadow);
     }
 
     html.mui.mui-phonelayout.theme-dark .skinHeader:not(.videoOsdHeader) .pageTitleWithDefaultLogo {
@@ -3663,6 +3690,25 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         --mui-lg-panel-filter: blur(26px) saturate(150%);
         --mui-lg-panel-edge: inset 0 1px 1px -.5px rgba(255, 255, 255, .4), inset 0 -1px 1px -.5px rgba(255, 255, 255, .1),
             inset 0 0 0 .5px rgba(255, 255, 255, .16), inset 0 0 20px rgba(255, 255, 255, .05), 0 18px 44px rgba(0, 0, 0, .36);
+        /* the header's ink: its glyphs and title, their shadows, and the glow of a pressed button */
+        --mui-ink: #fff;
+        --mui-ink-shadow: drop-shadow(0 1px 2px rgba(0, 0, 0, .3));
+        --mui-ink-text-shadow: 0 1px 2px rgba(0, 0, 0, .95), 0 2px 10px rgba(0, 0, 0, .8);
+        --mui-press: rgba(255, 255, 255, .18);
+    }
+
+    /* Over light content iOS glass turns light and its glyphs dark. So does the header on light pages (Emby's
+       dashboard) and, one side at a time, over a bright picture at the top of details: modernui.js puts .mui-ink-dark
+       on .headerLeft or .headerRight while the part of the picture under it is bright. */
+    html.mui.mui-phonelayout.theme-light .skinHeader:not(.videoOsdHeader),
+    html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .mui-ink-dark {
+        --mui-ink: rgba(0, 0, 0, .84);
+        --mui-ink-shadow: none;
+        --mui-ink-text-shadow: none;
+        --mui-press: rgba(0, 0, 0, .07);
+        --mui-lg-fill: radial-gradient(130% 110% at 50% -10%, rgba(255, 255, 255, .72), rgba(255, 255, 255, .48) 55%, rgba(255, 255, 255, .4));
+        --mui-lg-edge: inset 0 1px 1px -.5px rgba(255, 255, 255, .95), inset 0 -1px 1px -.5px rgba(255, 255, 255, .5),
+            inset 0 0 0 .5px rgba(0, 0, 0, .1), 0 2px 12px rgba(0, 0, 0, .14);
     }
 
     /* press: the control swells and brightens under the finger, and springs back when let go */
@@ -3684,7 +3730,7 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
     html.mui.mui-phonelayout .skinHeader:not(.videoOsdHeader) .headerRight > .headerButton:active,
     html.mui.mui-phonelayout .mui-bar :is(.playPauseButton-right, .nextTrackButton):active {
         transform: scale(1.14) !important;
-        background: rgba(255, 255, 255, .18) !important;
+        background: var(--mui-press, rgba(255, 255, 255, .18)) !important;
         transition-duration: .16s !important;
     }
 
@@ -4042,4 +4088,78 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
 @keyframes mui-art-dim {
     64% { opacity: .45; }
     to { opacity: 0; }
+}
+
+/* ---------- phones: smaller fixes ---------- */
+@media (max-width: 40em) {
+    /* an album's disc headings line up with the cover and the buttons above them instead of the screen's edge */
+    html.mui.mui-phonelayout .trackList > .listGroupHeader {
+        padding-inline-start: 13px;
+    }
+
+    /* a card's title that doesn't fit ends in an ellipsis instead of being cut off mid-character (the title is a
+       button inside the line, which clipped as a whole) */
+    html.mui.mui-phonelayout .cardText > .textActionButton {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        vertical-align: top;
+    }
+
+    /* a logo drawn in black (modernui.js: .mui-logo-dark) is shown white over the dark art and page */
+    html.mui.mui-phonelayout .mui-phone-video-logo.mui-logo-dark {
+        filter: brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0, 0, 0, .35));
+    }
+
+    /* the full player's title menu (⋯) is a 29px button: its touch area grows to 44px around the same glyph */
+    html.mui.mui-phonelayout .videoOsdParentTitleContainer .btnOsdMore-title {
+        min-width: 44px;
+        min-height: 44px;
+        margin: -7.5px;
+    }
+
+    /* the search field is a glass capsule like the header's controls, without Emby's thick accent outline */
+    html.mui.mui-phonelayout.theme-dark .searchfields-txtSearch {
+        height: 44px;
+        box-sizing: border-box;
+        padding-inline: 18px;
+        border: 0 !important;
+        border-radius: 22px;
+        background: var(--mui-lg-fill), rgba(118, 118, 128, .24) !important;
+        box-shadow: var(--mui-lg-edge);
+        font-size: 17px;
+    }
+    html.mui.mui-phonelayout.theme-dark .searchfields-txtSearch:focus {
+        box-shadow: var(--mui-lg-edge), 0 0 0 1.5px rgba(255, 255, 255, .32);
+    }
+}
+
+/* A short window (a phone held sideways, which gets the desktop layout): the banner's logo, facts, overview and
+   buttons kept their full size and grew up over the header and its tabs. Phones turn between about 320 and 430px
+   tall as Safari's bars come and go, all below this. */
+@media (min-width: 40.01em) and (max-height: 32em) {
+    .mui-sl-info { bottom: 10%; }
+    .mui-sl-logo { max-height: 4.5em; margin-bottom: .6em; }
+    .mui-sl-title { font-size: 2em; }
+    .mui-sl-meta { margin-bottom: .5em; }
+    .mui-sl-overview { -webkit-line-clamp: 1; margin-bottom: .9em; }
+}
+
+/* Desktop: the docked player bar floats above the window's bottom edge; the page scrolling on under it fades and
+   blurs away into that edge instead of showing as a cut-off strip in the gap below the bar. */
+@media (min-width: 40.01em) {
+    html.mui .appfooter:has(.nowPlayingBar.mui-bar:not(.hide))::before {
+        content: "";
+        position: absolute;
+        z-index: -1;
+        inset: -24px 0 0 0;
+        pointer-events: none;
+        background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .22));
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        -webkit-mask-image: linear-gradient(to bottom, transparent, #000 60%);
+        mask-image: linear-gradient(to bottom, transparent, #000 60%);
+    }
 }
