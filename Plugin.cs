@@ -20,6 +20,12 @@ namespace BetterTheEmby
         /// <summary>Phones: no tab bar at the bottom, search in the header, albums three to a row, calmer motion.</summary>
         public bool EnablePhoneLayout { get; set; } = true;
 
+        /// <summary>
+        /// Phones: liquid glass in the manner of iOS 26 (clear, with a bright rim, bending the page under it in Chromium,
+        /// swelling under the finger) instead of the frosted glass of the desktop. Off: frosted glass.
+        /// </summary>
+        public bool EnableLiquidGlass { get; set; }
+
         /// <summary>Caches the web client's files in the browser (HTTPS only), so pages open faster.</summary>
         public bool EnableWebCache { get; set; } = true;
 

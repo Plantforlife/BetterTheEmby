@@ -16,6 +16,8 @@ define(['loading', 'emby-input', 'emby-button', 'emby-checkbox', 'emby-textarea'
         albumTintDesc: 'The player takes the cover\'s colours; Apple-Music-style lyrics.',
         phoneLayout: 'Phone layout',
         phoneLayoutDesc: 'No bottom tab bar, search at the top right, albums three to a row, calmer motion; pages scroll as a whole like an ordinary site, so Safari\'s toolbar shrinks away.',
+        liquidGlass: 'Liquid glass',
+        liquidGlassDesc: 'Buttons, tabs and menus on phones in the manner of iOS 26 liquid glass (clear, with a bright rim, swelling under the finger, bending the page under it in Chromium). Off: frosted glass, as on the desktop.',
         webCache: 'Web client cache',
         webCacheDesc: 'Caches the web client\'s files in the browser (HTTPS only), so it opens faster.',
         libraries: 'Libraries',

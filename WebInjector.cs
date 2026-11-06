@@ -170,6 +170,7 @@ namespace BetterTheEmby
                 modernUI = c.EnableModernUI,
                 albumTint = c.EnableAlbumTint,
                 phoneLayout = c.EnablePhoneLayout,
+                liquidGlass = c.EnableLiquidGlass,
                 simplifyTabs = c.SimplifyLibraryTabs,
                 seriesTab = c.EnableSeriesTab,
                 artistFeed = c.EnableArtistFeed,

@@ -14,7 +14,7 @@
     var DISABLED_KEY = 'modernui.disabled';
     // the plugin's settings (its settings page); everything is on when they are missing
     var SETTINGS = Object.assign({
-        modernUI: true, phoneLayout: true, simplifyTabs: true, seriesTab: true, artistFeed: true, folderTabs: '',
+        modernUI: true, phoneLayout: true, liquidGlass: false, simplifyTabs: true, seriesTab: true, artistFeed: true, folderTabs: '',
         smartSearch: true, pinyinSearch: true, pinyinIndex: true, shortVersionNames: true
     }, window.BetterTheEmbySettings || {});
     // text in Chinese when Emby's interface is Chinese, in English otherwise
@@ -4059,8 +4059,9 @@
     }
 
     // ---------- phone liquid glass: refraction where the engine allows it ----------
-    // iOS glass bends what lies under it toward its rim and splits the colours a little there. Chromium can do that to
-    // the page behind an element (an SVG displacement filter in backdrop-filter); WebKit can't yet, so Safari keeps the
+    // Liquid glass only (the settings page). iOS glass bends what lies under it toward its rim and splits the colours a
+    // little there. Chromium can do that to the page behind an element (an SVG displacement filter in backdrop-filter);
+    // WebKit can't yet, so Safari keeps the
     // light, rim and tint the stylesheet draws. The displacement map depends on the element's size and corner radius:
     // one filter per shape, made on demand and reused; the element points at it through --mui-refract.
     var GLASS = '.skinHeader:not(.videoOsdHeader) :is(.headerBackButton,.headerMenuButton), .skinHeader:not(.videoOsdHeader) .headerRight,' +
@@ -4068,10 +4069,11 @@
         ' .mainDetailButtons > :is(.btnShuffle,.detailButton-autotext), .nowPlayingBar.mui-bar';
     var canRefract = !!(window.CSS && CSS.supports('backdrop-filter', 'url(#x)')) &&
         /Chrome\/|Chromium\//.test(navigator.userAgent) && !/CriOS|EdgiOS|FxiOS/.test(navigator.userAgent);
-    if (canRefract) root.classList.add('mui-refracts');
+    // Chromium, for the header glass during page slides (modernui.css)
+    if (canRefract) root.classList.add('mui-chromium');
     var glassDefs = null, glassShapes = {}, glassSizer = null;
     function glassify() {
-        if (!canRefract || !isPhone() || !window.ResizeObserver) return;
+        if (!canRefract || SETTINGS.liquidGlass !== true || !isPhone() || !window.ResizeObserver) return;
         if (!glassSizer) glassSizer = new ResizeObserver(function (entries) { entries.forEach(function (e) { refract(e.target); }); });
         document.querySelectorAll(GLASS).forEach(function (node) {
             if (node.__muiGlass) return;
@@ -4254,6 +4256,8 @@
         // the stylesheet only applies from here on
         root.classList.add('mui');
         if (SETTINGS.phoneLayout !== false) root.classList.add('mui-phonelayout');
+        // the phone's glass: frosted like the desktop's, or liquid glass in the manner of iOS 26 (settings page)
+        if (SETTINGS.liquidGlass === true) root.classList.add('mui-liquid');
         hookEmby();
         window.ModernUI.refresh = refresh;
         // in case the page was already up when this script ran

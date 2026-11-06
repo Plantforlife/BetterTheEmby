@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2.53
+
+- Phone glass is now the frosted glass of the desktop's detail buttons: the page under it blurred behind a faint veil, a hairline edge and a soft light along the top, on the header, the tabs and the detail buttons; menus and the mini player are the desktop's darker menu glass, with rounded corners instead of capsules. The iOS 26 style liquid glass is still there: turn on 「液态玻璃」 / "Liquid glass" on the plugin's settings page.
+- Phone: the header's capsule no longer scales on the way into a show and back (it holds three buttons on most pages and two on video details); it crossfades at its own size.
+- Desktop details: the round played, favourite and more buttons are the same clear glass as the pill next to them (Emby drew them solid grey).
+- Phone player: shuffle and repeat have the corners of the cover above them instead of capsule ends; in the queue, remove is a light × and reorder three fine lines, in the muted text colour (they were a circled minus and a heavy double bar).
+
 ## 1.0.2.52
 
 - Phone settings (and Emby's other dashboard pages, which use the light theme) are readable again: white, as Emby has them, with the header in light glass with dark glyphs and a frosted white band under it once the page scrolls. They had black text on a near-black page.
