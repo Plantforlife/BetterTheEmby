@@ -1,18 +1,29 @@
 # Changelog
 
-## 1.0.2.54
+## 1.0.2 — 2026-11-06
+
+> **The phone layout is still a work in progress.** It is usable on the iPhone (Safari) and on Android, but unfinished: expect rough edges, and it may change a lot in the next versions. The desktop layout is the finished part.
+
+- Phones: pages scroll like an ordinary site, so Safari's toolbar shrinks away and pages run on under the status bar; pages slide in and out; the header's controls, the tabs and the detail buttons are frosted glass (iOS 26 style liquid glass is an option on the settings page) and turn light with dark glyphs over a bright picture; menus open from their button; a floating mini player; video details with full-width artwork, an episode strip and five controls; album pages with the cover beside the title; a library letter index you can scrub; Apple Music style player panels.
+- Desktop: a docked frosted player bar; the lyrics and queue panels glide in and out; detail buttons in one clear glass; version, audio and subtitle menus open at their select, and versions show short names.
+- Music and search: search finds album artists and their albums, also by pinyin; album colours are sampled the same way on phones and desktops.
+- Settings page in Chinese, with English to pick; a new **Liquid glass** option.
+
+The builds deployed while 1.0.2 was made follow, newest first.
+
+### 1.0.2.54
 
 - Phone (Safari too): no square blocks behind the header's round buttons and capsule, and no leftover block where the tabs were, while pages slide. The browsers drew the glass's blur in the pictures they take for the slide without its rounded corners; while pages slide the header glass is a denser tint instead.
 - Phone player, as in Apple Music: the lyrics and queue panels open with a 70px cover, the title over the artist and the playing item's ⋯ at the right; shuffle and repeat are translucent pills that turn white while on; the queue has a "Continue Playing" heading with the album it comes from, and a lighter grabber.
 
-## 1.0.2.53
+### 1.0.2.53
 
 - Phone glass is now the frosted glass of the desktop's detail buttons: the page under it blurred behind a faint veil, a hairline edge and a soft light along the top, on the header, the tabs and the detail buttons; menus and the mini player are the desktop's darker menu glass, with rounded corners instead of capsules. The iOS 26 style liquid glass is still there: turn on 「液态玻璃」 / "Liquid glass" on the plugin's settings page.
 - Phone: the header's capsule no longer scales on the way into a show and back (it holds three buttons on most pages and two on video details); it crossfades at its own size.
 - Desktop details: the round played, favourite and more buttons are the same clear glass as the pill next to them (Emby drew them solid grey).
 - Phone player: shuffle and repeat have the corners of the cover above them instead of capsule ends; in the queue, remove is a light × and reorder three fine lines, in the muted text colour (they were a circled minus and a heavy double bar).
 
-## 1.0.2.52
+### 1.0.2.52
 
 - Phone settings (and Emby's other dashboard pages, which use the light theme) are readable again: white, as Emby has them, with the header in light glass with dark glyphs and a frosted white band under it once the page scrolls. They had black text on a near-black page.
 - Phone header over a bright picture (an artist's backdrop, light artwork on show and film pages): the back button and the capsule each turn to light glass with dark glyphs while the part of the picture under them is bright, until it has scrolled away, as iOS glass does. White glyphs on white glass used to vanish.
@@ -28,7 +39,7 @@
 - Phones held sideways and other short windows: the banner's logo and text no longer run up over the header and its tabs.
 - Desktop: the page fades out under the docked player bar instead of showing a cut-off strip in the gap below it.
 
-## 1.0.2.51
+### 1.0.2.51
 
 - Phone show and film pages: the artwork shrinks again as the page scrolls, toward its top edge (about 78% after a quarter of a screen width, 66% after a third), then fades out, as in the reference; it stays smooth, since the scroll position still drives it on the compositor.
 - Phone show and film pages are edge to edge: the artwork first scrolls up under Safari's status bar and holds still from there, and at the top of the page the status bar takes the colour of the top of the artwork instead of a dark band.
@@ -40,19 +51,19 @@
 - Phone glass is calmer over strongly coloured art: a red poster no longer turns the buttons solid red.
 - The letter index of phone libraries keeps its size while Safari's toolbar shows or hides.
 
-## 1.0.2.50
+### 1.0.2.50
 
 - Phone show and film pages scroll smoothly: the artwork holds still at the top while the page slides over it, and dims as the content covers it, as in the iOS app. It used to be moved by script from scroll events, a frame behind Safari's scrolling, and it switched from following to scrolling away part-way down, so it twitched.
 
-## 1.0.2.49
+### 1.0.2.49
 
 - Phone libraries: the A–Z index sits in a gutter of its own along the right edge instead of over the right-hand column of posters. The grid stops 28 px short of the edge; the index is 24 px wide with smaller letters, and its letter readout is glass like the other phone panels.
 
-## 1.0.2.48
+### 1.0.2.48
 
 - Phone tabs: the glass track is no longer cut off at its top and bottom edges (Emby's tab row clipped it), and the glass rim is a soft, continuous top light instead of an offset arc that read as a second outline at the rounded ends.
 
-## 1.0.2.47
+### 1.0.2.47
 
 - Phone liquid glass now refracts: in Chrome and Edge the page under the header buttons, tabs, detail buttons and mini player bends toward their rims with a slight colour split, the way iOS glass does. Safari (which can't bend what lies behind an element yet) gets the same light, rim and colour fringe without the bending.
 - The header glass really blurs the page now. Emby names the header for page transitions, which kept its buttons from seeing the page behind them: they were merely see-through.
@@ -60,7 +71,7 @@
 - Corners follow iOS: concentric radii (the tab lens inside its track, the mini player capsule), and continuous corners on menus and panels where the browser supports them (Chrome and Edge).
 - The header capsule now holds all three buttons in narrow desktop windows; the cast button used to spill out of it.
 
-## 1.0.2.46
+### 1.0.2.46
 
 - Desktop now-playing bar: a docked player with rounded frosted glass. The track sits on the left, the transport in the middle with a slim progress bar under it between the elapsed time and the duration, and shuffle, repeat, volume and the queue on the right. The progress takes the playing album's colour, and the slider thumbs only show on hover.
 - Phone now-playing bar: a floating mini player (cover, title, play/pause, next) with a hairline of progress.
@@ -68,180 +79,180 @@
 - Phone menus only keep what a phone needs: playing, favourites, played state and going to the item. Editing, identifying, converting, downloading, deleting and similar desktop tools are gone from them, and the library view settings are hidden. Desktops keep everything.
 - Phone album pages: Play and Shuffle are two pills with their labels instead of icons with overlapping text. A film that shows its logo no longer repeats its name under it.
 
-## 1.0.2.45
+### 1.0.2.45
 
 - Audio player: when the lyrics or queue panel opens or closes on the desktop, the timeline, buttons and volume now glide with the cover instead of jumping to their new place, and the cover is no longer cut off at the column edge while it moves. The old panel fades out by mid-way and the new one fades in over the first stretch, so they no longer overlap. On phones the big cover morphs into the small cover beside the title (and back) instead of vanishing.
 
-## 1.0.2.44
+### 1.0.2.44
 
 - Audio player: the lyrics and queue toggle now uses the curve and duration of the interface's page slides (300 ms, ease-out) for every part, and the desktop panel slides in solid instead of half transparent.
 
-## 1.0.2.43
+### 1.0.2.43
 
 - Audio player: the lyrics and queue toggle now moves every part — panel, cover, title lines and controls — on one 360 ms curve, so the whole player switches in step instead of trailing behind.
 
-## 1.0.2.42
+### 1.0.2.42
 
 - Desktop audio player: opening or closing the lyrics (and queue) panel now glides the cover, the title and the controls to their new places with the panel, instead of jumping there while only the panel moved.
 
-## 1.0.2.41
+### 1.0.2.41
 
 - Audio player: the lyrics and queue panels now slide in and out over 640 ms on an evenly decelerating curve — a smooth scroll into place rather than a fade, on the desktop (96 px) and the phone (24 px).
 
-## 1.0.2.40
+### 1.0.2.40
 
 - Desktop audio player: the lyrics (and queue) panel now slides in and out 64 px, so the transition is visible on a wide screen.
 
-## 1.0.2.39
+### 1.0.2.39
 
 - Phone audio player: opening and closing the lyrics (and play queue) panel fades and rises it over 420 ms, as on the desktop player; closing no longer snaps shut.
 
-## 1.0.2.38
+### 1.0.2.38
 
 - Phone home: no banner, so the page opens on My Media. Library tiles sit three to a screen, Continue Watching cards at two to a screen, and each row heading shows the library's own name with a blue 更多 link, as in the reference.
 
-## 1.0.2.37
+### 1.0.2.37
 
 - Phone episode rail: the blue outline jumps straight onto the tapped episode instead of sliding across the strip; only the strip scrolls to center it. The season heading now opens the same picker as the version selector — the native one on Safari, the anchored menu elsewhere. The header buttons on video details are one pane of light glass, aligned as in the reference.
 
-## 1.0.2.36
+### 1.0.2.36
 
 - Phone episode rail: the blue outline and the strip scroll now move on one eased 400 ms curve, so the outline glides straight to the new episode instead of overshooting and being dragged back. Rapid taps continue from the current position, a swipe during the motion keeps the finger in control, and a new width keeps the outline on its card. Switching seasons slides the new episodes in from the side of the season order.
 
-## 1.0.2.35
+### 1.0.2.35
 
 - Suppress duplicate phone card navigation and recover artwork after scrolling or returning to a cached page.
 - Open phone shows directly to the episode rail. Switch seasons and specials in place, with a moving blue outline for the selected episode.
 
-## 1.0.2.34
+### 1.0.2.34
 
 - Apply the detail button reflections on desktop over Emby's native shadow reset.
 
-## 1.0.2.33
+### 1.0.2.33
 
 - Give detail playback and secondary buttons a soft inset reflection.
 - Use separate season and episode pages for multi-season shows on phones, with in-place previews for single-season shows.
 - Extend phone slides across media browsing and details. Start once the title is ready without waiting for artwork or classifying the clicked item.
 
-## 1.0.2.32
+### 1.0.2.32
 
 - Slide the full phone series route in from the right and back out over the previous page.
 - Drive artwork directly from scroll position on supported browsers. Keep episode cards and the series artwork steady while tapping through episodes.
 
-## 1.0.2.31
+### 1.0.2.31
 
 - Match the reference phone series scroll: the backdrop stays anchored as it zooms out and fades, and the logo and episode controls scroll at full size.
 
-## 1.0.2.30
+### 1.0.2.30
 
 - Keep the phone episode strip in place when switching to an episode with a longer or shorter synopsis.
 - Put item commands in the floating header for all phone video details. Use quieter controls for unavailable playback options.
 
-## 1.0.2.29
+### 1.0.2.29
 
 - Close the phone synopsis reader with browser Back while keeping the episode page, selection and scroll position.
 
-## 1.0.2.28
+### 1.0.2.28
 
 - Use the phone episode strip on single-season series pages while retaining Emby's season navigation for multi-season series.
 
-## 1.0.2.27
+### 1.0.2.27
 
 - Keep episode card resizing smooth when another episode is selected mid-animation, and center the latest selection using the rail's layout coordinates.
 
-## 1.0.2.26
+### 1.0.2.26
 
 - Continue interrupted desktop lyrics and queue transitions from the current position instead of jumping to the old destination.
 
-## 1.0.2.25
+### 1.0.2.25
 
 - Let a late phone spotlight logo fade in after the swipe settles, keeping the title and metadata aligned throughout.
 
-## 1.0.2.24
+### 1.0.2.24
 
 - Commit a phone alphabet index tap once when WebKit also emits a native click after touch.
 
-## 1.0.2.23
+### 1.0.2.23
 
 - Phone season details start on the first episode. An episode switch updates the title, technical information, track options and selection together.
 
-## 1.0.2.22
+### 1.0.2.22
 
 - Match the phone season and episode layout to the reference, with a blue play button, a compact floating header and blue season and episode controls.
 - Show the current letter in the center of the screen while scrubbing the library index. Safari's native selectors retain keyboard focus feedback without drawing a ring on touch.
 
-## 1.0.2.21
+### 1.0.2.21
 
 - Keep the phone player's artwork centered at its intended square size when lyrics and the queue are closed.
 
-## 1.0.2.20
+### 1.0.2.20
 
 - The phone episode strip shows two and a half cards at the start and centers later selections with half of each neighbouring card visible.
 - Phone video details share five controls across video types, keep the header within reach during scrolling, and clamp the synopsis inside its own text container. Episode selections use a blue outline, a soft title transition, and a backdrop fade matching the home banner.
 - The phone library index supports touch scrubbing. Album actions are four circles in a row, and the player gives artwork more space when its side panels are closed.
 - The rounded audio bar keeps its frosted backdrop. Desktop lyrics, queue and playback settings slide and fade. Fast phone home swipes finish the current movement before starting the next.
 
-## 1.0.2.19
+### 1.0.2.19
 
 - Compact phone video details keep the episode strip in view and open long descriptions in a reader. Season and episode entrances move right in one 480 ms transition.
 - Phone Safari uses native track pickers. Other browsers use a compact anchored menu. Watched and favourite controls respond immediately and restore their prior state on failure.
 - The audio footer blurs the page behind it. Desktop lyrics animate out, and phone transport controls slide and resize the lyrics area.
 
-## 1.0.2.18
+### 1.0.2.18
 
 - Phone show and episode details use a full-width backdrop, centered playback, and five circular controls. Episode selection updates the detail panel without navigation. Version, audio, and subtitle menus use the browser's native select control.
 - Phone home banners slide horizontally. The drawer and bottom audio bar use neutral frosted glass.
 - The phone music player puts shuffle and repeat above the queue and lets lyrics expand after inactivity or a downward scroll.
 
-## 1.0.2.17 — 2026-11-03
+### 1.0.2.17 — 2026-11-03
 
 - Phone album details place a larger cover beside the left-aligned title, artist and metadata. The existing play/shuffle buttons and favourite/more controls remain underneath across the full width. Long titles and genres wrap without clipping; the layout also works with Album Tint off and leaves desktop and other detail types unchanged.
 
-## 1.0.2.16 — 2026-11-02
+### 1.0.2.16 — 2026-11-02
 
 - Top-level library tabs use a clearer directional slide and fade: right-hand tabs enter from the right and left-hand tabs from the left. Motion scales with the viewport, waits for custom content/native scroll bodies, and cancels cleanly on rapid switches.
 - Series covers and titles now use the same poster transition into collection details and back as normal cards. Returning hides only the series cover, keeping its title rows visible. Phone and reduced-motion behaviour is retained.
 
-## 1.0.2.15 — 2026-11-02
+### 1.0.2.15 — 2026-11-02
 
 - Video option selectors and menus share the detail artwork's 12px corners. Selected rows have a persistent light-grey background with dark text and fill the menu width without dark inset strips; the outer menu clips the row at its rounded edges.
 
-## 1.0.2.14 — 2026-11-02
+### 1.0.2.14 — 2026-11-02
 
 - Video option menus remove their top and bottom inset so the first and last option highlights meet the menu edges. Side inset, small corners, selection dot and text padding are retained.
 
-## 1.0.2.13 — 2026-11-02
+### 1.0.2.13 — 2026-11-02
 
 - Video detail options use smaller corners: 6px on the selectors, 8px on their desktop menus and 4px on entries. The selected dot, spacing and alignment stay the same.
 
-## 1.0.2.12 — 2026-11-02
+### 1.0.2.12 — 2026-11-02
 
 - Search includes album artists and finds their albums by album-artist name, full pinyin or initials. Artist results use the existing cards and also appear in drawer suggestions. Artist catalogues are cached per library, and an unavailable artist lookup does not hide title results.
 
-## 1.0.2.11 — 2026-11-02
+### 1.0.2.11 — 2026-11-02
 
 - Select menus on desktops: the chosen entry has a dot in front of its first line instead of a check mark at the right end, and every entry has the same 10px on all four sides (the menu 6px around its entries).
 
-## 1.0.2.10 — 2026-11-02
+### 1.0.2.10 — 2026-11-02
 
 - Select menus (version, audio, subtitles) open at the select's own left edge, with each entry's text in line with the select's text and the check mark at the right end. Emby placed them 26px to the left of the select, for a check-mark column in front of every entry, so the text lined up with nothing. This replaces 1.0.2.9's narrower column. Phones keep Emby's bottom sheets.
 
-## 1.0.2.9 — 2026-11-02
+### 1.0.2.9 — 2026-11-02
 
 - Option menus of selects (version, audio, subtitles): the strip in front of each entry, kept free for the check mark, is 2.6em wide instead of Emby's 3.99em, so the text starts closer to the left edge.
 
-## 1.0.2.8 — 2026-11-02
+### 1.0.2.8 — 2026-11-02
 
 - Detail pages: the **Version** picker shows what comes after the first " - " of each version's name ("天气之子 - 4K BluRay-Remux … - Xcat" becomes "4K BluRay-Remux … - Xcat"), leaving off the title the name starts with and the page shows already. It covers the closed picker and its menu. New setting **Short version names** (on by default). A name with no " - ", or with nothing after it, stays as it is.
 
-## 1.0.2.7 — 2026-11-02
+### 1.0.2.7 — 2026-11-02
 
 - Phones: smaller full-screen lyrics and translations leave room for whole phrases; desktop sizes stay the same.
 - Album colours: phones and desktops sample the same 160 px cover at quality 90. Inherited artist backdrops stay hidden on phones too, and the document behind Safari's bars uses the gradient's actual base colour.
 - Phones: floating header buttons and tab tracks have more opaque dark surfaces, less blur and clearer text over cards and artwork.
 - Home album rows follow their music library's `stripPrefix` setting, matching folder tabs without changing album metadata or other libraries.
 
-## 1.0.2 — 2026-11-02
+### First 1.0.2 builds — 2026-11-02
 
 - Phones: pages scroll the document, like an ordinary site, so Safari shrinks its toolbar as you scroll, shows the page under the status bar and the toolbar, and goes back to the top on a tap on the status bar. Emby scrolls a container per page inside a locked document, which Safari never does any of that for; on phones that container is now let out into the document and Emby's scroller reads and moves the document instead (its virtual grids and header keep working). Each page and each tab keeps its own place. This replaces 1.0.1's containers stretched past the screen's edges, which didn't work. Emby's full-screen background layer and the empty footer are transparent now: Safari painted its status bar and toolbar solid in their colour (it does that for any fixed element with a background at the screen's edge) instead of showing the page under them. And a hidden header now leaves the screen completely: Emby keeps the strip of it under the status bar on screen, frosted, which stood over the status bar as a band nothing scrolled under.
 - Phones: the page now scrolls on behind the clock. Safari 26 (WebKit's `fixedContainerEdges`) fills the area behind the status bar with an opaque colour whenever a full-width fixed box sits at the top edge, and once found, that box keeps the status bar until it is hidden; the top edge isn't looked at again after the first scroll or tap. Emby's header was that box from the start, so in this single-page app the status bar was a band for the whole session, and the toolbar likewise picked up a band after the page art changed. The header box and the full-screen background layers are now `visibility: hidden` on phones (which WebKit skips), with their rows and pictures still visible and the header's glass drawn by a pseudo-element.

@@ -8,6 +8,8 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 > Requires **Emby Server 4.9.5.0**. The plugin follows that version's web client; pin your image to `emby/embyserver:4.9.5.0`.
 
+> **Version 1.0.2. The phone layout is still a work in progress.** It is usable on the iPhone (Safari) and on Android, but unfinished: expect rough edges, and it may change a lot in the next versions. The desktop layout is the finished part. If the phone layout gets in your way, turn off **Phone layout** on the plugin's settings page.
+
 ## Features
 
 ### Look and motion (Modern UI)
@@ -53,6 +55,8 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 - The drawer's search box suggests the same results and opens the search page on Enter.
 
 ### Phones
+
+> Work in progress: usable, but unfinished (see the note at the top).
 
 - Phone episode cards keep their width while scrolling. Tap a later episode to highlight it immediately and glide it to the center.
 - Video details keep Back, Search and More in the floating header. The episode strip stays in place when the synopsis changes length, and a blue border marks the selected episode. Drag the library letter index to choose a letter. Album playback actions sit together in one row.
@@ -149,6 +153,7 @@ docs/TECHNICAL.md      how it all works
 
 ## Known limitations
 
+- The phone layout is unfinished (see the note at the top); the desktop layout is the finished part.
 - Made for the web client of Emby 4.9.5.0; other versions may rename the classes it relies on.
 - Works in Emby's bundled web client (browsers, and apps that open the server's web page), not in Emby's native apps.
 - The blurred lyrics and page art use the GPU; very old graphics may stutter.
