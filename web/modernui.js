@@ -4036,9 +4036,12 @@
         }
         // A header button (the user menu) opens its menu without an anchor, as a sheet: anchor it to the button.
         var tap = lastTap && Date.now() - lastTap.at < 1500 && lastTap.el.isConnected ? lastTap.el : null;
-        if (!options.positionTo && tap && !options.title && tap.closest('.skinHeader, .mui-phone-video-head, .nowPlayingBar')) {
+        // A menu anchored to a hidden button (the player's ⋯ beside the big title, opened from the panel header's ⋯)
+        // opens from the button that was tapped
+        var gone = options.positionTo && options.positionTo.getBoundingClientRect && !options.positionTo.getBoundingClientRect().width;
+        if (tap && (gone || !options.positionTo && !options.title) && tap.closest('.skinHeader, .mui-phone-video-head, .nowPlayingBar, .albumtint-phone-head')) {
             options.positionTo = tap;
-            options.positionY = 'below';
+            options.positionY = 'bottom';
             options.positionX = tap.getBoundingClientRect().left > innerWidth / 2 ? 'right' : 'left';
         }
         if (options.positionTo) {
@@ -4069,8 +4072,6 @@
         ' .mainDetailButtons > :is(.btnShuffle,.detailButton-autotext), .nowPlayingBar.mui-bar';
     var canRefract = !!(window.CSS && CSS.supports('backdrop-filter', 'url(#x)')) &&
         /Chrome\/|Chromium\//.test(navigator.userAgent) && !/CriOS|EdgiOS|FxiOS/.test(navigator.userAgent);
-    // Chromium, for the header glass during page slides (modernui.css)
-    if (canRefract) root.classList.add('mui-chromium');
     var glassDefs = null, glassShapes = {}, glassSizer = null;
     function glassify() {
         if (!canRefract || SETTINGS.liquidGlass !== true || !isPhone() || !window.ResizeObserver) return;

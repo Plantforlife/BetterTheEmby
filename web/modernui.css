@@ -2251,10 +2251,16 @@ html.mui-phone-pop::view-transition-new(root) { --mui-route-keyframes: mui-route
 @keyframes mui-route-under-push { from { transform: translateX(0); } to { transform: translateX(-30%); } }
 @keyframes mui-route-under-pop { from { transform: translateX(-30%); } to { transform: translateX(0); } }
 
-/* Chromium (html.mui-chromium) takes a picture of each named header control for the slide, and drew its backdrop
-   filter in it as a square block, its radius ignored; the tab track's stayed as a coarse blurred block while the pages
-   slid. While pages slide those controls are plain tinted glass, without a backdrop filter. */
-html.mui-chromium.mui-phonelayout:is(.mui-phone-push, .mui-phone-pop) .skinHeader:not(.videoOsdHeader) :is(.headerBackButton, .headerMenuButton, .headerRight, .emby-tabs-slider) {
+/* While pages slide, the header's controls and the mini player keep their place as pictures the browser takes of
+   them (they are named for the transition). Safari and Chromium drew a backdrop filter in those pictures as a square
+   block, its radius ignored, and the tab track's lingered as a blurred block over the new page. While pages slide they
+   have no backdrop filter; the header controls take a denser tint of the same glass instead (--mui-lg-still). */
+html.mui-phonelayout:is(.mui-phone-push, .mui-phone-pop) .skinHeader:not(.videoOsdHeader) :is(.headerBackButton, .headerMenuButton, .headerRight, .emby-tabs-slider) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: var(--mui-lg-still, rgba(52, 52, 56, .62)) !important;
+}
+html.mui-phonelayout:is(.mui-phone-push, .mui-phone-pop) .appfooter .nowPlayingBar.mui-bar {
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
 }
@@ -2283,7 +2289,7 @@ html:is(.mui-phone-push, .mui-phone-pop)::view-transition-new(mui-header-tabs) {
     translate: -50% 0;
 }
 
-.albumtint-phone-identity, .albumtint-phone-modes { display: none; }
+.albumtint-phone-head, .albumtint-phone-modes, .albumtint-phone-queuehead { display: none; }
 
 @media (max-width: 40em) {
     html.mui-phonelayout.albumtint-osd .videoOsdBottom:not(.videoOsdBottom-video):not(.hide) {
@@ -2327,24 +2333,49 @@ html:is(.mui-phone-push, .mui-phone-pop)::view-transition-new(mui-header-tabs) {
         max-height: none;
         padding-inline: 0;
     }
-    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) .albumtint-phone-identity {
+    /* A panel's header (lyrics, queue), as in Apple Music: a 70px cover with 10px corners, the title over the artist
+       at one size, and the playing item's ⋯ at the right. */
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) .albumtint-phone-head {
         display: flex;
         order: 0;
         flex: 0 0 auto;
         align-items: center;
-        gap: 12px;
-        padding: 0 0 12px;
+        gap: 8px;
+        padding: 0 0 16px;
+    }
+    .albumtint-phone-identity {
+        display: flex;
+        flex: 1 1 auto;
+        min-width: 0;
+        align-items: center;
+        gap: 16px;
+        padding: 0;
         text-align: start;
         border: 0;
         background: none;
         color: inherit;
         font: inherit;
     }
-    .albumtint-phone-identity img { width: 54px; height: 54px; object-fit: cover; border-radius: 8px; }
+    .albumtint-phone-identity img { flex: 0 0 auto; width: 70px; height: 70px; object-fit: cover; border-radius: 10px; }
     .albumtint-phone-identity img:not([src]) { display: none; }
     .albumtint-phone-identity span { min-width: 0; }
     .albumtint-phone-identity :is(strong,small) { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .albumtint-phone-identity small { opacity: .65; margin-top: 4px; }
+    .albumtint-phone-identity strong { font-size: 17px; font-weight: 600; line-height: 22px; }
+    .albumtint-phone-identity small { font-size: 17px; line-height: 22px; opacity: .55; }
+    .albumtint-phone-more {
+        display: inline-grid;
+        place-items: center;
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: none;
+        color: inherit;
+    }
+    .albumtint-phone-more .md-icon { font-size: 28px; }
+    .albumtint-phone-more:active { background: rgba(255,255,255,.14); }
     html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.lyricsSection:not(.hide),.osdPlayQueue:not(.hide)) :is(.osdPosterContainer,.videoOsdText) {
         display: none !important;
     }
@@ -2352,32 +2383,45 @@ html:is(.mui-phone-push, .mui-phone-pop)::view-transition-new(mui-header-tabs) {
         display: flex;
         order: 1;
         gap: 12px;
-        margin: 2px 0 12px;
+        margin: 0 0 20px;
     }
-    /* shuffle and repeat share the corners of the cover above them (8px), not a capsule's */
+    /* shuffle and repeat: Apple Music's translucent pills with the icon alone, filled white while on */
     .albumtint-phone-modes button {
         flex: 1;
-        min-height: 42px;
+        height: 40px;
+        min-height: 0;
+        padding: 0;
         color: inherit;
         border: 0;
-        border-radius: 8px;
-        background: rgba(255,255,255,.14);
+        border-radius: 20px;
+        background: rgba(255,255,255,.16);
+        transition: background-color .2s ease, color .2s ease;
     }
-    .albumtint-phone-modes button[aria-pressed="true"] { background: rgba(255,255,255,.32); }
-    /* A queue row's two controls: remove is a light ×, reorder the three fine lines of an iOS grabber, both in the
-       muted text colour (Emby's circled minus and heavy double bar outweighed the titles) */
+    .albumtint-phone-modes button .md-icon { font-size: 22px; }
+    .albumtint-phone-modes button[aria-pressed="true"] { background: rgba(255,255,255,.88); color: rgba(0,0,0,.78); }
+    /* the queue's heading: what plays next, and the album it comes from */
+    html.mui-phonelayout.albumtint-osd .videoOsdBottom:has(.osdPlayQueue:not(.hide)) .albumtint-phone-queuehead {
+        display: block;
+        order: 1;
+        margin: 0 0 8px;
+    }
+    .albumtint-phone-queuehead strong { display: block; font-size: 17px; font-weight: 600; line-height: 22px; }
+    .albumtint-phone-queuehead small { display: block; font-size: 15px; line-height: 20px; opacity: .55; }
+    .albumtint-phone-queuehead small:empty { display: none; }
+    /* A queue row's two controls: remove is a light ×, reorder the three fine lines of Apple Music's grabber, both
+       quieter than the titles (Emby's circled minus and heavy double bar outweighed them) */
     html.mui.mui-phonelayout.albumtint-osd .osdPlayQueue .listItem .listItemButton {
         color: transparent !important;
         background:
-            linear-gradient(45deg, transparent calc(50% - .75px), rgba(255,255,255,.5) calc(50% - .75px) calc(50% + .75px), transparent calc(50% + .75px)) center / 14px 14px no-repeat,
-            linear-gradient(-45deg, transparent calc(50% - .75px), rgba(255,255,255,.5) calc(50% - .75px) calc(50% + .75px), transparent calc(50% + .75px)) center / 14px 14px no-repeat !important;
+            linear-gradient(45deg, transparent calc(50% - .75px), rgba(255,255,255,.4) calc(50% - .75px) calc(50% + .75px), transparent calc(50% + .75px)) center / 14px 14px no-repeat,
+            linear-gradient(-45deg, transparent calc(50% - .75px), rgba(255,255,255,.4) calc(50% - .75px) calc(50% + .75px), transparent calc(50% + .75px)) center / 14px 14px no-repeat !important;
     }
     html.mui.mui-phonelayout.albumtint-osd .osdPlayQueue .listViewDragHandle {
         color: transparent !important;
         background:
-            linear-gradient(rgba(255,255,255,.45), rgba(255,255,255,.45)) center calc(50% - 5px) / 18px 1.5px no-repeat,
-            linear-gradient(rgba(255,255,255,.45), rgba(255,255,255,.45)) center / 18px 1.5px no-repeat,
-            linear-gradient(rgba(255,255,255,.45), rgba(255,255,255,.45)) center calc(50% + 5px) / 18px 1.5px no-repeat !important;
+            linear-gradient(rgba(255,255,255,.34), rgba(255,255,255,.34)) center calc(50% - 6px) / 22px 1.5px no-repeat,
+            linear-gradient(rgba(255,255,255,.34), rgba(255,255,255,.34)) center / 22px 1.5px no-repeat,
+            linear-gradient(rgba(255,255,255,.34), rgba(255,255,255,.34)) center calc(50% + 6px) / 22px 1.5px no-repeat !important;
     }
     html.mui.mui-phonelayout.albumtint-osd .osdPlayQueue .listViewDragHandle::before,
     html.mui.mui-phonelayout.albumtint-osd .osdPlayQueue .listViewDragHandle::after {
@@ -3745,6 +3789,8 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         --mui-lg-panel: rgba(30, 30, 34, .76);
         --mui-lg-panel-filter: blur(30px) saturate(180%);
         --mui-lg-panel-edge: inset 0 0 0 1px rgba(255, 255, 255, .09), 0 28px 70px -16px rgba(0, 0, 0, .7);
+        /* the glass while pages slide, without its backdrop filter (see the route transitions) */
+        --mui-lg-still: rgba(52, 52, 56, .62);
         /* menus, the version pickers and the mini player: rounded rectangles, as the desktop's menus and player bar */
         --mui-panel-radius: 14px;
         /* the header's ink: its glyphs and title, their shadows, and the glow of a pressed button */
@@ -3779,6 +3825,7 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         --mui-ink-shadow: none;
         --mui-ink-text-shadow: none;
         --mui-press: rgba(0, 0, 0, .07);
+        --mui-lg-still: rgba(255, 255, 255, .8);
         --mui-lg-fill: linear-gradient(rgba(255, 255, 255, .62), rgba(255, 255, 255, .62));
         --mui-lg-edge: inset 0 0 0 1px rgba(0, 0, 0, .08), 0 3px 9px rgba(0, 0, 0, .14);
     }

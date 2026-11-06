@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2.54
+
+- Phone (Safari too): no square blocks behind the header's round buttons and capsule, and no leftover block where the tabs were, while pages slide. The browsers drew the glass's blur in the pictures they take for the slide without its rounded corners; while pages slide the header glass is a denser tint instead.
+- Phone player, as in Apple Music: the lyrics and queue panels open with a 70px cover, the title over the artist and the playing item's ⋯ at the right; shuffle and repeat are translucent pills that turn white while on; the queue has a "Continue Playing" heading with the album it comes from, and a lighter grabber.
+
 ## 1.0.2.53
 
 - Phone glass is now the frosted glass of the desktop's detail buttons: the page under it blurred behind a faint veil, a hairline edge and a soft light along the top, on the header, the tabs and the detail buttons; menus and the mini player are the desktop's darker menu glass, with rounded corners instead of capsules. The iOS 26 style liquid glass is still there: turn on 「液态玻璃」 / "Liquid glass" on the plugin's settings page.

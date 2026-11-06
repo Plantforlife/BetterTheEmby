@@ -1129,12 +1129,28 @@
         if (!bottom) return;
         if (bottom.__albumtintItemId !== item.Id) cancelPanelMotion();
         bottom.__albumtintItemId = item.Id;
+        var zh = /^zh/i.test(document.documentElement.getAttribute('lang') || navigator.language || '');
         if (!bottom.__albumtintPhone) {
+            // the header of a panel (lyrics, queue), as in Apple Music: the cover, the title over the artist, and the
+            // playing item's menu at the right
+            var head = document.createElement('div');
+            head.className = 'albumtint-phone-head';
             var identity = document.createElement('button');
             identity.type = 'button';
             identity.className = 'albumtint-phone-identity';
             identity.setAttribute('aria-label', 'Toggle playback controls');
             identity.innerHTML = '<img alt=""><span><strong></strong><small></small></span>';
+            var more = document.createElement('button');
+            more.type = 'button';
+            more.className = 'albumtint-phone-more';
+            more.setAttribute('aria-label', zh ? '更多' : 'More');
+            more.innerHTML = '<i class="md-icon">more_horiz</i>';
+            more.onclick = function () {
+                // Emby's menu for the playing item (its ⋯ sits beside the big title, hidden while a panel is open)
+                var native = bottom.querySelector('.btnOsdMore');
+                if (native && !native.disabled) native.click();
+            };
+            head.append(identity, more);
             var modes = document.createElement('div');
             modes.className = 'albumtint-phone-modes';
             [['shuffle', 'Shuffle', '.btnOsdShuffle-bottom'], ['repeat', 'Repeat', '.btnOsdRepeatMode-bottom']].forEach(function (spec) {
@@ -1152,7 +1168,13 @@
                 };
                 modes.appendChild(button);
             });
-            bottom.prepend(identity, modes);
+            // the queue's heading, as in Apple Music: what plays next and the album it comes from
+            var queueHead = document.createElement('div');
+            queueHead.className = 'albumtint-phone-queuehead';
+            queueHead.innerHTML = '<strong></strong><small></small>';
+            queueHead.firstChild.textContent = zh ? '继续播放' : 'Continue Playing';
+            bottom.__albumtintQueueHead = queueHead;
+            bottom.prepend(head, modes, queueHead);
             var idle, holdingControls = false;
             function lyricsOpen() {
                 return root.classList.contains('albumtint-osd') &&
@@ -1237,6 +1259,8 @@
         else if (!playingUrl) image.removeAttribute('src');
         identity.querySelector('strong').textContent = item.Name || '';
         identity.querySelector('small').textContent = (item.Artists || []).join(' · ') || item.AlbumArtist || '';
+        var from = bottom.__albumtintQueueHead && bottom.__albumtintQueueHead.querySelector('small');
+        if (from) from.textContent = item.Album ? (zh ? '来自 ' : 'From ') + item.Album : '';
     }
 
     function isDisabled() {
