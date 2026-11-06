@@ -3549,10 +3549,18 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
 }
 
 @media (min-width: 40.01em) {
-    html.mui .appfooter:has(.nowPlayingBar.mui-bar) {
+    /* Only while the bar is there, fading out included. The bar stays in the footer after it is hidden (on the
+       player, in a video, after playback stops): with the gap below it kept, the footer painted Emby's footer
+       colour (--footer-background) as a strip along the window's bottom edge. */
+    html.mui .appfooter:has(.nowPlayingBar.mui-bar:not(.hide)) {
         box-sizing: border-box;
         padding: 0 16px 16px;
         pointer-events: none;
+        background: transparent !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
     }
 
     html.mui .nowPlayingBar.mui-bar {
@@ -4322,5 +4330,11 @@ html.mui .nowPlayingBar.mui-bar .nowPlayingBarPositionContainer .emby-slider-bac
         backdrop-filter: blur(8px);
         -webkit-mask-image: linear-gradient(to bottom, transparent, #000 60%);
         mask-image: linear-gradient(to bottom, transparent, #000 60%);
+        transition: opacity 260ms ease;
+    }
+
+    /* it fades out with the bar (Album Tint's 260ms) as the player opens, rather than lingering over its bottom */
+    html.mui .appfooter:has(.nowPlayingBar.mui-bar.nowPlayingBar-hidden)::before {
+        opacity: 0;
     }
 }

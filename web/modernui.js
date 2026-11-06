@@ -3267,8 +3267,10 @@
             }
             if (!isBox(t) || typeof t.getItems !== 'function' || t.__muiItems) return;
             t.__muiItems = true;
+            // Emby hands this to its menu as options.getItems and calls it on those options, not on the box
+            // (its own is bound), so the typed text comes from the box itself
             t.getItems = function () {
-                var term = (this.value || '').trim(), n = searchKey(term);
+                var term = (t.value || '').trim(), n = searchKey(term);
                 if (!n || (!hasCjk(n) && n.length < 2)) return Promise.resolve({ Items: [], TotalRecordCount: 0 });
                 return runSearch(api(), term, null).then(function (found) {
                     var items = [].concat(found.Series, found.Movie, found.MusicArtist, found.MusicAlbum, found.Episode, found.Audio).slice(0, 20);
