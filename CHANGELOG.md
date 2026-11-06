@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.0.3.1
+## 1.0.2.1 — 2026-11-07
+
+A small fix release on top of 1.0.2. The phone layout is still a work in progress.
 
 - Desktop: no strip along the window's bottom edge on the player, under a video, or on any page once playback stopped. The gap kept below the docked bar stayed after the bar was hidden, in Emby's footer colour. The shade under the bar now fades out with it as the player opens.
 - Drawer search: the suggestions under the search box show again (the list stayed empty). Emby calls the box's suggestion source on its menu's options, not on the box, so it read no text.

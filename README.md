@@ -8,7 +8,7 @@ Everything lives in one plugin, `BetterTheEmby.dll`. On start it adds its styles
 
 > Requires **Emby Server 4.9.5.0**. The plugin follows that version's web client; pin your image to `emby/embyserver:4.9.5.0`.
 
-> **Version 1.0.2. The phone layout is still a work in progress.** It is usable on the iPhone (Safari) and on Android, but unfinished: expect rough edges, and it may change a lot in the next versions. The desktop layout is the finished part. If the phone layout gets in your way, turn off **Phone layout** on the plugin's settings page.
+> **Version 1.0.2.1. The phone layout is still a work in progress.** It is usable on the iPhone (Safari) and on Android, but unfinished: expect rough edges, and it may change a lot in the next versions. The desktop layout is the finished part. If the phone layout gets in your way, turn off **Phone layout** on the plugin's settings page.
 
 ## Features
 
